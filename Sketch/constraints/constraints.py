@@ -1,10 +1,10 @@
 from collections import Counter
 from enum import Enum, auto
-from constraints.constraint import Constraint
-from constraints.constraint_equations import *
-from geometric_primitives.point import Point
-from geometric_primitives.segment import Segment
-from geometric_primitives.arc import Arc
+from Sketch.constraints.constraint import Constraint
+from Sketch.constraints.constraint_equations import *
+from Sketch.geometric_primitives.point import Point
+from Sketch.geometric_primitives.segment import Segment
+from Sketch.geometric_primitives.arc import Arc
 
 class CONSTRAINT_TYPE(Enum):
     COINCIDENCE             = auto()

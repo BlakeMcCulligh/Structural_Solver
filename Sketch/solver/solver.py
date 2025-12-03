@@ -2,10 +2,10 @@ from enum import Enum, auto
 import itertools
 from scipy.optimize import minimize
 from copy import copy
-from constraints.constraints import CONSTRAINT_FUNCTION, CONSTRAINT_TYPE, Constraints
-from geometry import Geometry
-from geometric_primitives.point import Point, distance_p2p
-from geometric_primitives.segment import Segment
+from Sketch.constraints.constraints import CONSTRAINT_FUNCTION, CONSTRAINT_TYPE, Constraints
+from Sketch.geometry import Geometry
+from Sketch.geometric_primitives.point import Point, distance_p2p
+from Sketch.geometric_primitives.segment import Segment
 
 class SOLVER_TYPE(Enum):
     SLSQP   = auto()

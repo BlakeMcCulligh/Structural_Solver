@@ -1,13 +1,13 @@
 import tkinter as tk
-from constraints.constraint import Constraint
-from constraints.constraints import *
-from examples.examples import examples
-from geometry import Geometry
-from geometric_primitives.point import Point, distance_p2p
-from geometric_primitives.segment import Segment, distance_p2s
+from Sketch.constraints.constraint import Constraint
+from Sketch.constraints.constraints import *
+from Sketch.examples.examples import examples
+from Sketch.geometry import Geometry
+from Sketch.geometric_primitives.point import Point, distance_p2p
+from Sketch.geometric_primitives.segment import Segment, distance_p2s
 from math import atan2, degrees, pi
-from geometric_primitives.arc import Arc, distance_p2a
-from gui.constraint_icon import ConstraintIcon
+from Sketch.geometric_primitives.arc import Arc, distance_p2a
+from Sketch.gui.constraint_icon import ConstraintIcon
 
 WINDOW_SIZE = (840, 440)
 

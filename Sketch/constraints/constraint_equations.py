@@ -1,11 +1,11 @@
 # helpers
 
 from collections import Counter
-from geometric_primitives.arc import Arc
-from geometric_primitives.line import Line, distance_p2l
-from geometric_primitives.point import distance_p2p
-from geometric_primitives.segment import Segment
-from geometric_primitives.vector import Vector, cross, dot
+from Sketch.geometric_primitives.arc import Arc
+from Sketch.geometric_primitives.line import Line, distance_p2l
+from Sketch.geometric_primitives.point import distance_p2p
+from Sketch.geometric_primitives.segment import Segment
+from Sketch.geometric_primitives.vector import Vector, cross, dot
 
 def pairs(entities):
     return zip(entities[:-1], entities[1:])
