@@ -1,4 +1,6 @@
 import tkinter as tk
+from tkinter import ttk
+
 from Sketch.constraints.constraint import Constraint
 from Sketch.constraints.constraints import *
 from Sketch.examples.examples import examples
@@ -54,20 +56,23 @@ class GUI(tk.Frame):
         # could be Segment, Arc, Point or Constraint
         self.selected_entities = set()
 
-        self.create_text_hint()
-        self.create_text_info()
+        self.text_hint = tk.Label(self, bd=0, background='white')
+        self.text_info = tk.Label(self, bd=0, background='white')
+
         self.create_side_menus()
+
         self.create_top_menu()
         self.create_bindings()
+
         self.create_icons()
-        self.create_buttons()
         self.add_geometry()
 
-    def create_text_hint(self):
-        self.text_hint = tk.Label(self, bd=0, background='white')
-
-    def create_text_info(self):
-        self.text_info = tk.Label(self, bd=0, background='white')
+        # creating the toolbars
+        self.notebook = None
+        self.toolbar = []
+        self.toolbarFrame = []
+        self.currentTool = tk.StringVar(value="line")
+        self.createToolBars()
 
     def set_text_hint(self, text):
         self.text_hint.config(text = text)
@@ -80,13 +85,61 @@ class GUI(tk.Frame):
     def create_top_menu(self):
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
-        file_menu = tk.Menu(menubar, tearoff="off")
+        file_menu = tk.Menu(menubar, tearoff = "off")
         file_menu.add_command(label='Clear', command=self.clear_everything)
         menubar.add_cascade(label="File", menu=file_menu)
-        examples_menu = tk.Menu(menubar, tearoff="off")
+        examples_menu = tk.Menu(menubar, tearoff = "off")
+
         for example in examples:
             examples_menu.add_command(label=f'{example.__name__}', command=lambda example = example: self.load_example(example))
+
         menubar.add_cascade(label="Examples", menu=examples_menu)
+
+    def createToolBars(self):
+        """
+        Creates all the toolbars and butons
+        """
+
+        self.notebook = ttk.Notebook()
+        self.notebook.pack(side=tk.TOP, fill=tk.X)
+
+        self.toolbar.append(tk.Frame(self.notebook))
+        self.toolbar.append(tk.Frame(self.notebook))
+
+        self.notebook.add(self.toolbar[0], text="Draw")
+        self.notebook.add(self.toolbar[1], text="Relations")
+
+        self.toolbarFrame.append(tk.Frame(self.toolbar[0], bg="#ddd"))
+        self.toolbarFrame[0].pack(side=tk.TOP, fill=tk.X)
+
+        def create_menu_Draw(column, icon, command):
+            tk.Button(self.toolbarFrame[0], image = icon, command = command, relief = tk.SOLID, bg = "light gray", activebackground = "light gray").grid(row = 1, column = column, sticky = "n", pady = 2)
+
+        create_menu_Draw(0, self.segment_icon, self.on_add_segment_button_clicked)
+        create_menu_Draw(1, self.arc_icon, self.on_add_arc_button_clicked)
+
+        self.toolbarFrame.append(tk.Frame(self.toolbar[1], bg="#ddd"))
+        self.toolbarFrame[1].pack(side=tk.TOP, fill=tk.X)
+
+        def create_menu_right_constraint_button(column, constraint_type):
+            button = tk.Button(self.toolbarFrame[1], image=self.constraint_icon[BUTTON_ICON_SIZE][constraint_type],
+                               command=lambda: self.on_add_constraint_button_clicked(constraint_type),
+                               state=tk.DISABLED, relief=tk.SOLID, bg="light gray", activebackground="light gray")
+            button.grid(row=1, column=column, sticky="n", pady=2)
+            return button
+
+        self.constraint_button = {
+            CONSTRAINT_TYPE.COINCIDENCE: create_menu_right_constraint_button(0, CONSTRAINT_TYPE.COINCIDENCE),
+            CONSTRAINT_TYPE.FIXED: create_menu_right_constraint_button(1, CONSTRAINT_TYPE.FIXED),
+            CONSTRAINT_TYPE.PERPENDICULARITY: create_menu_right_constraint_button(2, CONSTRAINT_TYPE.PERPENDICULARITY),
+            CONSTRAINT_TYPE.PARALLELITY: create_menu_right_constraint_button(3, CONSTRAINT_TYPE.PARALLELITY),
+            CONSTRAINT_TYPE.EQUAL_LENGTH_OR_RADIUS: create_menu_right_constraint_button(4,
+                                                                                        CONSTRAINT_TYPE.EQUAL_LENGTH_OR_RADIUS),
+            CONSTRAINT_TYPE.VERTICALITY: create_menu_right_constraint_button(5, CONSTRAINT_TYPE.VERTICALITY),
+            CONSTRAINT_TYPE.HORIZONTALITY: create_menu_right_constraint_button(6, CONSTRAINT_TYPE.HORIZONTALITY),
+            CONSTRAINT_TYPE.TANGENCY: create_menu_right_constraint_button(7, CONSTRAINT_TYPE.TANGENCY),
+            CONSTRAINT_TYPE.CONCENTRICITY: create_menu_right_constraint_button(8, CONSTRAINT_TYPE.CONCENTRICITY),
+        }
 
     def create_side_menus(self):
         self.menu_left = tk.Frame(self)
@@ -104,20 +157,12 @@ class GUI(tk.Frame):
         self.canvas.bind("<B2-Motion>", self.on_middle_mouse_button_move)
 
         # wheel bindings (zoom)
-
-        # linux scroll
-        # TODO: check if we really need it
-        # self.canvas.bind("<Button-4>", self.on_zoom_in)
-        # self.canvas.bind("<Button-5>", self.on_zoom_out)
-
-        # windows zoom
-        # self.canvas.bind("<MouseWheel>",self.on_zoom)
+        self.canvas.bind("<MouseWheel>",self.on_zoom)
         
         # resize of the main window
         self.bind("<Configure>", self.on_resize)
 
         self.root.bind("<KeyPress>", self.on_key_press)
-
 
     def create_icons(self):
         self.segment_icon = tk.PhotoImage(file = f"icons/{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}/segment.png")
@@ -147,34 +192,7 @@ class GUI(tk.Frame):
             for constraint_type in CONSTRAINT_TYPE:
                 self.constraint_icon[icon_size][constraint_type] = tk.PhotoImage(file = f"icons/{icon_size}x{icon_size}/{icon_file_name[constraint_type]}.png")
 
-    def create_buttons(self):
-        def create_menu_left_button(row, icon, command):
-            tk.Button(self.menu_left, image = icon, command = command, relief = tk.SOLID, bg = "light gray", activebackground = "light gray").grid(row = row, column = 1, sticky = "n", pady = 2)
-
-        create_menu_left_button(0, self.segment_icon, self.on_add_segment_button_clicked)
-        create_menu_left_button(1, self.arc_icon, self.on_add_arc_button_clicked)
-        # create_menu_left_button(2, self.circle_icon, None)
-
-        def create_menu_right_constraint_button(row, constraint_type):
-            button = tk.Button(self.menu_right, image = self.constraint_icon[BUTTON_ICON_SIZE][constraint_type], \
-                command = lambda: self.on_add_constraint_button_clicked(constraint_type), state=tk.DISABLED, relief = tk.SOLID, bg = "light gray", activebackground = "light gray")
-            button.grid(row = row, column = 1, sticky="n", pady = 2)
-            return button
-
-        self.constraint_button = {
-            CONSTRAINT_TYPE.COINCIDENCE:               create_menu_right_constraint_button(0, CONSTRAINT_TYPE.COINCIDENCE),
-            CONSTRAINT_TYPE.FIXED:                     create_menu_right_constraint_button(1, CONSTRAINT_TYPE.FIXED),
-            CONSTRAINT_TYPE.PERPENDICULARITY:          create_menu_right_constraint_button(2, CONSTRAINT_TYPE.PERPENDICULARITY),
-            CONSTRAINT_TYPE.PARALLELITY:               create_menu_right_constraint_button(3, CONSTRAINT_TYPE.PARALLELITY),
-            CONSTRAINT_TYPE.EQUAL_LENGTH_OR_RADIUS:    create_menu_right_constraint_button(4, CONSTRAINT_TYPE.EQUAL_LENGTH_OR_RADIUS),
-            CONSTRAINT_TYPE.VERTICALITY:               create_menu_right_constraint_button(5, CONSTRAINT_TYPE.VERTICALITY),
-            CONSTRAINT_TYPE.HORIZONTALITY:             create_menu_right_constraint_button(6, CONSTRAINT_TYPE.HORIZONTALITY),
-            CONSTRAINT_TYPE.TANGENCY:                  create_menu_right_constraint_button(7, CONSTRAINT_TYPE.TANGENCY),
-            CONSTRAINT_TYPE.CONCENTRICITY:             create_menu_right_constraint_button(8, CONSTRAINT_TYPE.CONCENTRICITY),
-        }
-
-    # mouse and keyboard handlers
-
+    """ --------------------------------- Mouse and Keyboard Handlers -----------------------------------------------"""
     def on_key_press(self, event):
         {
             'Delete': self.delete_selected_entities,
@@ -279,19 +297,18 @@ class GUI(tk.Frame):
     def on_middle_mouse_button_move(self, event):
         self.canvas.scan_dragto(event.x, event.y, gain=1)
 
-    # def on_zoom(self,event):
-    #     factor = 1.1 if (event.delta > 0) else 0.9
-    #     x, y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
-    #     self.canvas.scale("all", x, y, factor, factor)
+    def on_zoom(self,event):
+        factor = 1.1 if (event.delta > 0) else 0.9
+        x, y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+        self.canvas.scale("all", x, y, factor, factor)
 
-    # def on_zoom_in(self,event):
-    #     self.canvas.scale("all", event.x, event.y, 1.1, 1.1)
+    def on_zoom_in(self,event):
+        self.canvas.scale("all", event.x, event.y, 1.1, 1.1)
         
-    # def on_zoom_out(self,event):
-    #     self.canvas.scale("all", event.x, event.y, 0.9, 0.9)
+    def on_zoom_out(self,event):
+        self.canvas.scale("all", event.x, event.y, 0.9, 0.9)
 
-    # external events handlers
-
+    """------------------------------------- External Events Handlers -----------------------------------------------"""
     def on_resize(self, event, repeat = True):
         self.canvas.config(width = event.width, height = event.height)
         
@@ -306,8 +323,7 @@ class GUI(tk.Frame):
             self.update()
             self.on_resize(event, False)
 
-    # screen buttons handlers
-
+    """------------------------------------ Screen Button Handlers --------------------------------------------------"""
     def on_add_segment_button_clicked(self):
         self.set_text_hint('Select point 1')
         self.adding_segment = True
@@ -322,16 +338,30 @@ class GUI(tk.Frame):
         self.selected_entities.clear()
         self.constraints_changed_callback()
 
-    # elements drawing (geometry)
-
+    """------------------------------------- Element Drawing (Geometry) ---------------------------------------------"""
     def add_drawn_point(self, point):
+        """
+        Adds a drawn point
+        :param point: The point to be added
+        :return: The canves object of the point
+        """
+
         return self.canvas.create_oval(point.x - POINT_RADIUS, point.y - POINT_RADIUS, point.x + POINT_RADIUS, point.y + POINT_RADIUS, fill='blue', outline='blue')
 
     def remove_drawn_point(self, point: Point):
+        """
+        Removes drawn point
+        :param point:  The point to be removed
+        """
         self.canvas.delete(self.entity_to_drawn_entity[point])
         self.entity_to_drawn_entity.pop(point, None)
 
     def add_drawn_segment(self, segment: Segment):
+        """
+        Adds a drawn segment
+        :param segment: the segment to add
+        """
+
         line = self.canvas.create_line(segment.p1.x, segment.p1.y, segment.p2.x, segment.p2.y, capstyle=tk.ROUND, joinstyle=tk.ROUND, width=LINE_TICKNESS)
         self.canvas.tag_lower(line)
         self.entity_to_drawn_entity[segment] = line
@@ -340,12 +370,22 @@ class GUI(tk.Frame):
         self.entity_to_drawn_entity[segment.p2] = self.add_drawn_entity(segment.p2)
 
     def remove_drawn_segment(self, segment: Segment):
+        """
+        Removes drawn segment of line
+        :param segment: The segment to be removed
+        """
+
         self.canvas.delete(self.entity_to_drawn_entity[segment])
         self.entity_to_drawn_entity.pop(segment, None)
         self.remove_drawn_entity(segment.p1)
         self.remove_drawn_entity(segment.p2)
 
     def calculate_arc_start_and_extent(self, arc: Arc):
+        """
+        Calculates the arcs start and end points and midel
+        :param arc: The arc to be calcululed
+        """
+
         arc_center = arc.center()
 
         center_p2 = Vector.from_two_points(arc_center, arc.p2)
@@ -362,6 +402,11 @@ class GUI(tk.Frame):
         return start_angle, extent
 
     def add_drawn_arc(self, arc: Arc):
+        """
+        Adds a geometric arc
+        :param arc: the arc to be added
+        """
+
         bb_coords = arc.bb_coords()
 
         start, extent = self.calculate_arc_start_and_extent(arc)
@@ -374,12 +419,22 @@ class GUI(tk.Frame):
         self.entity_to_drawn_entity[arc.p2] = self.add_drawn_entity(arc.p2)
 
     def remove_drawn_arc(self, arc: Arc):
+        """
+        Removes a geometric arc
+        :param arc: the arc to remove
+        """
+
         self.canvas.delete(self.entity_to_drawn_entity[arc])
         self.entity_to_drawn_entity.pop(arc, None)
         self.remove_drawn_entity(arc.p1)
         self.remove_drawn_entity(arc.p2)
 
     def remove_drawn_entity(self, entity):
+        """
+        Returns the information about a geometry so it can be removed
+        :param entity: the entity to be deleted
+        """
+
         {
             Arc:        self.remove_drawn_arc,
             Segment:    self.remove_drawn_segment,
@@ -387,6 +442,12 @@ class GUI(tk.Frame):
         }.get(entity.__class__, lambda : None)(entity)
 
     def add_drawn_entity(self, entity):
+        """
+        Returns the information about a geometry so it can be added
+        :param entity: The entity to get the data about
+        :return: the data about the entity
+        """
+
         return {
             Arc:        self.add_drawn_arc,
             Segment:    self.add_drawn_segment,
@@ -394,14 +455,26 @@ class GUI(tk.Frame):
         }.get(entity.__class__, lambda : None)(entity)
 
     def add_geometry(self):
+        """
+        Adds all the geometry
+        """
+
         for entity in (self.geometry.segments + self.geometry.arcs):
             self.add_drawn_entity(entity)
 
     def remove_geometry(self):
+        """
+        Removes all the geometry
+        """
+
         for entity in (self.geometry.segments + self.geometry.arcs):
             self.remove_drawn_entity(entity)
 
     def redraw_geometry(self):
+        """
+        redraws the geometru
+        """
+
         # segments and arcs
         for entity in (self.geometry.segments + self.geometry.arcs):
             for point in entity.points():
@@ -437,9 +510,14 @@ class GUI(tk.Frame):
         self.update_constraint_icons()
         self.set_text_info(f'e: {len(self.geometry.segments) + len(self.geometry.arcs)} | c: {len(self.constraints)} | d: {self.degrees_of_freedom}')
 
+    """------------------------------------- Elements Drawing (Constraints) -----------------------------------------"""
     # elements drawing (constraints)
-
     def add_constraint_icon(self, constraint):
+        """
+        Adds the constraint icon
+        :param constraint: The constraint to have its icon added
+        """
+
         for entity in (self.geometry.segments + self.geometry.arcs):
             if entity in constraint.entities:
                 if not (entity, constraint) in self.entity_and_constraint_to_drawn_constraint_icon:
@@ -453,6 +531,11 @@ class GUI(tk.Frame):
                             self.entity_and_constraint_to_drawn_constraint_icon[(point, constraint)] = ConstraintIcon(self.canvas, self.constraint_icon[CONSTRAINT_ICON_SIZE][constraint.type], CONSTRAINT_ICON_SIZE)
 
     def remove_constraint_icon(self, constraint):
+        """
+        Removes the constraint icon
+        :param constraint: The constraint to have its iccon removed
+        """
+
         def remove_icon(entity):
             icon = self.entity_and_constraint_to_drawn_constraint_icon.get((entity, constraint))
             if not icon is None:
@@ -468,14 +551,26 @@ class GUI(tk.Frame):
                     remove_icon(point)
 
     def add_constraint_icons(self):
+        """
+        adds the constraint icons
+        """
+
         for constraint in self.constraints:
             self.add_constraint_icon(constraint)
 
     def remove_constraint_icons(self):
+        """
+        Revomes the constraint icons
+        """
+
         for constraint in self.constraints:
             self.remove_constraint_icon(constraint)
 
     def update_constraint_icons(self):
+        """
+        Updates constraint icons
+        """
+
         # constraint icons for segments and arcs
         for entity in (self.geometry.segments + self.geometry.arcs):
             drawn_icons = []
@@ -538,17 +633,30 @@ class GUI(tk.Frame):
                         offset += Vector(0, first_layer_radius)
 
     # misc
-
     def add_constraint(self, constraint: Constraint):
+        """
+        Adds a constraint
+        :param constraint: The constraint to be added
+        """
+
         new_constraints = self.constraints.add_constraint(constraint.type, constraint.entities)
         for constraint in new_constraints:
             self.add_constraint_icon(constraint)
 
     def remove_constraint(self, constraint: Constraint):
+        """
+        Removes a constraint
+        :param constraint: The constraint to be removed
+        """
+
         self.remove_constraint_icon(constraint)
         self.constraints.remove(constraint)
 
     def new_geometry_added(self):
+        """
+        Resets the drawing tools after a new geometry has been added.
+        """
+
         self.points_for_new_geometry.clear()
 
         self.adding_segment = False
@@ -559,6 +667,10 @@ class GUI(tk.Frame):
         self.geometry_changed_callback(None)
 
     def check_constraints_requirements(self):
+        """
+        Checks requirements for the constraints
+        """
+
         for button in self.constraint_button.values():
             button.configure(state = tk.DISABLED)
 
@@ -566,12 +678,21 @@ class GUI(tk.Frame):
             self.constraint_button[constraint_type].configure(state = tk.NORMAL)
 
     def clear_everything(self):
+        """
+        Clears Drawing
+        """
+
         self.remove_geometry()
         self.remove_constraint_icons()
         self.geometry.clear()
         self.constraints.clear()
 
     def load_example(self, example):
+        """
+        Loads the example drawing
+        :param example: the example to be loaded
+        """
+
         self.clear_everything()
         example(self.geometry, self.constraints)
         self.add_geometry()
@@ -579,6 +700,10 @@ class GUI(tk.Frame):
         self.constraints_changed_callback()
 
     def delete_selected_entities(self):
+        """
+        Deletes objects that are selected
+        """
+
         entities_to_be_removed = []
 
         for entity in list(self.selected_entities):
@@ -607,6 +732,10 @@ class GUI(tk.Frame):
         self.redraw_geometry()
 
     def print_detailed_info(self):
+        """
+        When I key presed print infermation about the constraints
+        """
+
         print ("")
         print ("==============================")
         print (f"Constraints [{len(self.constraints)}]:")
