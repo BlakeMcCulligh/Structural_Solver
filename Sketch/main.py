@@ -30,5 +30,3 @@ gui = GUI(root_widget, geometry, geometry_changed_by_GUI, constraints, constrain
 gui.pack(fill="both", expand=True)
 
 root_widget.mainloop()
-
-#aa

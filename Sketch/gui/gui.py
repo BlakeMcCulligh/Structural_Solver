@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog
 
 from Sketch.constraints.constraint import Constraint
 from Sketch.constraints.constraints import *
@@ -59,7 +59,7 @@ class GUI(tk.Frame):
         self.text_hint = tk.Label(self, bd=0, background='white')
         self.text_info = tk.Label(self, bd=0, background='white')
 
-        self.create_side_menus()
+        #self.create_side_menus()
 
         self.create_top_menu()
         self.create_bindings()
@@ -112,11 +112,11 @@ class GUI(tk.Frame):
         self.toolbarFrame.append(tk.Frame(self.toolbar[0], bg="#ddd"))
         self.toolbarFrame[0].pack(side=tk.TOP, fill=tk.X)
 
-        def create_menu_Draw(column, icon, command):
-            tk.Button(self.toolbarFrame[0], image = icon, command = command, relief = tk.SOLID, bg = "light gray", activebackground = "light gray").grid(row = 1, column = column, sticky = "n", pady = 2)
+        def create_menu_Draw(column, text, command):
+            tk.Button(self.toolbarFrame[0], text = text, command = command, relief = tk.SOLID, bg = "light gray", activebackground = "light gray").grid(row = 1, column = column, sticky = "n", pady = 2)
 
-        create_menu_Draw(0, self.segment_icon, self.on_add_segment_button_clicked)
-        create_menu_Draw(1, self.arc_icon, self.on_add_arc_button_clicked)
+        create_menu_Draw(0, "Line", self.on_add_segment_button_clicked)
+        create_menu_Draw(1, "Arc", self.on_add_arc_button_clicked)
 
         self.toolbarFrame.append(tk.Frame(self.toolbar[1], bg="#ddd"))
         self.toolbarFrame[1].pack(side=tk.TOP, fill=tk.X)
@@ -139,11 +139,8 @@ class GUI(tk.Frame):
             CONSTRAINT_TYPE.HORIZONTALITY: create_menu_right_constraint_button(6, CONSTRAINT_TYPE.HORIZONTALITY),
             CONSTRAINT_TYPE.TANGENCY: create_menu_right_constraint_button(7, CONSTRAINT_TYPE.TANGENCY),
             CONSTRAINT_TYPE.CONCENTRICITY: create_menu_right_constraint_button(8, CONSTRAINT_TYPE.CONCENTRICITY),
+            CONSTRAINT_TYPE.LENGTH: create_menu_right_constraint_button(9, CONSTRAINT_TYPE.LENGTH),
         }
-
-    def create_side_menus(self):
-        self.menu_left = tk.Frame(self)
-        self.menu_right = tk.Frame(self)
 
     def create_bindings(self):
         # left mouse button bindings
@@ -183,7 +180,7 @@ class GUI(tk.Frame):
             CONSTRAINT_TYPE.VERTICALITY:            "verticality",
             CONSTRAINT_TYPE.TANGENCY:               "tangency",
             CONSTRAINT_TYPE.CONCENTRICITY:          "concentricity",
-            # CONSTRAINT_TYPE.LENGTH:                 "length",
+            CONSTRAINT_TYPE.LENGTH:                 "length",
         }
 
         for icon_size in icon_sizes:
@@ -311,9 +308,6 @@ class GUI(tk.Frame):
     """------------------------------------- External Events Handlers -----------------------------------------------"""
     def on_resize(self, event, repeat = True):
         self.canvas.config(width = event.width, height = event.height)
-        
-        self.menu_left.place(x = MENU_SIDE_OFFSET, y = MENU_TOP_OFFSET)
-        self.menu_right.place(x = event.width - self.menu_right.winfo_width() - MENU_SIDE_OFFSET, y = MENU_TOP_OFFSET)
 
         self.text_hint.place(x = TEXT_SIDE_OFFSET, y = event.height - self.text_hint.winfo_height() - TEXT_BOTTOM_OFFSET)
 
@@ -333,6 +327,15 @@ class GUI(tk.Frame):
         self.adding_arc = True
 
     def on_add_constraint_button_clicked(self, constraint_type):
+
+        if constraint_type == CONSTRAINT_TYPE.LENGTH:
+            length = simpledialog.askstring(title="Test",
+                                              prompt="Length:")
+            self.selected_entities.add(float(length))
+            print(self.selected_entities)
+            self.check_constraints_requirements()
+
+
         self.add_constraint(Constraint(list(self.selected_entities), constraint_type))
 
         self.selected_entities.clear()
@@ -668,7 +671,7 @@ class GUI(tk.Frame):
 
     def check_constraints_requirements(self):
         """
-        Checks requirements for the constraints
+        Checks requirements for if the selected itoms meet the requirements to add that constrinat to them
         """
 
         for button in self.constraint_button.values():
