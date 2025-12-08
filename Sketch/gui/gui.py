@@ -1,5 +1,8 @@
+import math
 import tkinter as tk
 from tkinter import ttk, simpledialog
+
+import numpy as np
 
 from Sketch.constraints.constraint import Constraint
 from Sketch.constraints.constraints import *
@@ -24,6 +27,10 @@ TEXT_BOTTOM_OFFSET      = 15
 TEXT_SIDE_OFFSET        = 15
 MENU_TOP_OFFSET         = 10
 MENU_SIDE_OFFSET        = 10
+
+DISTANCE_CONSTRAINTS_OFSET = 35
+DISTANCE_CONSTRAINTS_LINE_THICKNESS = 2
+DISTANCE_CONSTRAINTS_TEXT_SIZE = 10
 
 
 class GUI(tk.Frame):
@@ -509,6 +516,56 @@ class GUI(tk.Frame):
         for (_, constraint), drawn_constraint_icon in self.entity_and_constraint_to_drawn_constraint_icon.items():
             color = "red" if constraint in self.selected_entities else "pale green"
             drawn_constraint_icon.set_background_color(color)
+            if constraint.type == CONSTRAINT_TYPE.LENGTH:
+                entities = constraint.entities
+                p1, p2, l = 0, 0, 0
+                if len(entities) == 2:
+                    p1 = entities[1].p1
+                    p2 = entities[1].p2
+                    l = entities[0]
+                else:
+                    if isinstance(entities[2], float):
+                        p1 = entities[0]
+                        p2 = entities[1]
+                        l = entities[2]
+                    else:
+                        p1 = entities[1]
+                        p2 = entities[2]
+                        l = entities[0]
+
+                DISTANCE_CONSTRAINTS_OFSET = 35
+                DISTANCE_CONSTRAINTS_LINE_THICKNESS = 2
+                DISTANCE_CONSTRAINTS_TEXT_SIZE = 10
+
+                p1 = np.array([p1.x, p1.y], dtype=float)
+                p2 = np.array([p2.x, p2.y], dtype=float)
+
+                # Direction vector
+                d = p2 - p1
+                L = np.linalg.norm(d)
+
+                # Unit perpendicular vector
+                n = np.array([-d[1], d[0]]) / L
+
+                p1_up = p1 + DISTANCE_CONSTRAINTS_OFSET * n
+                p2_up = p2 + DISTANCE_CONSTRAINTS_OFSET * n
+
+                p1_offsetEnd = p1_up + 3 * n
+                p2_offsetEnd = p2_up + 3 * n
+
+                self.canvas.coords(constraint.canvas_parts[0], p1[0], p1[1], p1_offsetEnd[0], p1_offsetEnd[1])
+                self.canvas.itemconfig(constraint.canvas_parts[0], fill=color)
+                self.canvas.coords(constraint.canvas_parts[1], p2_offsetEnd[0], p2_offsetEnd[1], p2[0], p2[1])
+                self.canvas.itemconfig(constraint.canvas_parts[1], fill=color)
+                self.canvas.coords(constraint.canvas_parts[2], p1_up[0], p1_up[1], p2_up[0], p2_up[1])
+                self.canvas.itemconfig(constraint.canvas_parts[2], fill=color)
+
+
+                angle = math.degrees(math.atan2(-d[1], d[0]))
+                center = (p1_up + p2_up) / 2 + DISTANCE_CONSTRAINTS_TEXT_SIZE / 2 + 1
+                # canvas_parts.append(self.canvas.create_text(center[0], center[1],text=l, angle=angle, fill=color, anchor = "center"))
+                self.canvas.coords(constraint.canvas_parts[3], center[0], center[1])
+                self.canvas.itemconfig(constraint.canvas_parts[3], fill=color, angle=angle)
 
         self.update_constraint_icons()
         self.set_text_info(f'e: {len(self.geometry.segments) + len(self.geometry.arcs)} | c: {len(self.constraints)} | d: {self.degrees_of_freedom}')
@@ -552,6 +609,11 @@ class GUI(tk.Frame):
             for point in entity.points():
                 if point in constraint.entities:
                     remove_icon(point)
+
+        if constraint.type == CONSTRAINT_TYPE.LENGTH:
+            for part in constraint.canvas_parts:
+                self.canvas.delete(part)
+
 
     def add_constraint_icons(self):
         """
@@ -645,6 +707,59 @@ class GUI(tk.Frame):
         new_constraints = self.constraints.add_constraint(constraint.type, constraint.entities)
         for constraint in new_constraints:
             self.add_constraint_icon(constraint)
+
+            if constraint.type == CONSTRAINT_TYPE.LENGTH:
+                entities = constraint.entities
+                p1, p2, l = 0, 0, 0
+                if len(entities) == 2:
+                    p1 = entities[1].p1
+                    p2 = entities[1].p2
+                    l = entities[0]
+                else:
+                    if isinstance(entities[2], float):
+                        p1 = entities[0]
+                        p2 = entities[1]
+                        l = entities[2]
+                    else:
+                        p1 = entities[1]
+                        p2 = entities[2]
+                        l = entities[0]
+
+                DISTANCE_CONSTRAINTS_OFSET = 35
+                DISTANCE_CONSTRAINTS_LINE_THICKNESS = 2
+                DISTANCE_CONSTRAINTS_TEXT_SIZE = 10
+
+                p1 = np.array([p1.x, p1.y], dtype=float)
+                p2 = np.array([p2.x, p2.y], dtype=float)
+
+                # Direction vector
+                d = p2 - p1
+                L = np.linalg.norm(d)
+
+                # Unit perpendicular vector
+                n = np.array([-d[1], d[0]]) / L
+
+                p1_up = p1 + DISTANCE_CONSTRAINTS_OFSET * n
+                p2_up = p2 + DISTANCE_CONSTRAINTS_OFSET * n
+
+                p1_offsetEnd = p1_up + 3 * n
+                p2_offsetEnd = p2_up + 3 * n
+
+                canvas_parts = [self.canvas.create_line(p1[0], p1[1], p1_offsetEnd[0], p1_offsetEnd[1], fill="pale green",
+                                                        capstyle=tk.ROUND,
+                                                        joinstyle=tk.ROUND, width=DISTANCE_CONSTRAINTS_LINE_THICKNESS),
+                                self.canvas.create_line(p2_offsetEnd[0], p2_offsetEnd[1], p2[0], p2[1], fill="pale green",
+                                                        capstyle=tk.ROUND,
+                                                        joinstyle=tk.ROUND, width=DISTANCE_CONSTRAINTS_LINE_THICKNESS),
+                                self.canvas.create_line(p1_up[0], p1_up[1], p2_up[0], p2_up[1], fill="pale green",
+                                                        capstyle=tk.ROUND,
+                                                        joinstyle=tk.ROUND, width=DISTANCE_CONSTRAINTS_LINE_THICKNESS)]
+
+                angle = math.degrees(math.atan2(-d[1], d[0]))
+                center = (p1_up + p2_up) / 2 + DISTANCE_CONSTRAINTS_TEXT_SIZE / 2 + 1
+                canvas_parts.append(
+                    self.canvas.create_text(center[0], center[1], text=l, angle=angle, fill="pale green", anchor="center"))
+                constraint.canvas_parts = canvas_parts
 
     def remove_constraint(self, constraint: Constraint):
         """
