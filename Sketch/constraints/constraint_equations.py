@@ -25,12 +25,15 @@ def equal_length_or_radius(entity1, entity2):
     entities = (entity1, entity2)
     segments, arcs = all_entities(entities, Segment), all_entities(entities, Arc)
     assert segments or arcs
-    return [entity1.length() - entity2.length()] if segments else [entity1.radius() - entity2.radius()]
+    return [entity1.length() - entity2.length()] if segments else [entity1.radius - entity2.radius]
 
 def length_or_radius_equal_to_Number(entity1, entity2, entity3 = None):
 
     if entity3 is None:
-        return length(entity2, entity1)
+        if isinstance(entity1, float):
+            return length(entity2, entity1)
+        else:
+            return length(entity1, entity2)
     else:
         if isinstance(entity3, float):
             return [(Vector(entity2.x - entity1.x, entity2.y - entity1.y).length() - entity3)]

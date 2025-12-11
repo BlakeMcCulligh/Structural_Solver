@@ -45,6 +45,9 @@ class Arc:
 
         self.d = dot(Vector.from_two_points(p1_p2_segment_center, center), self.get_n())
 
+        self.center = self.center()
+        self.radius = Vector.from_two_points(self.p1, self.center.length())
+
     def get_n(self):
         return Vector.from_two_points(self.p1, self.p2).rotated90ccw().normalized()
 
@@ -57,13 +60,8 @@ class Arc:
     def points(self):
         return [self.p1, self.p2]
 
-    def radius(self):
-        return Vector.from_two_points(self.p1, self.center()).length()
-
     def bb_coords(self):
-        radius = self.radius()
-        center = self.center()
-        return center.x - radius, center.y - radius, center.x + radius, center.y + radius
+        return self.center.x - self.radius, self.center.y - self.radius, self.center.x + self.radius, self.center.y + self.radius
 
     def invert_direction(self):
         self.p1, self.p2 = self.p2, self.p1

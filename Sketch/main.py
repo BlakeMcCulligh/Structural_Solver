@@ -1,8 +1,11 @@
 import tkinter as tk
-from constraints.constraints import Constraints
-from geometry import Geometry
-from gui.gui import GUI
-from solver.solver import Solver
+from Sketch.constraints.constraints import Constraints
+from Sketch.geometry import Geometry
+from Sketch.gui.gui import GUI
+from Sketch.solver.solver import Solver
+
+solver = None
+gui = None
 
 def geometry_changed_by_GUI(active_point):
     global solver
@@ -18,15 +21,24 @@ def geometry_changed_by_solver():
     gui.degrees_of_freedom = solver.degrees_of_freedom
     gui.redraw_geometry()
 
-geometry = Geometry()
-constraints = Constraints()
+def sketch():
+    global solver
+    global gui
+    global root_widget
 
-solver = Solver(geometry, geometry_changed_by_solver, constraints)
+    geometry = Geometry()
+    constraints = Constraints()
 
-root_widget = tk.Tk()
-root_widget.title('2D Geometric Constraint Solver')
+    solver = Solver(geometry, geometry_changed_by_solver, constraints)
 
-gui = GUI(root_widget, geometry, geometry_changed_by_GUI, constraints, constraints_changed_by_GUI)
-gui.pack(fill="both", expand=True)
+    root_widget = tk.Tk()
+    root_widget.title('2D Geometric Constraint Solver')
 
-root_widget.mainloop()
+    gui = GUI(root_widget, geometry, geometry_changed_by_GUI, constraints, constraints_changed_by_GUI)
+    gui.pack(fill="both", expand=True)
+
+    root_widget.mainloop()
+
+    return geometry
+
+#geometry = sketch()

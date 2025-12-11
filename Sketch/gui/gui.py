@@ -81,6 +81,12 @@ class GUI(tk.Frame):
         self.currentTool = tk.StringVar(value="line")
         self.createToolBars()
 
+        exitButton = tk.Button(root, text= "Complete Sketch", command = self.endSketch)
+        self.canvas.create_window(100, 100, window=exitButton)
+
+    def endSketch(self):
+        self.root.destroy()
+
     def set_text_hint(self, text):
         self.text_hint.config(text = text)
 
@@ -168,10 +174,12 @@ class GUI(tk.Frame):
 
         self.root.bind("<KeyPress>", self.on_key_press)
 
+    #C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\
+    #C:\Users\blake\OneDrive\Desktop\Structural_Solver\Sketch\icons\32x32\segment.png
     def create_icons(self):
-        self.segment_icon = tk.PhotoImage(file = f"icons/{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}/segment.png")
-        self.arc_icon =     tk.PhotoImage(file = f"icons/{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}/arc.png")
-        self.circle_icon =  tk.PhotoImage(file = f"icons/{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}/circle.png")
+        self.segment_icon = tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\segment.png")
+        self.arc_icon =     tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\arc.png")
+        self.circle_icon =  tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\circle.png")
 
         icon_sizes = [20, 32, 64, 128]
 
@@ -194,7 +202,7 @@ class GUI(tk.Frame):
             self.constraint_icon[icon_size] = {}
 
             for constraint_type in CONSTRAINT_TYPE:
-                self.constraint_icon[icon_size][constraint_type] = tk.PhotoImage(file = f"icons/{icon_size}x{icon_size}/{icon_file_name[constraint_type]}.png")
+                self.constraint_icon[icon_size][constraint_type] = tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\{icon_file_name[constraint_type]}.png")
 
     """ --------------------------------- Mouse and Keyboard Handlers -----------------------------------------------"""
     def on_key_press(self, event):
@@ -372,7 +380,7 @@ class GUI(tk.Frame):
         :param segment: the segment to add
         """
 
-        line = self.canvas.create_line(segment.p1.x, segment.p1.y, segment.p2.x, segment.p2.y, capstyle=tk.ROUND, joinstyle=tk.ROUND, width=LINE_TICKNESS)
+        line = self.canvas.create_line(segment.p1.x, segment.p1.y, segment.p2.x, segment.p2.y, capstyle = tk.ROUND, joinstyle = tk.ROUND, width=LINE_TICKNESS)
         self.canvas.tag_lower(line)
         self.entity_to_drawn_entity[segment] = line
 
@@ -520,9 +528,14 @@ class GUI(tk.Frame):
                 entities = constraint.entities
                 p1, p2, l = 0, 0, 0
                 if len(entities) == 2:
-                    p1 = entities[1].p1
-                    p2 = entities[1].p2
-                    l = entities[0]
+                    if isinstance(entities[0], float):
+                        p1 = entities[1].p1
+                        p2 = entities[1].p2
+                        l = entities[0]
+                    else:
+                        p1 = entities[0].p1
+                        p2 = entities[0].p2
+                        l = entities[1]
                 else:
                     if isinstance(entities[2], float):
                         p1 = entities[0]
@@ -712,9 +725,14 @@ class GUI(tk.Frame):
                 entities = constraint.entities
                 p1, p2, l = 0, 0, 0
                 if len(entities) == 2:
-                    p1 = entities[1].p1
-                    p2 = entities[1].p2
-                    l = entities[0]
+                    if isinstance(entities[0], float):
+                        p1 = entities[1].p1
+                        p2 = entities[1].p2
+                        l = entities[0]
+                    else:
+                        p1 = entities[0].p1
+                        p2 = entities[0].p2
+                        l = entities[1]
                 else:
                     if isinstance(entities[2], float):
                         p1 = entities[0]
