@@ -3,6 +3,7 @@ from operator import truediv
 
 from scipy.stats import false_discovery_control
 
+from Sketch.geometric_primitives.arc import Arc
 from Sketch.geometric_primitives.point import Point
 from Sketch.geometric_primitives.segment import Segment
 from Sketch.main import sketch
@@ -57,13 +58,89 @@ class ClosedShape:
 
     def getArea(self):
         area = 0
-        # TODO
-        return area
+
+        g1 = self.Geomitry[0]
+        g2 = self.Geomitry[1]
+
+        flip1 = False
+        if g1.p1.x == g2.p1.x and g1.p1.y == g2.p1.y:
+            flip1 = True
+        elif g1.p2.x == g2.p1.x and g1.p2.y == g2.p1.y:
+            flip1 = False
+        elif g1.p1.x == g2.p2.x and g1.p1.y == g2.p2.y:
+            flip1 = True
+        elif g1.p2.x == g2.p2.x and g1.p2.y == g2.p2.y:
+            flip1 = False
+        else:
+            print("ERROR")
+
+        lastPoint = [0,0]
+        firstG = True
+        for g in self.Geomitry:
+            if firstG:
+                firstG = False
+                if flip1:
+                    area += 0.5 * (g.p2.x * g.p1.y - g.p1.x * g.p2.y)
+                    lastPoint = [g.p1.x, g.p1.y]
+                    if isinstance(g, Arc):
+                        aArc = self.areaArc(g)
+                        addAreaSign = self.findArcAreaSign(g)
+                        area += addAreaSign*aArc
+                else:
+                    area += 0.5 * (g.p1.x * g.p2.y - g.p2.x * g.p1.y)
+                    lastPoint = [g.p2.x, g.p2.y]
+                    if isinstance(g, Arc):
+                        aArc = self.areaArc(g)
+                        addAreaSign = self.findArcAreaSign(g)
+                        area += addAreaSign * aArc
+            else:
+                if g.p1.x == lastPoint[0] and g.p1.y == lastPoint[1]:
+                    lastPoint = [g.p2.x, g.p2.y]
+                    area += 0.5*(g.p1.x*g.p2.y-g.p2.x*g.p1.y)
+                    if isinstance(g, Arc):
+                        aArc = self.areaArc(g)
+                        addAreaSign = self.findArcAreaSign(g)
+                        area += addAreaSign * aArc
+                else:
+                    lastPoint = [g.p1.x, g.p1.y]
+                    area += 0.5*(g.p2.x*g.p1.y-g.p1.x*g.p2.y)
+                    if isinstance(g, Arc):
+                        aArc = self.areaArc(g)
+                        addAreaSign = self.findArcAreaSign(g)
+                        area += addAreaSign * aArc
+
+        # TODO add support for arcs
+
+        return abs(area)
 
     def updateArea(self):
         self.AreaInnerRemoved = self.Area
         for innerShapes in self.ClosedShapesWithin:
             self.AreaInnerRemoved -= innerShapes.Area
+
+    def areaArc(self, arc):
+        AreaCircleSection = 0.5 * arc.Radius ** 2 * arc.angle
+        AreaTriangle = 0.5 * arc.Radius ** 2 * math.sin(arc.angle)
+        return AreaCircleSection - AreaTriangle
+
+    def findArcAreaSign(self, arc):
+
+        midlePoint = arc.middle_point()
+
+        m = (arc.p2.x + arc.p1.x) / (arc.p2.y - arc.p1.y)
+        b = arc.p1.y - m * arc.p1.x
+
+        y = m * midlePoint.x + b
+
+        if midlePoint.y > y:
+            return 1
+        elif midlePoint.y < y:
+            return -1
+        else:
+            print("ERROR")
+            return None
+
+
 
 def findClosedShapes(geometry):
     loops = []
@@ -159,7 +236,7 @@ def linesEqual(l1, l2):
 def arcsEqual(a1, a2):
     p1Same = a1.p1.x == a2.p1.x and a1.p1.y == a2.p1.y
     p2Same = a1.p2.x == a2.p2.x and a1.p2.y == a2.p2.y
-    cSame = a1.center.x == a2.center.x and a1.center.y == a2.center.y
+    cSame = a1.Center.x == a2.Center.x and a1.Center.y == a2.Center.y
     rSame = a1.radius == a2.radius
     return p1Same and p2Same and cSame and rSame
 

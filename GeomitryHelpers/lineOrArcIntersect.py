@@ -49,8 +49,8 @@ def line_line_intersect(l1, l2):
     return False
 
 def point_on_arc_strict(p, arc):
-    # Distance from center must equal radius
-    d = math.hypot(p.x - arc.center.x, p.y - arc.center.y)
+    # Distance from Center must equal radius
+    d = math.hypot(p.x - arc.Center.x, p.y - arc.Center.y)
     if not almost_equal(d, arc.radius):
         return False
 
@@ -62,9 +62,9 @@ def point_on_arc_strict(p, arc):
             a -= 2*math.pi
         return a
 
-    ang1 = norm(math.atan2(arc.p1.y - arc.center.y, arc.p1.x - arc.center.x))
-    ang2 = norm(math.atan2(arc.p2.y - arc.center.y, arc.p2.x - arc.center.x))
-    angp = norm(math.atan2(p.y - arc.center.y, p.x - arc.center.x))
+    ang1 = norm(math.atan2(arc.p1.y - arc.Center.y, arc.p1.x - arc.Center.x))
+    ang2 = norm(math.atan2(arc.p2.y - arc.Center.y, arc.p2.x - arc.Center.x))
+    angp = norm(math.atan2(p.y - arc.Center.y, p.x - arc.Center.x))
 
     # Check interior of arc (CCW assumed)
     if ang1 <= ang2:
@@ -74,11 +74,11 @@ def point_on_arc_strict(p, arc):
 
 
 def line_arc_intersect(line, arc):
-    # Shift line so arc.center becomes (0,0)
-    x1 = line.p1.x - arc.center.x
-    y1 = line.p1.y - arc.center.y
-    x2 = line.p2.x - arc.center.x
-    y2 = line.p2.y - arc.center.y
+    # Shift line so arc.Center becomes (0,0)
+    x1 = line.p1.x - arc.Center.x
+    y1 = line.p1.y - arc.Center.y
+    x2 = line.p2.x - arc.Center.x
+    y2 = line.p2.y - arc.Center.y
 
     dx = x2 - x1
     dy = y2 - y1
@@ -115,8 +115,8 @@ def line_arc_intersect(line, arc):
     return False
 
 def arc_arc_intersect(a1, a2):
-    cx1, cy1 = a1.center.x, a1.center.y
-    cx2, cy2 = a2.center.x, a2.center.y
+    cx1, cy1 = a1.Center.x, a1.Center.y
+    cx2, cy2 = a2.Center.x, a2.Center.y
     r1, r2 = a1.radius, a2.radius
 
     dx = cx2 - cx1
@@ -127,7 +127,7 @@ def arc_arc_intersect(a1, a2):
     if d > r1 + r2 or d < abs(r1 - r2) or d == 0:
         return False
 
-    # Distance from center1 to intersection line
+    # Distance from Center1 to intersection line
     a = (r1*r1 - r2*r2 + d*d) / (2*d)
     h = math.sqrt(max(r1*r1 - a*a, 0))
 

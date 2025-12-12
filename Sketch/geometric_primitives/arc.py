@@ -45,8 +45,11 @@ class Arc:
 
         self.d = dot(Vector.from_two_points(p1_p2_segment_center, center), self.get_n())
 
-        self.center = self.center()
-        self.radius = Vector.from_two_points(self.p1, self.center.length())
+        self.Center = None
+        self.Radius = None
+        self.center()
+        self.radius()
+        self.angle = self.angle()
 
     def get_n(self):
         return Vector.from_two_points(self.p1, self.p2).rotated90ccw().normalized()
@@ -54,28 +57,41 @@ class Arc:
     def center(self):
         p1_p2 = Vector.from_two_points(self.p1, self.p2)
         p1_p2_segment_center = self.p1 + p1_p2 / 2
+        self.Center = p1_p2_segment_center + self.get_n() * self.d
+        return  self.Center
 
-        return p1_p2_segment_center + self.get_n() * self.d
+    def radius(self):
+        self.center()
+        self.Radius = Vector.from_two_points(self.p1, self.Center).length()
+        return self.Radius
 
     def points(self):
         return [self.p1, self.p2]
 
     def bb_coords(self):
-        return self.center.x - self.radius, self.center.y - self.radius, self.center.x + self.radius, self.center.y + self.radius
+        self.center()
+        self.radius()
+        return self.Center.x - self.Radius, self.Center.y - self.Radius, self.Center.x + self.Radius, self.Center.y + self.Radius
 
     def invert_direction(self):
         self.p1, self.p2 = self.p2, self.p1
 
     def middle_point(self):
-        center = self.center()
+        self.center()
 
-        c_p1 = Vector.from_two_points(center, self.p1)
-        c_p2 = Vector.from_two_points(center, self.p2)
+        c_p1 = Vector.from_two_points(self.Center, self.p1)
+        c_p2 = Vector.from_two_points(self.Center, self.p2)
 
         angle = v2v_angle_cw(c_p1, c_p2)
 
-        return center + c_p1.rotated(angle / 2)
+        return self.Center + c_p1.rotated(angle / 2)
 
+    def angle(self):
+        self.center()
+        v1 = Vector.from_two_points(self.Center, self.p1)
+        v2 = Vector.from_two_points(self.Center, self.p2)
+
+        return v2v_angle_cw(v1, v2)
 
 def distance_p2a(p: Point, arc: Arc):
     arc_center = arc.center()
@@ -90,5 +106,6 @@ def distance_p2a(p: Point, arc: Arc):
         return abs(arc.radius() - distance_p2p(arc_center, p))
     else:
         return min(distance_p2p(p, arc.p1), distance_p2p(p, arc.p2))
+
 
     

@@ -48,7 +48,7 @@ def tangency(entity1, entity2):
     if temp == Counter((Arc, Segment)):
         arc = entity1 if isinstance(entity1, Arc) else entity2
         segment = entity1 if isinstance(entity1, Segment) else entity2
-        return [distance_p2l(arc.center(), Line(segment.p1, segment.p2)) - arc.radius()]
+        return [distance_p2l(arc.center(), Line(segment.p1, segment.p2)) - arc.radius]
     elif temp == Counter((Arc, Arc)):
         return [distance_p2p(entity1.center(), entity2.center()) - (entity1.radius() + entity2.radius())]
     else:

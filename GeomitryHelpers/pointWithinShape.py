@@ -27,7 +27,7 @@ def point_in_shape(p, shape):
     return intersections % 2 == 1
 
 def ray_intersects_arc(p, arc):
-    cy = arc.center.y
+    cy = arc.Center.y
     r = arc.radius
     dy = p.y - cy
 
@@ -39,8 +39,8 @@ def ray_intersects_arc(p, arc):
     dx = math.sqrt(r*r - dy*dy)
 
     # Intersection x-values
-    xi1 = arc.center.x - dx
-    xi2 = arc.center.x + dx
+    xi1 = arc.Center.x - dx
+    xi2 = arc.Center.x + dx
 
     # Only intersections to the right of point
     candidates = [x for x in (xi1, xi2) if x > p.x]
@@ -94,14 +94,14 @@ def point_on_line_segment(p, a, b):
 
 def point_on_arc(p, arc):
     # Check distance to center equals radius
-    d = math.hypot(p.x - arc.center.x, p.y - arc.center.y)
+    d = math.hypot(p.x - arc.Center.x, p.y - arc.Center.y)
     if not almost_equal(d, arc.radius):
         return False
 
     # Compute angles for arc boundaries
-    ang_p1 = math.atan2(arc.p1.y - arc.center.y, arc.p1.x - arc.center.x)
-    ang_p2 = math.atan2(arc.p2.y - arc.center.y, arc.p2.x - arc.center.x)
-    ang_p  = math.atan2(p.y - arc.center.y,  p.x - arc.center.x)
+    ang_p1 = math.atan2(arc.p1.y - arc.Center.y, arc.p1.x - arc.Center.x)
+    ang_p2 = math.atan2(arc.p2.y - arc.Center.y, arc.p2.x - arc.Center.x)
+    ang_p  = math.atan2(p.y - arc.Center.y,  p.x - arc.Center.x)
 
     # Normalize to [0, 2π)
     def norm(a):

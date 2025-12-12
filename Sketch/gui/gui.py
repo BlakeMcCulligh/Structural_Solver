@@ -404,10 +404,10 @@ class GUI(tk.Frame):
         :param arc: The arc to be calcululed
         """
 
-        arc_center = arc.center()
+        arc.center()
 
-        center_p2 = Vector.from_two_points(arc_center, arc.p2)
-        center_p1 = Vector.from_two_points(arc_center, arc.p1)
+        center_p2 = Vector.from_two_points(arc.Center, arc.p2)
+        center_p1 = Vector.from_two_points(arc.Center, arc.p1)
 
         start_angle = degrees(atan2(-center_p1.y, center_p1.x))
         end_angle = degrees(atan2(-center_p2.y, center_p2.x))
