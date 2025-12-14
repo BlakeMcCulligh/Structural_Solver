@@ -1,14 +1,15 @@
 import math
-from operator import truediv
 
-from scipy.stats import false_discovery_control
-
+from CrossSectionAnalysis.integration import areaIntegral
 from Sketch.geometric_primitives.arc import Arc
 from Sketch.geometric_primitives.point import Point
 from Sketch.geometric_primitives.segment import Segment
 from Sketch.main import sketch
 from GeomitryHelpers.lineOrArcIntersect import checkIfLineOrArcIntersect
 from GeomitryHelpers.pointWithinShape import point_in_shape
+
+def a(y, x):
+    return 1
 
 def analysisCrossSection():
     geometry = sketch()
@@ -21,6 +22,10 @@ def analysisCrossSection():
         for p in cloasedShape.Points:
             print("(", p.x, ",", p.y, ")")
         print(Area)
+
+        answer, errorEstimite = areaIntegral(a, cloasedShape.Geomitry)
+        print("Area Testing: ", answer)
+
     else:
         print("No shape found")
 
@@ -109,7 +114,7 @@ class ClosedShape:
                         addAreaSign = self.findArcAreaSign(g)
                         area += addAreaSign * aArc
 
-        # TODO add support for arcs
+        # TODO area with shapes with an arc works
 
         return abs(area)
 

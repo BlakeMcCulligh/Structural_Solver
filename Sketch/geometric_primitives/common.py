@@ -14,3 +14,12 @@ def v2v_angle_cw(a, b):
 
 def equal_eps(a, b, eps = 1e-5):
     return abs(a - b) < eps
+
+def v2v_angle_ccw_underPi(a, b):
+    angle = v2v_angle_cw(a, b)
+    a1 = -angle
+    if angle > pi:
+        a1 = angle - 2 * pi
+    if angle < -pi:
+        a1 = angle + 2 * pi
+    return a1
