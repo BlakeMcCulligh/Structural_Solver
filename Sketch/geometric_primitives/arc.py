@@ -12,7 +12,7 @@ class DIRECTION(Enum):
     CCW     = auto()
 
 class Arc:
-    # p1, p2 -- beginning and end of the arc
+    # N1, N2 -- beginning and end of the arc
     # p -- random point that belongs to the arc
     # direction is always CW (left-handed coordinate system)
     def __init__(self, p1: Point, p2: Point, p: Point):

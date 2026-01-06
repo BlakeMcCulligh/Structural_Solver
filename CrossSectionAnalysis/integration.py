@@ -57,8 +57,8 @@ def convertEdgesToEquations(edges):
                 else:
                     bounds.append([equationMinus, e.p2, e.p1, "Arc", e.Center.y, e.Radius, e.Center.x, "Minus"])
             else:
-                # add both
 
+                # add both
                 xcPlus = e.Center.x + e.Radius
                 xcMinus = e.Center.x - e.Radius
                 yc = e.Center.y
@@ -116,10 +116,10 @@ def convertEdgesToEquations(edges):
                 else:
                     print("ERROR")
 
-    return bounds
+    return bounds, edges
 
 def areaIntegral(integrand, edges):
-    bounds = convertEdgesToEquations(edges)
+    bounds, edges = convertEdgesToEquations(edges)
 
     i = 0
     answer = 0
@@ -140,7 +140,7 @@ def areaIntegral(integrand, edges):
         lineBotom = lambda x: mBotom * x
         lineTop = lambda x: mTop * x
 
-        sign =  getSign(edges[i])
+        sign =  getSign(edges[i]) # needs fixxing
 
         if b[1].x > 0:
             if b[0] is not None:

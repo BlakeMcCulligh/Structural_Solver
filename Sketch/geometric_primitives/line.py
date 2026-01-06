@@ -1,10 +1,10 @@
 from Sketch.geometric_primitives.point import Point
 from Sketch.geometric_primitives.vector import Vector
 
-# def line(p1, p2):
-#     A = (p1[1] - p2[1])
-#     B = (p2[0] - p1[0])
-#     C = (p1[0]*p2[1] - p2[0]*p1[1])
+# def line(N1, N2):
+#     A = (N1[1] - N2[1])
+#     B = (N2[0] - N1[0])
+#     C = (N1[0]*N2[1] - N2[0]*N1[1])
 #     return A, B, -C
 
 class Line:

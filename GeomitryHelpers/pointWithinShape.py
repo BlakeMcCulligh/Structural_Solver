@@ -113,7 +113,7 @@ def point_on_arc(p, arc):
     ang_p2 = norm(ang_p2)
     ang_p = norm(ang_p)
 
-    # Arc always assumed CCW from p1 → p2
+    # Arc always assumed CCW from N1 → N2
     if ang_p1 <= ang_p2:
         return ang_p1 - 1e-9 <= ang_p <= ang_p2 + 1e-9
     else:
