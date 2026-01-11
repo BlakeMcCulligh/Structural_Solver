@@ -7,3 +7,5 @@ class Material:
         self.G = None
 
         self.n = None
+
+        self.desity = None
