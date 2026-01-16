@@ -10,7 +10,7 @@ class Mesh:
         self.zone = zone
         self.maxSpassing = maxSpassing
         self.nodes = None
-        self.members = None
+        self.members = []
 
         self.CollinerarTollerance = CollinerarTollerance
 
@@ -133,12 +133,6 @@ class Mesh:
                         point = np.array([[point[0], point[1]]])
                         self.nodes = np.append(self.nodes, point, axis =0)
 
-        # for i in range(len(self.nodes)):
-        #     for j in range(len(self.nodes)):
-        #         if i != j and self.nodes[i][0] == self.nodes[j][0] and self.nodes[i][1] == self.nodes[j][1]:
-        #             print("node Deleted")
-        #             del self.nodes[i]
-
     def doesPointExist(self, point):
 
         for node in self.nodes:
@@ -157,141 +151,66 @@ class Mesh:
 
         plt.show()
 
-    def generateLevel1Members(self):
-        A = np.zeros((len(self.nodes),len(self.nodes)))
+    def addMembers(self, maxDistance):
 
         for i in range(len(self.nodes)):
-            x = self.nodes[i][0]
-            y = self.nodes[i][1]
-            closestXIndex = None
-            disToClosestX = math.inf
-            closestYIndex = None
-            disToClosestY = math.inf
+            node = self.nodes[i]
+
+            distance = ((self.nodes[:, 0] - node[0]) ** 2 + (self.nodes[:, 1] - node[1]) ** 2) ** 0.5
+            index = []
             for j in range(len(self.nodes)):
+                index.append(j)
 
-                if i != j:
-                    if x == self.nodes[j][0]:
-                        dist = y - self.nodes[j][1]
-                        if dist < 0:
-                            if abs(dist) < disToClosestX:
-                                disToClosestX = dist
-                                closestXIndex = j
+            distance = distance.tolist()
 
-                    elif y == self.nodes[j][1]:
-                        dist = x - self.nodes[j][0]
-                        if dist < 0:
-                            if abs(dist) < disToClosestY:
-                                disToClosestY = dist
-                                closestYIndex = j
+            indexSorted = [x for _, x in sorted(zip(distance, index ))]
 
-            if closestXIndex is not None:
-                A[i,closestXIndex] = 1
-            if closestYIndex is not None:
-                A[i, closestYIndex] = 1
+            nodesToAdd = []
 
-        A = A + A.T
-        n = self.getListOfUnderseportedNodes(A)
-        if len(n) != 0:
-            repet = True
-        else:
-            repet = False
-        while repet:
+            for ind in indexSorted:
+                if i != ind and distance[ind] <= maxDistance:
 
-            node = self.nodes[n[0]]
+                    sk = False
+                    for j in range(len(self.members)):
+                        if i == self.members[j][0] and ind == self.members[j][1]:
+                            sk = True
+                        elif i == self.members[j][1] and ind == self.members[j][0]:
+                            sk = True
 
-            distClosest = math.inf
-            closestIndex = None
-            for i in range(len(self.nodes)):
-                dist = ((node[0]-self.nodes[i][0])**2 + (node[1]-self.nodes[i][1])**2)**0.5
-                if dist < distClosest and n[0] != i and A[n[0],i] == 0:
-                    distClosest = dist
-                    closestIndex = i
+                    if not sk:
+                        dontAdd = False
+                        for j in range(len(nodesToAdd)):
+                            if is_collinear(node, self.nodes[ind], self.nodes[nodesToAdd[j]]):
+                                dontAdd = True
+                        if not dontAdd:
+                            nodesToAdd.append(ind)
 
-            A[n[0],closestIndex] = 1
+            for node2Index in nodesToAdd:
+                #TODO check if member goes outside of the bounds
+                self.members.append([i, node2Index])
 
-            A = A + A.T
-            n = self.getListOfUnderseportedNodes(A)
-            if len(n) == 0:
-                repet = False
+def is_collinear(a, b, c):
 
-        self.H = A
-        self.A1 = A
-        self.convertMatrixToMembers(A)
+    a = np.append(a, 0)
+    b = np.append(b, 0)
+    c = np.append(c, 0)
 
-    def convertMatrixToMembers(self, A):
-        self.members = []
+    AB = b - a
+    AC = c - a
 
-        for i in range(len(A)):
-            for j in range(len(A[i])):
-                if A[i][j] > 0 and i > j:
-                    self.members.append([i,j])
+    cp = np.cross(AB, AC)
 
-    def getListOfUnderseportedNodes(self, A):
-        n = [] #TODO if corner node make only need 2 members
-        for i in range(len(A)):
-            numMembers = 0
-            for j in range(len(A[i])):
-                if A[i][j] > 0 and i != j:
-                    numMembers += 1
-            if numMembers < 3:
-                n.append(i)
-
-        return n
-
-    def generateUpperLevelMembers(self, level):
-        An = self.A1
-        Anlow = None
-        for i in range(level - 1):
-            Anlow = An
-            An = An @ self.A1
-
-        Gn = An - Anlow
-
-        #TODO remove all new members that are within a tolerance of colinarity of an already existing members
-        # figure out what is happening at the top of the mesh.
-        #self.members = []
-        # m = np.array(self.members)
-        # n = np.array(self.nodes)
-        #
-        # d = [n[m[:, 1],0] - n[m[:, 0],0], n[m[:, 1],1] - n[m[:, 0],1]]
-        # l = ((d[0]) ** 2 + (d[1]) ** 2) ** 0.5
-        #
-        # unitVectors = np.array(d)/l
-        #
-        # for i in range(len(Gn)):
-        #     for j in range(len(Gn)):
-        #         if i != j and Gn[i,j] > 0:
-        #             dnew = [n[i,0] - n[j,0], n[i,1] - n[j,1]]
-        #             lnew = ((dnew[0]) ** 2 + (dnew[1]) ** 2) ** 0.5
-        #             unitVectorNew = np.array(dnew) / lnew
-        #
-        #             unitVectorsNew = np.array([unitVectorNew] * len(unitVectors.T))
-        #
-        #             C = unitVectors * unitVectorsNew.T
-        #
-        #             #print(np.max(C))
-        #             if np.max(C) > self.CollinerarTollerance:
-        #                 Gn[i,j] = 0
-
-        self.H = self.H + Gn
-        self.H = self.H + self.H.T
-
-        self.convertMatrixToMembers(self.H)
-
-
-
+    return np.allclose(cp, 0)
 
 nodes = [[0,0],[0,100],[100,100],[100,0]]
 edges = [[0,1],[1,2],[2,3],[3,0]]
 
 Zone = Zone(nodes, edges)
 
-MaxSpassing = [5,5]
+MaxSpassing = [10,10]
 
 mesh = Mesh(Zone, MaxSpassing, 0.999)
 mesh.generateNodes()
-mesh.generateLevel1Members()
-# mesh.generateUpperLevelMembers(2)
-# mesh.generateUpperLevelMembers(3)
-# mesh.generateUpperLevelMembers(4)
+mesh.addMembers(30)
+
 mesh.print()

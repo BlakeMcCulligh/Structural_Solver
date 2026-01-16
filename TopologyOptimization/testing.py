@@ -28,7 +28,7 @@ f = cp.Variable(2)
 # Diagonal term
 D = cp.diag(cp.multiply(l, a))
 
-# Lower-right block (this is the correct order)
+# Lower-right block
 K = B.T @ E @ D @ B   # (2×2)
 
 # SDP block matrix
