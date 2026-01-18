@@ -3,6 +3,7 @@ import math
 import numpy as np
 from matplotlib import pyplot as plt
 
+from TopologyOptimization.Optimize import TrussTopologyOptimization
 from TopologyOptimization.Zone import Zone
 
 class Mesh:
@@ -11,6 +12,7 @@ class Mesh:
         self.maxSpassing = maxSpassing
         self.nodes = None
         self.members = []
+        self.memberLengths = []
 
         self.CollinerarTollerance = CollinerarTollerance
 
@@ -189,6 +191,11 @@ class Mesh:
                 #TODO check if member goes outside of the bounds
                 self.members.append([i, node2Index])
 
+    def CalcMemberLengths(self):
+        m = np.array(self.members)
+
+        self.memberLengths = ((self.nodes[m[:, 1], 0] - self.nodes[m[:, 0], 0]) ** 2 + (self.nodes[m[:, 1], 1] - self.nodes[m[:, 0], 1]) ** 2 ) ** 0.5
+
 def is_collinear(a, b, c):
 
     a = np.append(a, 0)
@@ -202,7 +209,7 @@ def is_collinear(a, b, c):
 
     return np.allclose(cp, 0)
 
-nodes = [[0,0],[0,100],[100,100],[100,0]]
+nodes = [[0,0],[0,50],[50,50],[50,0]]
 edges = [[0,1],[1,2],[2,3],[3,0]]
 
 Zone = Zone(nodes, edges)
@@ -212,5 +219,12 @@ MaxSpassing = [10,10]
 mesh = Mesh(Zone, MaxSpassing, 0.999)
 mesh.generateNodes()
 mesh.addMembers(30)
+mesh.CalcMemberLengths()
 
-mesh.print()
+#mesh.print()
+
+volume_bound = 500
+E = 200000
+opt = TrussTopologyOptimization(volume_bound, np.array(mesh.members), np.array(mesh.nodes), mesh.memberLengths, E)
+opt.optimize()
+opt.printResults()
