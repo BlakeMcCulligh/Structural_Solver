@@ -3,18 +3,23 @@ import numpy as np
 
 
 class TrussTopologyOptimization:
-    def __init__(self, volumeBound, members, nodes, memberLengths, E):
+    def __init__(self, volumeBound, members, nodes, memberLengths, E, supports, loads):
         self.volumeBound = volumeBound
         self.members = members
         self.nodes = nodes
         self.l = memberLengths
         self.m = len(self.l)
-        self.Ediagenal = np.diag([E] * self.m)
+        self.E = E
 
-        self.B = self.build_B()
         self.w = None
         self.A = None
         self.prob = None
+
+        # node_id : (fix_x, fix_y)
+        self.supports = supports
+
+        # node_id : (Fx, Fy)
+        self.loads = loads
 
     def build_B(self):
         n_nodes = len(self.nodes)
@@ -41,19 +46,44 @@ class TrussTopologyOptimization:
 
         return B
 
-    def optimize(self):
-        self.w = cp.Variable()
-        self.A = cp.Variable(self.m)
+    def get_dof_sets(self):
+        fixed = []
+        for node, (fix_x, fix_y) in self.supports.items():
+            if fix_x:
+                fixed.append(2 * node)
+            if fix_y:
+                fixed.append(2 * node + 1)
 
-        # f must be length 2 to match B'
-        d = self.B.shape[1]
+        all_dofs = set(range(2 * len(self.nodes)))
+        free = sorted(all_dofs - set(fixed))
+
+        return free, sorted(fixed)
+
+    def build_force_vector(self):
+        F = np.zeros(2 * len(self.nodes))
+        for node, (Fx, Fy) in self.loads.items():
+            F[2 * node] = Fx
+            F[2 * node + 1] = Fy
+        return F
+
+    def optimize(self):
+        B = self.build_B()
+
+        free_dofs, fixed_dofs = self.get_dof_sets()
+
+        F_full = self.build_force_vector()
+        F_free = F_full[free_dofs]
+
+        B_free = B[:, free_dofs]
+
+        d = B_free.shape[1]
+
+        self.A = cp.Variable(len(self.members), nonneg=True)
+        self.w = cp.Variable()
         f = cp.Variable(d)
 
-        # Diagonal term
-        D = cp.diag(cp.multiply(self.l, self.A))
-
-        # Lower-right block
-        K = self.B.T @ self.Ediagenal @ D @ self.B  # (2×2)
+        D = cp.diag(cp.multiply(self.E * self.l, self.A))
+        K = B_free.T @ D @ B_free
 
         # SDP block matrix
         M = cp.bmat([
@@ -65,32 +95,15 @@ class TrussTopologyOptimization:
         constraints = [
             M >> 0,
             self.l @ self.A <= self.volumeBound,
-            self.A >= 0
+            self.A >= 0,
+            f == F_free
         ]
 
         # Problem
         self.prob = cp.Problem(cp.Minimize(self.w), constraints)
-        self.prob.solve(solver=cp.SCS)
+        self.prob.solve(solver=cp.SCS,verbose=True)
 
     def printResults(self):
         print("Status:", self.prob.status)
         print("w:", self.w.value)
         print("a:", self.A.value)
-
-
-
-# volume_bound = 5
-# B = np.array([
-#     [1, 2],
-#     [2, 3],
-#     [3, 4],
-#     [4, 5],
-#     [5, 1]
-# ], dtype=float)
-# l = np.array([5, 6, 7, 3, 5], dtype=float)
-# E = 5
-#
-# opt = TrussTopologyOptimization(volume_bound, B, [1], l, E)
-# opt.optimize()
-# opt.printResults()
-

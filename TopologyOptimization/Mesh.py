@@ -209,7 +209,7 @@ def is_collinear(a, b, c):
 
     return np.allclose(cp, 0)
 
-nodes = [[0,0],[0,50],[50,50],[50,0]]
+nodes = [[0,0],[0,30],[30,30],[30,0]]
 edges = [[0,1],[1,2],[2,3],[3,0]]
 
 Zone = Zone(nodes, edges)
@@ -221,10 +221,20 @@ mesh.generateNodes()
 mesh.addMembers(30)
 mesh.CalcMemberLengths()
 
-#mesh.print()
+mesh.print()
 
 volume_bound = 500
 E = 200000
-opt = TrussTopologyOptimization(volume_bound, np.array(mesh.members), np.array(mesh.nodes), mesh.memberLengths, E)
+# node_id : (fix_x, fix_y)
+supports = {
+    0: (True, True),  # fixed support
+    3: (True, True),  # roller support (x fixed, y free)
+}
+
+# node_id : (Fx, Fy)
+loads = {
+    10: (0.0, -1.0),  # downward load at node 2
+}
+opt = TrussTopologyOptimization(volume_bound, np.array(mesh.members), np.array(mesh.nodes), mesh.memberLengths, E, supports, loads)
 opt.optimize()
 opt.printResults()
