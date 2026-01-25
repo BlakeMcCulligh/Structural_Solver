@@ -1,6 +1,6 @@
 import cvxpy as cp
 import numpy as np
-
+from matplotlib import pyplot as plt
 
 class TrussTopologyOptimization:
     def __init__(self, volumeBound, members, nodes, memberLengths, E, supports, loads):
@@ -107,3 +107,12 @@ class TrussTopologyOptimization:
         print("Status:", self.prob.status)
         print("w:", self.w.value)
         print("a:", self.A.value)
+
+        plt.plot(self.nodes[:, 0], self.nodes[:, 1], 'o')
+
+        for i in range(len(self.members)):
+            xi, xf, = self.nodes[self.members[i][0], 0], self.nodes[self.members[i][1], 0]
+            yi, yf, = self.nodes[self.members[i][0], 1], self.nodes[self.members[i][1], 1]
+            plt.plot([xi, xf], [yi, yf], color='gray', linewidth = self.A.value[i])
+
+        plt.show()

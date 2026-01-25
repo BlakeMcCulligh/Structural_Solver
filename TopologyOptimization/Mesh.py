@@ -7,7 +7,7 @@ from TopologyOptimization.Optimize import TrussTopologyOptimization
 from TopologyOptimization.Zone import Zone
 
 class Mesh:
-    def __init__(self, zone, maxSpassing, CollinerarTollerance):
+    def __init__(self, zone, maxSpassing, supports, loads, CollinerarTollerance):
         self.zone = zone
         self.maxSpassing = maxSpassing
         self.nodes = None
@@ -16,8 +16,22 @@ class Mesh:
 
         self.CollinerarTollerance = CollinerarTollerance
 
-        self.H = None
-        self.A1 = None
+        self.supports = supports
+        self.loads = loads
+
+        self.SupportLocations = []
+        self.LoadLocations = []
+
+        for node, (supX, supY) in self.supports.items():
+            cords = self.zone.nodes[node,:]
+            self.SupportLocations.append([cords, supX, supY])
+
+        for node, (loadX, loadY) in self.loads.items():
+            cords = self.zone.nodes[node,:]
+            self.LoadLocations.append([cords, loadX, loadY])
+
+        #self.H = None
+        #self.A1 = None
 
     def generateNodes(self):
         minX, minY, maxX, maxY = self.zone.getMostExtreamPoints()
@@ -196,6 +210,23 @@ class Mesh:
 
         self.memberLengths = ((self.nodes[m[:, 1], 0] - self.nodes[m[:, 0], 0]) ** 2 + (self.nodes[m[:, 1], 1] - self.nodes[m[:, 0], 1]) ** 2 ) ** 0.5
 
+    def setSpecialNodes(self):
+        self.supports = {}
+        self.loads = {}
+        print(self.SupportLocations)
+        print(self.LoadLocations)
+        for support in self.SupportLocations:
+
+            for i in range(len(self.nodes)):
+                if self.nodes[i][0] == support[0][0] and self.nodes[i][1] == support[0][1]:
+                    self.supports.update( { i: (support[1], support[2]) })
+
+        for load in self.LoadLocations:
+
+            for i in range(len(self.nodes)):
+                if self.nodes[i][0] == load[0][0] and self.nodes[i][1] == load[0][1]:
+                    self.loads.update( { i : (load[1], load[2]) } )
+
 def is_collinear(a, b, c):
 
     a = np.append(a, 0)
@@ -209,32 +240,37 @@ def is_collinear(a, b, c):
 
     return np.allclose(cp, 0)
 
-nodes = [[0,0],[0,30],[30,30],[30,0]]
+nodes = [[0,0],[0,20],[20,20],[20,0]]
+
+supports = {
+    0: (True, True),  # fixed support
+    1: (True, False),  # roller support (x fixed, y free)
+}
+
+# node_id : (Fx, Fy)
+loads = {
+    2: (0.0, -1.0),  # downward load at node 2
+}
+
 edges = [[0,1],[1,2],[2,3],[3,0]]
 
 Zone = Zone(nodes, edges)
 
 MaxSpassing = [10,10]
 
-mesh = Mesh(Zone, MaxSpassing, 0.999)
+mesh = Mesh(Zone, MaxSpassing, supports, loads, 0.999)
 mesh.generateNodes()
 mesh.addMembers(30)
 mesh.CalcMemberLengths()
+mesh.setSpecialNodes()
 
 mesh.print()
 
 volume_bound = 500
 E = 200000
 # node_id : (fix_x, fix_y)
-supports = {
-    0: (True, True),  # fixed support
-    3: (True, True),  # roller support (x fixed, y free)
-}
-
-# node_id : (Fx, Fy)
-loads = {
-    10: (0.0, -1.0),  # downward load at node 2
-}
-opt = TrussTopologyOptimization(volume_bound, np.array(mesh.members), np.array(mesh.nodes), mesh.memberLengths, E, supports, loads)
+print(mesh.supports)
+print(mesh.loads)
+opt = TrussTopologyOptimization(volume_bound, np.array(mesh.members), np.array(mesh.nodes), mesh.memberLengths, E, mesh.supports, mesh.loads)
 opt.optimize()
 opt.printResults()
