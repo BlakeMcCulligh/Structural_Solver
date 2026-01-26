@@ -93,6 +93,163 @@ def createInitialStructure(Nodes, zone):
 
     return Members
 
+def simplify(Nodes, Members, f, dof):
+
+    ParTolerance1 = 0.01
+
+    ChangeMaster = True
+    count = 0
+    while ChangeMaster:
+        if count > 10:
+             break
+        count += 1
+        ChangeMaster = False
+        print("looping")
+
+        ActiveMembers = Members[Members[:, 3] == True]
+        vol, a, q, u = solveOptimumProblem(Nodes, ActiveMembers, f, dof)
+        #plotTruss(Nodes, ActiveMembers, a, max(a) * 1e-3)
+        minA = max(a) * 1e-3
+
+        V = [Nodes[Members[:, 1].astype(int), 0] - Nodes[Members[:, 0].astype(int), 0], Nodes[Members[:, 1].astype(int), 1] - Nodes[Members[:, 0].astype(int), 1]]
+
+        Area = []
+        Needed = []
+        j = 0
+
+        for i, m1 in enumerate(Members):
+            if m1[3]:
+                Area.append(a[j])
+                if Area[-1] >= minA:
+                    Needed.append(True)
+                else:
+                    Needed.append(False)
+                j += 1
+            else:
+                Area.append(0)
+                Needed.append(False)
+
+        V = np.array(V)
+        Area = np.array(Area)
+        Needed = np.array(Needed)
+
+        M = np.column_stack((Members[:, [0,1]].astype(int), Members[:, [2,3]], V.T, Area, Needed))
+
+        for i, M1 in enumerate(M):
+            for j, M2 in enumerate(M):
+
+                if M1[3] and M2[3] and i != j and M1[6] > 1 and M2[6] > 1:
+
+                    C = M1[4] * M2[5] - M1[5] * M2[4]
+                    if abs(C) < ParTolerance1:
+
+                        if M1[0] == M2[0]:
+                            Change = parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, 0, 0)
+                            if Change: ChangeMaster = True
+                        elif M1[1] == M2[1]:
+                            Change = parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, 1, 1)
+                            if Change: ChangeMaster = True
+                        elif M1[1] == M2[0]:
+                            Change = parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, 1, 0)
+                            if Change: ChangeMaster = True
+                        elif M1[0] == M2[1]:
+                            Change = parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, 0, 1)
+                            if Change: ChangeMaster = True
+
+        Members = M[:, [0,1,2,3]]
+
+    return Members
+
+
+def parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, sp1i, sp2i):
+
+    minA = max(M[:,6]) * 1e-3
+
+    ParTolerance2 = 0.01
+    PerpTolerance = 0.01
+    maxLength = 20
+
+    nsp1i, nsp2i = abs(sp1i-1), abs(sp2i-1)
+    v3 = [Nodes[int(M1[nsp1i])][0] - Nodes[int(M2[nsp2i])][0], Nodes[int(M1[nsp1i])][1] - Nodes[int(M2[nsp2i])][1]]
+    C1 = M1[4] * v3[1] - M1[5] * v3[0]
+    C2 = M2[4] * v3[1] - M2[5] * v3[0]
+    D1 = M1[4] * v3[0] - M1[5] * v3[1]
+    D2 = M2[4] * v3[0] - M2[5] * v3[1]
+
+    # if a member from the ends that are not shared is also paralel (with tolerance)
+    if abs(C1) < ParTolerance2 and abs(C2) < ParTolerance2:
+
+        sharedPointI = M1[sp1i]
+        sharedWithOther = False
+
+        for k, M3 in enumerate(M):
+            if (M3[0] == sharedPointI or M3[1] == sharedPointI) and (k != i or k != j) and M3[3] and M3[6] > minA:
+                C3 = M1[4] * M3[5] - M1[5] * M3[4]
+                if abs(C3) > ParTolerance2:
+                    sharedWithOther = True
+
+        if not sharedWithOther:
+            dx = Nodes[int(M2[nsp2i]), 0] - Nodes[int(M1[nsp1i]), 0]
+            dy = Nodes[int(M2[nsp2i]), 1] - Nodes[int(M1[nsp1i]), 1]
+            newMember = [M1[nsp1i], M2[nsp2i], np.sqrt( dx**2 + dy**2 ), True, dx, dy, 100, True]
+
+            if newMember[2] <= maxLength:
+                print("simplifying 1")
+                M[i] = newMember
+                M[j][3] = False
+                M[j][7] = False
+                return True
+        #else:
+
+            # if M1[2] <= M2[2]:
+            #     m = M[j]
+            #     m[nsp2i] = M1[nsp1i]
+            #
+            #     lnew = ((Nodes[int(m[1])][0] - Nodes[int(m[0])][0]) ** 2 +
+            #             (Nodes[int(m[1])][1] - Nodes[int(m[0])][1]) ** 2) **0.5
+            #     if lnew < M2[2]:
+            #         M[j][nsp2i] = M1[nsp1i]
+            #         print("simplifying 4")
+            #         return True
+            #     else:
+            #         return False
+            #
+            # else:
+            #     m = M[i]
+            #     m[nsp1i] = M2[nsp2i]
+            #
+            #     lnew = ((Nodes[int(m[1])][0] - Nodes[int(m[0])][0]) ** 2 +
+            #             (Nodes[int(m[1])][1] - Nodes[int(m[0])][1]) ** 2) ** 0.5
+            #     if lnew < M1[2]:
+            #         M[i][nsp1i] = M1[nsp2i]
+            #         print("simplifying 4")
+            #         return True
+            #     else:
+            #         return False
+
+    # if a member form the ends that are not shared is perpindicular (with tolerance)
+    elif abs(D1) < PerpTolerance and abs(D2) < PerpTolerance:
+        #print("Canadit 2.1")
+        if M1[2] <= M2[2]:
+            M[i][3] = False # TODO not sure if this will work
+            M[i][7] = False
+        else:
+            M[j][3] = False # TODO not sure if this will work
+            M[j][7] = False
+        print("simplifying 2")
+        return True
+
+    # if a member from the ends is nether parallel or perpindicular (with tolerance)
+    else:
+        #print("Canadit 3.1")
+        if M1[2] <= M2[2]:
+            M[j][nsp2i] = M1[nsp1i]
+        else:
+            M[i][nsp1i] = M2[nsp2i]
+        print("simplifying 3")
+        return True
+    return False
+
 def solveOptimumProblem(Nodes, ActiveMembers, f, dof):
     """
     Solves for the optimum areas for all the acitve members
@@ -205,6 +362,7 @@ def plotTruss(Nodes, ActiveMembers, a, threshold):
 
     # ploting members
     for i in [i for i in range(len(a)) if a[i] >= threshold]:
+
         pos = Nodes[ActiveMembers[i, [0, 1]].astype(int), :]
         plt.plot(pos[:, 0], pos[:, 1], linewidth=np.sqrt(a[i] * ThinknessMult), solid_capstyle='round')
 
@@ -258,18 +416,24 @@ def OptimizeTruss(zoneNodes, nodeSpasing, loadCasses, supports):
 
     print('Nodes: %d Members: %d' % (len(Nodes), len(Members)))
 
+    # plotTruss(Nodes, Members, np.ones((len(Members))) * 30, 0)
+    # vol, a, q, u = solveOptimumProblem(Nodes, Members, f, dof)
+    # plotTruss(Nodes, Members, a, max(a) * 1e-3)
 
     # Start the main member adding loop
     itr, vol, ActiveMembers, a, q = 0, 0, 0, 0, 0
-    for itr in range(1, 100):
+    for itr in range(1, 5):
 
-        ActiveMembers = Members[Members[:, 3] == True]  # Only take members that are active
+        Members = simplify(Nodes, Members, f, dof)
+
+        ActiveMembers = Members[Members[:, 3] == True]# Only take members that are active
 
         vol, a, q, u = solveOptimumProblem(Nodes, ActiveMembers, f, dof)
 
         print("Itr: %d, volume: %f, active members: %d" % (itr, vol, len(ActiveMembers)))
 
-        plotTruss(Nodes, ActiveMembers, a, max(a) * 1e-3) # plot interation for truss
+        plotTruss(Nodes, ActiveMembers, a, max(a) * 1e-3)# plot interation for truss
+        #plotTruss(Nodes, ActiveMembers, np.ones((len(a)))*30, 0)
 
         if stopViolation(Nodes, Members, u):
             break  # if no elements are added, terminate process
@@ -283,9 +447,10 @@ def OptimizeTruss(zoneNodes, nodeSpasing, loadCasses, supports):
 
 
 if __name__ == '__main__':
-    # ZoneNodes = [[0, 0], [0, 10], [9, 10], [10, 0]]
+    # ZoneNodes = [[0, 0], [0, 10], [10, 10], [10, 0]]
     # Supports = [[0,0,True, True],[0,10, True, True]]
-    # LoadCasses = [[[10,0,0, -1]],[[6,5,-1,0]]]
+    # # #LoadCasses = [[[10,0,0, -5]],[[6,5,-5,0]]]
+    # LoadCasses = [[[10, 0, 0, -5]]]
     # MaxSpassing = [1, 1]
 
     ZoneNodes = [[0, 0], [12, 0], [12, 5], [78, 5], [78, 12], [162, 12], [162,5], [228,5], [228,0], [240, 0], [240,12], [288, 12], [288,28], [0,28]]
@@ -297,11 +462,11 @@ if __name__ == '__main__':
     for i in range(len(Supports)):
         Supports[i] = [Supports[i][0]/4, Supports[i][1]/4, True, True]
 
-    LoadCasses = [[]]
-    for i in range(7, 50):
-        LoadCasses[0].append([i, 28/4, 0, -1/108])
-    for i in range(60, 72):
-        LoadCasses[0].append([i, 28/4, 0, -1/108])
+    LoadCasses = [[[10, 28/4, 0, -1/7], [20, 28/4, 0, -1/7], [30, 28/4, 0, -1/7], [40, 28/4, 0, -1/7], [50, 28/4, 0, -1/7], [60, 28/4, 0, -1/7], [72, 28/4, 0, -1/7]]]
+    #for i in range(7, 50):
+    #     LoadCasses[0].append([i, 28/4, 0, -1/108])
+    # for i in range(60, 72):
+    #     LoadCasses[0].append([i, 28/4, 0, -1/108])
 
     # ZoneNodes = [[0, 0], [0, 5], [20, 5], [20, 0]]
     # Supports = [[0,0,True, True],[20,0, True, True]]
