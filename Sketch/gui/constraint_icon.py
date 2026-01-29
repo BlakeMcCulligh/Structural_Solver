@@ -1,6 +1,6 @@
 from Sketch.geometric_primitives.point import Point
 
-class ConstraintIcon():
+class ConstraintIcon:
     def __init__(self, canvas, icon, icon_size):
         self.canvas = canvas
         self.icon = icon

@@ -24,7 +24,6 @@ def geometry_changed_by_solver():
 def sketch():
     global solver
     global gui
-    global root_widget
 
     geometry = Geometry()
     constraints = Constraints()
@@ -34,10 +33,24 @@ def sketch():
     root_widget = tk.Tk()
     root_widget.title('2D Geometric Constraint Solver')
 
-    gui = GUI(root_widget, geometry, geometry_changed_by_GUI, constraints, constraints_changed_by_GUI)
+    gui = GUI(root_widget, geometry, geometry_changed_by_GUI, constraints, constraints_changed_by_GUI, mainWindow = None, objective = None)
     gui.pack(fill="both", expand=True)
 
-    root_widget.mainloop()
+    #root_widget.mainloop()
+
+    return geometry
+
+def startSketch(root_widget, mainWindow, objective, nextFunction):
+    global solver
+    global gui
+
+    geometry = Geometry()
+    constraints = Constraints()
+
+    solver = Solver(geometry, geometry_changed_by_solver, constraints)
+
+    gui = GUI(root_widget, geometry, geometry_changed_by_GUI, constraints, constraints_changed_by_GUI, mainWindow, objective, nextFunction)
+    gui.pack(fill="both", expand=True)
 
     return geometry
 

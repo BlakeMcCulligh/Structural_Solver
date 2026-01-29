@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 
 import numpy as np
+from shapely import line_merge, polygonize, get_parts
 
 from Sketch.constraints.constraint import Constraint
 from Sketch.constraints.constraints import *
@@ -11,8 +12,10 @@ from Sketch.geometry import Geometry
 from Sketch.geometric_primitives.point import Point, distance_p2p
 from Sketch.geometric_primitives.segment import Segment, distance_p2s
 from math import atan2, degrees, pi
-from Sketch.geometric_primitives.arc import Arc, distance_p2a
+from Sketch.geometric_primitives.arc import Arc, distance_p2a, create_arc_segment, get_angle_of_point
 from Sketch.gui.constraint_icon import ConstraintIcon
+
+from shapely.geometry import LineString, Polygon
 
 WINDOW_SIZE = (840, 440)
 
@@ -34,7 +37,12 @@ DISTANCE_CONSTRAINTS_TEXT_SIZE = 10
 
 
 class GUI(tk.Frame):
-    def __init__(self, root, geometry: Geometry, geometry_changed_callback, constraints, constraints_changed_callback):
+    def __init__(self, root, geometry: Geometry, geometry_changed_callback, constraints, constraints_changed_callback, mainWindow, objective, nextFunction):
+        self.mainWindow = mainWindow
+        self.objective = objective
+        self.nextFunction = nextFunction
+
+
         tk.Frame.__init__(self, root)
 
         self.root = root
@@ -81,8 +89,8 @@ class GUI(tk.Frame):
         self.currentTool = tk.StringVar(value="line")
         self.createToolBars()
 
-        exitButton = tk.Button(root, text= "Complete Sketch", command = self.endSketch)
-        self.canvas.create_window(100, 100, window=exitButton)
+        # exitButton = tk.Button(root, text= "Complete Sketch", command = self.endSketch)
+        # self.canvas.create_window(100, 100, window=exitButton)
 
     def endSketch(self):
         self.root.destroy()
@@ -101,12 +109,14 @@ class GUI(tk.Frame):
         file_menu = tk.Menu(menubar, tearoff = "off")
         file_menu.add_command(label='Clear', command=self.clear_everything)
         menubar.add_cascade(label="File", menu=file_menu)
-        examples_menu = tk.Menu(menubar, tearoff = "off")
+        # examples_menu = tk.Menu(menubar, tearoff = "off")
+        #
+        # for example in examples:
+        #     examples_menu.add_command(label=f'{example.__name__}', command=lambda example = example: self.load_example(example))
+        #
+        # menubar.add_cascade(label="Examples", menu=examples_menu)
 
-        for example in examples:
-            examples_menu.add_command(label=f'{example.__name__}', command=lambda example = example: self.load_example(example))
-
-        menubar.add_cascade(label="Examples", menu=examples_menu)
+        menubar.add_checkbutton(label="Complet Sketch", command=self.completeSketch)
 
     def createToolBars(self):
         """
@@ -174,12 +184,10 @@ class GUI(tk.Frame):
 
         self.root.bind("<KeyPress>", self.on_key_press)
 
-    #C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\
-    #C:\Users\blake\OneDrive\Desktop\Structural_Solver\Sketch\icons\32x32\segment.png
     def create_icons(self):
-        self.segment_icon = tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\segment.png")
-        self.arc_icon =     tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\arc.png")
-        self.circle_icon =  tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\circle.png")
+        self.segment_icon = tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Analysis_Programing\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\segment.png")
+        self.arc_icon =     tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Analysis_Programing\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\arc.png")
+        self.circle_icon =  tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Analysis_Programing\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\circle.png")
 
         icon_sizes = [20, 32, 64, 128]
 
@@ -202,7 +210,7 @@ class GUI(tk.Frame):
             self.constraint_icon[icon_size] = {}
 
             for constraint_type in CONSTRAINT_TYPE:
-                self.constraint_icon[icon_size][constraint_type] = tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\{icon_file_name[constraint_type]}.png")
+                self.constraint_icon[icon_size][constraint_type] = tk.PhotoImage(file = f"C:\\Users\\blake\\OneDrive\\Desktop\\Structural_Analysis_Programing\\Structural_Solver\\Sketch\\icons\\{BUTTON_ICON_SIZE}x{BUTTON_ICON_SIZE}\\{icon_file_name[constraint_type]}.png")
 
     """ --------------------------------- Mouse and Keyboard Handlers -----------------------------------------------"""
     def on_key_press(self, event):
@@ -880,3 +888,26 @@ class GUI(tk.Frame):
         print (f"\tSolved by substitution: {self.constraints.solved_by_substitution_constraints}")
         print (f"\tSolved by solver: {len(self.constraints) - self.constraints.solved_by_substitution_constraints - self.constraints.fixed_constraints}")
         print ("==============================")
+
+    """------------------------------------- Completing Sketch -----------------------------------------"""
+    def completeSketch(self):
+
+        lines = []
+        for s in self.geometry.segments:
+            lines.append(LineString([(s.p1.x, s.p1.y), (s.p2.x, s.p2.y)]))
+            print("Lines")
+            print(lines)
+
+        for a in self.geometry.arcs:
+            startAngle = get_angle_of_point(a.Center.x, a.Center.y, a.p1.x, a.p1.y)
+            endAngle = get_angle_of_point(a.Center.x, a.Center.y, a.p2.x, a.p2.y)
+            lines.append(create_arc_segment(a.Center.x, a.Center.y, a.Radius, startAngle, endAngle, num_segments=50))
+
+        if self.objective == "Closed Shape":
+            polys = polygonize(lines)
+            polys = get_parts(polys)
+
+            if polys is not None:
+                if len(polys) >= 1:
+                    poly = max(polys, key=lambda p: p.area)
+                    self.nextFunction(poly)

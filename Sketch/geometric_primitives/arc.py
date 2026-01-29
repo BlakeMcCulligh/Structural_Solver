@@ -1,7 +1,12 @@
+import math
 from enum import auto
 from math import atan2, degrees, pi
 
 from enum import Enum
+
+import numpy as np
+from shapely import LineString
+
 from Sketch.geometric_primitives.common import equal_eps, v2v_angle_cw
 from Sketch.geometric_primitives.point import Point, distance_p2p
 from Sketch.geometric_primitives.line import Line, intersection_line_line
@@ -106,6 +111,56 @@ def distance_p2a(p: Point, arc: Arc):
         return abs(arc.radius() - distance_p2p(arc_center, p))
     else:
         return min(distance_p2p(p, arc.p1), distance_p2p(p, arc.p2))
+
+def create_arc_segment(center_x, center_y, radius, start_angle_deg, end_angle_deg, num_segments=100):
+    """
+    Generates a shapely LineString approximating an arc segment.
+
+    :param center_x: X coordinate of the center.
+    :param center_y: Y coordinate of the center.
+    :param radius: The radius of the arc.
+    :param start_angle_deg: The start angle in degrees (e.g., 0).
+    :param end_angle_deg: The end angle in degrees (e.g., 90).
+    :param num_segments: The number of linear segments to use for approximation.
+    :return: A shapely LineString geometry.
+    """
+    # Convert angles from degrees to radians
+    start_angle_rad = math.radians(start_angle_deg)
+    end_angle_rad = math.radians(end_angle_deg)
+
+    # Generate angles for the segments
+    # The order of start/end angles may need adjustment depending on desired arc direction (CW/CCW)
+    angles = np.linspace(start_angle_rad, end_angle_rad, num_segments)
+
+    # Calculate coordinates
+    x = center_x + radius * np.cos(angles)
+    y = center_y + radius * np.sin(angles)
+
+    # Create the LineString from the coordinates
+    arc_coords = np.column_stack([x, y])
+    arc_segment = LineString(arc_coords)
+
+    return arc_segment
+
+
+def get_angle_of_point(center_x, center_y, point_x, point_y):
+    """
+    Calculates the angle of a point on a circle relative to the center.
+
+    The angle is measured counter-clockwise from the positive x-axis (3 o'clock position).
+    Returns the angle in degrees in the range [-180, 180].
+    """
+    # Calculate the difference in coordinates
+    dx = point_x - center_x
+    dy = point_y - center_y
+
+    # Use math.atan2 to get the angle in radians
+    angle_radians = math.atan2(dy, dx)
+
+    # Convert radians to degrees
+    angle_degrees = math.degrees(angle_radians)
+
+    return angle_degrees
 
 
     
