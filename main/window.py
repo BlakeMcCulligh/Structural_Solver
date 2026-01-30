@@ -1,6 +1,7 @@
 
 import tkinter as tk
 
+from CrossSectionAnalysis.main_CrossSectionAnalysis import getSectionProperties
 from Sketch.main import startSketch
 
 
@@ -22,6 +23,7 @@ class MainWindow(tk.Frame):
 
         new_menu = tk.Menu(menubar, tearoff="off")
         new_menu.add_command(label='Truss Topology Optimization', command= self.newTrussTopologyOptimization)
+        new_menu.add_command(label='Cross Section Analysis', command= self.startCrossSectionAnalysis)
         menubar.add_cascade(label="New", menu=new_menu)
 
 
@@ -47,6 +49,12 @@ class MainWindow(tk.Frame):
         # when sketch complete run truss iptimization
         # display results
 
+    def startCrossSectionAnalysis(self):
+        startSketch(self.root, self, "Closed Shape", self.returnCrossSectionAnalysis)
+
+    def returnCrossSectionAnalysis(self, poly):
+        section, properties = getSectionProperties(poly)
+        print(properties)
 
     def browseFilesToOpen(self):
         print("Long Term Goals")

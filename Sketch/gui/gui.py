@@ -895,8 +895,6 @@ class GUI(tk.Frame):
         lines = []
         for s in self.geometry.segments:
             lines.append(LineString([(s.p1.x, s.p1.y), (s.p2.x, s.p2.y)]))
-            print("Lines")
-            print(lines)
 
         for a in self.geometry.arcs:
             startAngle = get_angle_of_point(a.Center.x, a.Center.y, a.p1.x, a.p1.y)
