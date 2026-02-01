@@ -2,6 +2,7 @@ from math import gcd, ceil
 import itertools
 
 from scipy import sparse
+from scipy.spatial import Delaunay
 import numpy as np
 import cvxpy as cvx
 import matplotlib.pyplot as plt
@@ -74,22 +75,41 @@ def createInitialStructure(Nodes, zone):
 
     Members = []
 
-    for i, j in itertools.combinations(range(len(Nodes)), 2):
-
-        dx, dy = abs(Nodes[i][0] - Nodes[j][0]), abs(Nodes[i][1] - Nodes[j][1])
-
-        # Remove overlapping members from ground structure
-        if gcd(int(dx), int(dy)) == 1:
-            seg = [] if convex else LineString([Nodes[i], Nodes[j]])
+    tri = Delaunay(Nodes)
+    for simplex in tri.simplices:
+        for i in range(3):
+            line = tuple(sorted((simplex[i], simplex[(i + 1) % 3])))
+            dx, dy = abs(Nodes[line[0]][0] - Nodes[line[1]][0]), abs(Nodes[line[0]][1] - Nodes[line[1]][1])
+            seg = [] if convex else LineString([Nodes[line[0]], Nodes[line[1]]])
 
             if convex or zone.contains(seg) or zone.boundary.contains(seg):
-                Members.append([i, j, np.sqrt(dx ** 2 + dy ** 2), False])
+                Members.append([line[0], line[1], np.sqrt(dx ** 2 + dy ** 2), True])
+
+    Members = np.array(Members)
+    A1 = np.zeros((len(Nodes), len(Nodes)))
+
+    A1[Members[:, 0].astype(int) , Members[:, 1].astype(int) ] = 1
+    for k in range(5):
+        A1 = A1 @ A1
+        np.fill_diagonal(A1, 0)
+        A1[A1 > 0] = 1
+        A1[A1 != 1] = 0
+
+        A1 = A1 + A1.T
+        A1[A1 > 0] = 1
+
+    Members = []
+    for i in range(len(Nodes)):
+        for j in range(len(Nodes)):
+            if i != j and A1[i,j] == 1:
+                dx, dy = abs(Nodes[j][0] - Nodes[i][0]), abs(Nodes[j][1] - Nodes[i][1])
+                Members.append([i, j, np.sqrt(dx ** 2 + dy ** 2), True])
 
     Members = np.array(Members)
 
     # setting active membes
-    for pm in [p for p in Members if p[2] <= 1.500]:
-        pm[3] = True
+    # for pm in [p for p in Members if p[2] <= 1.500]:
+    #      pm[3] = True
 
     return Members
 
@@ -400,13 +420,19 @@ def calcBi(Nodes, Members, dof=None):
 
     return sparse.coo_matrix((v, (c, r)), shape=(m, len(Nodes) * 2))
 
-def OptimizeTruss(zoneNodes, nodeSpasing, loadCasses, supports):
+def OptimizeTruss(zoneNodes, loadCasses, supports, nodeSpasing =None, nodes = None):
 
     start = time()
 
     zone = Polygon(zoneNodes)
 
-    Nodes, numColumbs, numRows = createNodeGrid(zone, nodeSpasing)
+    if nodes is None:
+        Nodes, numColumbs, numRows = createNodeGrid(zone, nodeSpasing)
+
+    else:
+        Nodes = np.array(nodes)
+
+    print(Nodes)
 
     # Load and support conditions
     f, dof = assignLoadsAndSupports(Nodes, loadCasses, supports)
@@ -416,7 +442,7 @@ def OptimizeTruss(zoneNodes, nodeSpasing, loadCasses, supports):
 
     print('Nodes: %d Members: %d' % (len(Nodes), len(Members)))
 
-    # plotTruss(Nodes, Members, np.ones((len(Members))) * 30, 0)
+    plotTruss(Nodes, Members, np.ones((len(Members))) * 30, 0)
     # vol, a, q, u = solveOptimumProblem(Nodes, Members, f, dof)
     # plotTruss(Nodes, Members, a, max(a) * 1e-3)
 
@@ -447,23 +473,22 @@ def OptimizeTruss(zoneNodes, nodeSpasing, loadCasses, supports):
 
 
 if __name__ == '__main__':
-    # ZoneNodes = [[0, 0], [0, 10], [10, 10], [10, 0]]
-    # Supports = [[0,0,True, True],[0,10, True, True]]
-    # # #LoadCasses = [[[10,0,0, -5]],[[6,5,-5,0]]]
-    # LoadCasses = [[[10, 0, 0, -5]]]
-    # MaxSpassing = [1, 1]
+    ZoneNodes = [[0, 0], [0, 10], [10, 10], [10, 0]]
+    Supports = [[0,0,True, True],[0,10, True, True]]
+    LoadCasses = [[[10,0,0, -5]],[[6,5,-5,0]]]
+    MaxSpassing = [5, 5]
 
-    ZoneNodes = [[0, 0], [12, 0], [12, 5], [78, 5], [78, 12], [162, 12], [162,5], [228,5], [228,0], [240, 0], [240,12], [288, 12], [288,28], [0,28]]
-    Supports = [[0, 0, True, True], [2, 0, True, True], [4, 0, True, True], [6, 0, True, True], [8, 0, True, True], [10, 0, True, True], [12, 0, True, True], [228, 0, True, True], [230, 0, True, True], [232, 0, True, True], [234, 0, True, True], [236, 0, True, True], [238, 0, True, True], [240, 0, True, True]]
-
-    for i in range(len(Supports)):
-        ZoneNodes[i] = [ZoneNodes[i][0]/4, ZoneNodes[i][1]/4]
-
-    for i in range(len(Supports)):
-        Supports[i] = [Supports[i][0]/4, Supports[i][1]/4, True, True]
-
-    LoadCasses = [[[10, 28/4, 0, -1/7], [20, 28/4, 0, -1/7], [30, 28/4, 0, -1/7], [40, 28/4, 0, -1/7], [50, 28/4, 0, -1/7], [60, 28/4, 0, -1/7], [72, 28/4, 0, -1/7]]]
-    #for i in range(7, 50):
+    # ZoneNodes = [[0, 0], [12, 0], [12, 5], [78, 5], [78, 12], [162, 12], [162,5], [228,5], [228,0], [240, 0], [240,12], [288, 12], [288,28], [0,28]]
+    # Supports = [[0, 0, True, True], [2, 0, True, True], [4, 0, True, True], [6, 0, True, True], [8, 0, True, True], [10, 0, True, True], [12, 0, True, True], [228, 0, True, True], [230, 0, True, True], [232, 0, True, True], [234, 0, True, True], [236, 0, True, True], [238, 0, True, True], [240, 0, True, True]]
+    #
+    # for i in range(len(Supports)):
+    #     ZoneNodes[i] = [ZoneNodes[i][0]/4, ZoneNodes[i][1]/4]
+    #
+    # for i in range(len(Supports)):
+    #     Supports[i] = [Supports[i][0]/4, Supports[i][1]/4, True, True]
+    #
+    # LoadCasses = [[[10, 28/4, 0, -1/7], [20, 28/4, 0, -1/7], [30, 28/4, 0, -1/7], [40, 28/4, 0, -1/7], [50, 28/4, 0, -1/7], [60, 28/4, 0, -1/7], [72, 28/4, 0, -1/7]]]
+    # #for i in range(7, 50):
     #     LoadCasses[0].append([i, 28/4, 0, -1/108])
     # for i in range(60, 72):
     #     LoadCasses[0].append([i, 28/4, 0, -1/108])
@@ -473,7 +498,7 @@ if __name__ == '__main__':
     # LoadCasses = [[[5,5,0, -1], [15,5,0,-1]]]
 
 
-    MaxSpassing = [1, 1]
+    #MaxSpassing = [1, 1]
 
     Vol, Time, A, NumIter, NumActive, NumPotential = OptimizeTruss(
         zoneNodes = ZoneNodes, # the corners of the polygon defining where the truss can be

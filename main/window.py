@@ -1,7 +1,9 @@
 
 import tkinter as tk
+from tkinter import filedialog
 
 from CrossSectionAnalysis.main_CrossSectionAnalysis import getSectionProperties
+from OpeningAndSaving.Opening import openTrussTopologyOptimizationExcel
 from Sketch.main import startSketch
 
 
@@ -28,7 +30,7 @@ class MainWindow(tk.Frame):
 
 
         open_menu = tk.Menu(menubar, tearoff="off")
-        open_menu.add_command(label='Browse Files', command=self.browseFilesToOpen)
+        open_menu.add_command(label='Truss Topology Optimization', command=self.openTrussTopologyOptimization)
         menubar.add_cascade(label="Open", menu=open_menu)
 
     def closeProgram(self):
@@ -56,5 +58,33 @@ class MainWindow(tk.Frame):
         section, properties = getSectionProperties(poly)
         print(properties)
 
-    def browseFilesToOpen(self):
-        print("Long Term Goals")
+    def openTrussTopologyOptimization(self):
+        fileTypes = [("Excel Files", "*.xlsx")]
+        selected_file = select_file_gui(fileTypes)
+        openTrussTopologyOptimizationExcel(selected_file)
+
+
+def select_file_gui(file_Types):
+    """
+    Opens a file explorer dialog using Tkinter and returns the selected file path.
+    """
+    # Create a Tk root window (but hide it)
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+
+    # Open the file dialog
+    file_path = filedialog.askopenfilename(
+        title="Select a file",
+        filetypes= file_Types
+    )
+
+    if file_path:
+        print(f"Selected file: {file_path}")
+        return file_path
+    else:
+        print("No file selected.")
+        return None
+
+
+
+
