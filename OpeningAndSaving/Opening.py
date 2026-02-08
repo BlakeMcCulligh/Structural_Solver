@@ -17,12 +17,21 @@ def openTrussTopologyOptimizationExcel(filePath):
     numLoadCases = LoadCases_df["Number Load Casses"].tolist()[0]
 
     LoadCasses = []
-    for i in range(numLoadCases):
+    for i in range(int(numLoadCases)):
         x = LoadCases_df[f"LoadCase{i+1} x"].tolist()
         y = LoadCases_df[f"LoadCase{i+1} y"].tolist()
         fx = LoadCases_df[f"LoadCase{i+1} fx"].tolist()
         fy = LoadCases_df[f"LoadCase{i+1} fy"].tolist()
-        Case = np.array([x,y,fx,fy]).T.tolist()
+
+        dis1x = LoadCases_df[f"LoadCase{i+1} dis1x"].tolist()
+        dis1y = LoadCases_df[f"LoadCase{i+1} dis1y"].tolist()
+        dis2x = LoadCases_df[f"LoadCase{i + 1} dis2x"].tolist()
+        dis2y = LoadCases_df[f"LoadCase{i + 1} dis2y"].tolist()
+        disfx = LoadCases_df[f"LoadCase{i + 1} disfx"].tolist()
+        disfy = LoadCases_df[f"LoadCase{i + 1} disfy"].tolist()
+
+        Case = np.array([x,y,fx,fy, dis1x, dis1y, dis2x, dis2y, disfx, disfy]).T.tolist()
+        print(Case)
         LoadCasses.append(Case)
 
     Boundary = np.array(Boundary).T.tolist()
