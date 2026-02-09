@@ -1,5 +1,4 @@
 import math
-from math import gcd, ceil
 import itertools
 
 from scipy import sparse
@@ -118,168 +117,7 @@ def createInitialStructure(Nodes, zone):
 
     Members = np.array(Members)
 
-    # setting active membes
-    # for pm in [p for p in Members if p[2] <= 1.500]:
-    #      pm[3] = True
-
     return Members
-
-def simplify(Nodes, Members, f, dof):
-
-    ParTolerance1 = 0.01
-
-    ChangeMaster = True
-    count = 0
-    while ChangeMaster:
-        if count > 10:
-             break
-        count += 1
-        ChangeMaster = False
-        print("looping")
-
-        ActiveMembers = Members[Members[:, 3] == True]
-        vol, a, q, u = solveOptimumProblem(Nodes, ActiveMembers, f, dof)
-        #plotTruss(Nodes, ActiveMembers, a, max(a) * 1e-3)
-        minA = max(a) * 1e-3
-
-        V = [Nodes[Members[:, 1].astype(int), 0] - Nodes[Members[:, 0].astype(int), 0], Nodes[Members[:, 1].astype(int), 1] - Nodes[Members[:, 0].astype(int), 1]]
-
-        Area = []
-        Needed = []
-        j = 0
-
-        for i, m1 in enumerate(Members):
-            if m1[3]:
-                Area.append(a[j])
-                if Area[-1] >= minA:
-                    Needed.append(True)
-                else:
-                    Needed.append(False)
-                j += 1
-            else:
-                Area.append(0)
-                Needed.append(False)
-
-        V = np.array(V)
-        Area = np.array(Area)
-        Needed = np.array(Needed)
-
-        M = np.column_stack((Members[:, [0,1]].astype(int), Members[:, [2,3]], V.T, Area, Needed))
-
-        for i, M1 in enumerate(M):
-            for j, M2 in enumerate(M):
-
-                if M1[3] and M2[3] and i != j and M1[6] > 1 and M2[6] > 1:
-
-                    C = M1[4] * M2[5] - M1[5] * M2[4]
-                    if abs(C) < ParTolerance1:
-
-                        if M1[0] == M2[0]:
-                            Change = parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, 0, 0)
-                            if Change: ChangeMaster = True
-                        elif M1[1] == M2[1]:
-                            Change = parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, 1, 1)
-                            if Change: ChangeMaster = True
-                        elif M1[1] == M2[0]:
-                            Change = parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, 1, 0)
-                            if Change: ChangeMaster = True
-                        elif M1[0] == M2[1]:
-                            Change = parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, 0, 1)
-                            if Change: ChangeMaster = True
-
-        Members = M[:, [0,1,2,3]]
-
-    return Members
-
-
-def parSharedPoint(Nodes, ActiveMembers, M, M1, i, M2, j, sp1i, sp2i):
-
-    minA = max(M[:,6]) * 1e-3
-
-    ParTolerance2 = 0.01
-    PerpTolerance = 0.01
-    maxLength = 20
-
-    nsp1i, nsp2i = abs(sp1i-1), abs(sp2i-1)
-    v3 = [Nodes[int(M1[nsp1i])][0] - Nodes[int(M2[nsp2i])][0], Nodes[int(M1[nsp1i])][1] - Nodes[int(M2[nsp2i])][1]]
-    C1 = M1[4] * v3[1] - M1[5] * v3[0]
-    C2 = M2[4] * v3[1] - M2[5] * v3[0]
-    D1 = M1[4] * v3[0] - M1[5] * v3[1]
-    D2 = M2[4] * v3[0] - M2[5] * v3[1]
-
-    # if a member from the ends that are not shared is also paralel (with tolerance)
-    if abs(C1) < ParTolerance2 and abs(C2) < ParTolerance2:
-
-        sharedPointI = M1[sp1i]
-        sharedWithOther = False
-
-        for k, M3 in enumerate(M):
-            if (M3[0] == sharedPointI or M3[1] == sharedPointI) and (k != i or k != j) and M3[3] and M3[6] > minA:
-                C3 = M1[4] * M3[5] - M1[5] * M3[4]
-                if abs(C3) > ParTolerance2:
-                    sharedWithOther = True
-
-        if not sharedWithOther:
-            dx = Nodes[int(M2[nsp2i]), 0] - Nodes[int(M1[nsp1i]), 0]
-            dy = Nodes[int(M2[nsp2i]), 1] - Nodes[int(M1[nsp1i]), 1]
-            newMember = [M1[nsp1i], M2[nsp2i], np.sqrt( dx**2 + dy**2 ), True, dx, dy, 100, True]
-
-            if newMember[2] <= maxLength:
-                print("simplifying 1")
-                M[i] = newMember
-                M[j][3] = False
-                M[j][7] = False
-                return True
-        #else:
-
-            # if M1[2] <= M2[2]:
-            #     m = M[j]
-            #     m[nsp2i] = M1[nsp1i]
-            #
-            #     lnew = ((Nodes[int(m[1])][0] - Nodes[int(m[0])][0]) ** 2 +
-            #             (Nodes[int(m[1])][1] - Nodes[int(m[0])][1]) ** 2) **0.5
-            #     if lnew < M2[2]:
-            #         M[j][nsp2i] = M1[nsp1i]
-            #         print("simplifying 4")
-            #         return True
-            #     else:
-            #         return False
-            #
-            # else:
-            #     m = M[i]
-            #     m[nsp1i] = M2[nsp2i]
-            #
-            #     lnew = ((Nodes[int(m[1])][0] - Nodes[int(m[0])][0]) ** 2 +
-            #             (Nodes[int(m[1])][1] - Nodes[int(m[0])][1]) ** 2) ** 0.5
-            #     if lnew < M1[2]:
-            #         M[i][nsp1i] = M1[nsp2i]
-            #         print("simplifying 4")
-            #         return True
-            #     else:
-            #         return False
-
-    # if a member form the ends that are not shared is perpindicular (with tolerance)
-    elif abs(D1) < PerpTolerance and abs(D2) < PerpTolerance:
-        #print("Canadit 2.1")
-        if M1[2] <= M2[2]:
-            M[i][3] = False # TODO not sure if this will work
-            M[i][7] = False
-        else:
-            M[j][3] = False # TODO not sure if this will work
-            M[j][7] = False
-        print("simplifying 2")
-        return True
-
-    # if a member from the ends is nether parallel or perpindicular (with tolerance)
-    else:
-        #print("Canadit 3.1")
-        if M1[2] <= M2[2]:
-            M[j][nsp2i] = M1[nsp1i]
-        else:
-            M[i][nsp1i] = M2[nsp2i]
-        print("simplifying 3")
-        return True
-    return False
 
 def solveOptimumProblem(Nodes, ActiveMembers, f, dof):
     """
@@ -302,14 +140,8 @@ def solveOptimumProblem(Nodes, ActiveMembers, f, dof):
     beta = cvx.Variable(len(f), nonneg=True)  # Dual variables of lower bound on case weighting = slacks of eqn
 
     # setting objective function
-
-    y = cvx.Variable(len(ActiveMembers), boolean=True)
-
-
-    ActveMCon = [a - 0.01 <= 1000 * y, a >= 0, cvx.sum(y) <= 75]
-
     obj = cvx.Minimize((cvx.sum(l @ a) - cvx.sum(lb * beta)))
-    #sum(l[:] > 6)
+
     # setting equilibrium constraints
     B = calcBi(Nodes, ActiveMembers, dof)  # reduced
     equilibCon = [B.transpose() @ q[k] + f[k] == 0 for k in range(len(f))]
@@ -325,66 +157,18 @@ def solveOptimumProblem(Nodes, ActiveMembers, f, dof):
     # setting loadcase total energy constraints
     sumCon = [cvx.sum(p[k]) + beta[k] == 0.5 for k in range(len(f))]
 
-    #memberOverlaps = find_overlaps(ActiveMembers[:,[0,1]], Nodes)
-
-    #overlapCon = [(memberOverlaps @ a) >= 0.05]
-
     # Solving problem
     print("optimizing")
-    prob = cvx.Problem(obj, sumCon + equilibCon + coneConFlat + ActveMCon)
-    #prob = cvx.Problem(obj, sumCon + equilibCon + coneConFlat + overlapCon)
+    prob = cvx.Problem(obj, sumCon + equilibCon + coneConFlat)
     volume = prob.solve(cvx.MOSEK, verbose=False)
 
     # getting solved values
+    print("getting results")
     deformations = np.array([equilibCon[k].dual_value for k in range(len(f))])
     areas = a.value
     forces = np.array([q[k].value for k in range(len(f))])
 
     return volume, areas, forces, deformations
-
-# Check dual (kinematic) violation
-def stopViolation(Nodes, Members, deformations):
-    """
-    findes the members that are inactive but should be and makes them active. If there is none,
-    return true to end the optimization
-
-    :param Nodes: Array of nodes
-    :param Members: Array of members: [node 1 index, node 2 index, length, Active Member Boolean]
-    :param deformations: Array of deformations
-    :return: If the program is done optimizing
-    """
-
-    # check only inactive members for efficiency
-    InactiveMemberIndices = np.where(Members[:, 3] == False)[0]
-
-    # if all members active terminate process
-    if len(InactiveMemberIndices) == 0: return True
-
-    InactiveMembers = Members[InactiveMemberIndices]
-    MemberLengths = InactiveMembers[:, 2]
-    B = calcBi(Nodes, InactiveMembers)  # un-reduced version
-
-    #Values >1 violate
-    violation = np.zeros(len(InactiveMembers))
-    for k, deformation in enumerate(deformations):  # Calculate per-load-case
-        gk = B.dot(deformation)
-        violation += [0.5 * gk[i] ** 2 / (MemberLengths[i] ** 2) for i in range(len(InactiveMembers))]
-
-    ViolatedInactiveMemberIndices = np.where(violation > 1.0001)[0]
-
-    # indices of most violated elements within ViolatedInactiveMemberIndices
-    SortedViolatedInactiveMemberIndices = np.flipud(np.argsort(violation[ViolatedInactiveMemberIndices]))
-
-    # number of elements to be added, max 30% of current size
-    numMembersToAdd = ceil(min(float(len(SortedViolatedInactiveMemberIndices)), (len(Members) - len(InactiveMembers)) * 0.3))
-
-    for i in range(numMembersToAdd):
-        Members[InactiveMemberIndices[ViolatedInactiveMemberIndices[SortedViolatedInactiveMemberIndices[i]]]][3] = True
-
-    print('        adding', numMembersToAdd, ' of ', len(ViolatedInactiveMemberIndices), ' violated elements')
-
-    # if no added elements, then terminate process
-    return numMembersToAdd == 0
 
 def plotTruss(Nodes, ActiveMembers, a, threshold):
     """
@@ -442,41 +226,6 @@ def calcBi(Nodes, Members, dof=None):
     c = np.concatenate((np.arange(m), np.arange(m), np.arange(m), np.arange(m)))
 
     return sparse.coo_matrix((v, (c, r)), shape=(m, len(Nodes) * 2))
-
-
-def find_overlaps(members, Nodes):
-    overlaps = []
-
-    def get_orientation(p, q, r):
-        val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
-        return 0 if val == 0 else (1 if val > 0 else 2)
-
-    def on_segment(p, q, r):
-        return min(p[0], r[0]) <= q[0] <= max(p[0], r[0]) and \
-            min(p[1], r[1]) <= q[1] <= max(p[1], r[1])
-
-    def do_intersect(s1, s2):
-        p1, q1 = Nodes[int(s1[0])], Nodes[int(s1[1])]
-        p2, q2 = Nodes[int(s2[0])], Nodes[int(s2[1])]
-        o1, o2 = get_orientation(p1, q1, p2), get_orientation(p1, q1, q2)
-        o3, o4 = get_orientation(p2, q2, p1), get_orientation(p2, q2, q1)
-
-        if o1 != o2 and o3 != o4: return True
-        if o1 == 0 and on_segment(p1, p2, q1): return True
-        if o2 == 0 and on_segment(p1, q2, q1): return True
-        if o3 == 0 and on_segment(p2, p1, q2): return True
-        if o4 == 0 and on_segment(p2, q1, q2): return True
-        return False
-
-    overlaps = np.zeros((len(members), len(members)))
-
-    for i in range(len(members)):
-        for j in range(len(members)):
-            if i != j and do_intersect(members[i], members[j]):
-                overlaps[i,j] = 1
-                overlaps[j,i] = 1
-    return overlaps
-
 
 def is_on_line_segment(points, p1, p2, tolerance=1e-6):
     """
@@ -564,80 +313,118 @@ def sort_nodes_along_line(nodes, start_point, end_point):
 
     return sorted_nodes
 
-def constructLoadCases(loadCasses, maxLength, nodes):
+def getNodesOnSegment(nodes,p1, p2):
+    p1 = np.array(p1)
+    p2 = np.array(p2)
 
-    disLoadCasses = []
+    nodesOnSegment = nodes[is_on_line_segment(nodes, p1, p2)]
+    nodesOnSegment = sort_nodes_along_line(nodesOnSegment, p1, p2)
+    nodesOnSegment = np.unique(nodesOnSegment, axis=0)
 
-    for i, loadCase in enumerate(loadCasses):
-        disLoadCasse = []
-        for j, load in enumerate(loadCase):
-            if load[4] is not None and not math.isnan(float(load[4])):
-                print(load[4])
-                disLoadCasse.append([load[4], load[5], load[6], load[7], load[8], load[9]])
-        disLoadCasses.append(disLoadCasse)
+    return nodesOnSegment
 
-    disLoadCassesSplit = []
-    for i, disLoadCasse in enumerate(disLoadCasses):
-        disLoadCasseSplit = []
-        for j, disLoad in enumerate(disLoadCasse):
-            p1 = np.array([disLoad[0], disLoad[1]])
-            p2 = np.array([disLoad[2], disLoad[3]])
-            nodes = np.array(nodes)
-            nodesOnSegment = nodes[is_on_line_segment(nodes, p1, p2)]
 
-            nodesOnSegment = sort_nodes_along_line(nodesOnSegment, p1, p2)
-            nodesOnSegment = np.unique(nodesOnSegment, axis=0)
+def constructLoadCases(loadCasses, maxLength, nodes, supports):
+    nodes = np.array(nodes)
+    #print(loadCasses)
 
-            PosibleConbinations = []
-            n = len(nodesOnSegment)
+    #TODO ONLY FIST LODE CASE ACTIVE
+    loads = loadCasses[0]
 
-            # Backtracking to find subsets of intervals that cover the range
-            def backtrack(start_idx, current_combination):
-                if start_idx == n - 1:
-                    PosibleConbinations.append(list(current_combination))
-                    return
+    disLoads = []
+    for i, load in enumerate(loads):
+        if load[4] is not None and not math.isnan(float(load[4])):
+            disLoads.append([load[4], load[5], load[6], load[7], load[8], load[9]])
 
-                for end_idx in range(start_idx + 1, n):
+    # disLoads: list of loads, loads: [x1,y1, x2,y2, fx,fy]
+    #print("disLoads: ", disLoads)
 
-                    length = np.linalg.norm(nodesOnSegment[start_idx] - nodesOnSegment[end_idx])
+    posibleCombinationsOverall = []
+    for i, load in enumerate(disLoads):
+        p1, p2 = [load[0], load[1]], [load[2], load[3]]
 
-                    if length <= maxLength:
-                        interval = (nodesOnSegment[start_idx], nodesOnSegment[end_idx], disLoad[4], disLoad[5])
-                        backtrack(end_idx, current_combination + [interval])
+        nodesOnSegment = getNodesOnSegment(nodes,p1, p2)
 
-            backtrack(0, [])
-            disLoadCasseSplit.append(PosibleConbinations[0])
-        disLoadCassesSplit.append(list(itertools.product(*disLoadCasseSplit)))
-    disLoadCassesSplit = list(itertools.product(*disLoadCassesSplit))
+        posibleCombinationsPerDisLoad = []
+        n = len(nodesOnSegment)
 
-    StructureCases = [None] * len(disLoadCassesSplit[0])
-    for i, disLoadCasseSplit in enumerate(disLoadCassesSplit):
+        # Backtracking to find subsets of intervals that cover the range
+        def backtrack(start_idx, current_combination):
+            if start_idx == n - 1:
+                posibleCombinationsPerDisLoad.append(list(current_combination))
+                return
 
-        for j, disLoadCaseLayout in enumerate(disLoadCasseSplit):
+            for end_idx in range(start_idx + 1, n):
+                if np.linalg.norm(nodesOnSegment[start_idx] - nodesOnSegment[end_idx]) <= maxLength:
+                    interval = (nodesOnSegment[start_idx], nodesOnSegment[end_idx], load[4], load[5])
+                    backtrack(end_idx, current_combination + [interval])
 
-            if i == 0:
-                StructureCases[j] = [None] * len(disLoadCassesSplit)
+        backtrack(0, [])
 
-            loads = []
-            for k, disLoadSegment in enumerate(disLoadCaseLayout):
-                length = math.dist(disLoadSegment[0], disLoadSegment[1])
-                Rx, Ry = disLoadSegment[2] * length / 2, disLoadSegment[3] * length / 2
-                loads.append([disLoadSegment[0][0], disLoadSegment[0][1], Rx, Ry])
-                loads.append([disLoadSegment[1][0], disLoadSegment[1][1], Rx, Ry])
+        # posible combinations: list of structure layouts, Structure layouts: list of loads, loads: [[x1,y1], [x2,y2], fx,fy]
+        #print("posibleCombinationsPerDisLoad: ", posibleCombinationsPerDisLoad)
+        posibleCombinationsOverall.append(posibleCombinationsPerDisLoad)
 
-            StructureCases[j][i] = loads
+    # combining posible structure layouts for each distributed load
+    posibleCombinationsOverall = list(itertools.product(*posibleCombinationsOverall))
+    for i, posibleCombinationIn in enumerate(posibleCombinationsOverall):
+        p = []
+        for newloads in posibleCombinationIn:
+            for newload in newloads:
+                p.append(newload)
+        posibleCombinationsOverall[i] = p
 
-    for StructureCase in StructureCases:
-        for i, loadCase in enumerate(loadCasses):
-            for load in loadCase:
-                if load[0] is not None and not math.isnan(float(load[0])):
-                    StructureCase[i] = StructureCase[i] + [[load[0], load[1], load[2], load[3]]]
+    # posibleCombinationsOverall: list of structure layouts, Structure layouts: list of loads, loads: [[x1,y1], [x2,y2], fx,fy]
+    #print("posibleCombinationsOverall: ", posibleCombinationsOverall)
 
-    return StructureCases
+    # converting distributed loads into point loads
+    posibleStructures = []
+    for i, disLoads in enumerate(posibleCombinationsOverall):
+        newloads = []
+        for j, disLoad in enumerate(disLoads):
+            length = math.dist(disLoad[0], disLoad[1])
+            Rx, Ry = disLoad[2] * length / 2, disLoad[3] * length / 2
+            newloads.append([float(disLoad[0][0]), float(disLoad[0][1]), Rx, Ry])
+            newloads.append([float(disLoad[1][0]), float(disLoad[1][1]), Rx, Ry])
+        posibleStructures.append(newloads)
+
+    #print("posibleStructures 1: ", posibleStructures)
+
+    # adding point loads
+    for i, newloads in enumerate(posibleStructures):
+        for load in loads:
+            if load[0] is not None and not math.isnan(float(load[0])):
+                posibleStructures[i] = posibleStructures[i] + [[load[0], load[1], load[2], load[3]]]
+
+    #print("posibleStructures 2: ", posibleStructures)
+
+    for i, loads in enumerate(posibleStructures):
+        newLoads = []
+        for load in loads:
+            loadFound = False
+            for newLoad in newLoads:
+                if float(load[0]) == float(newLoad[0]) and float(load[1]) == float(newLoad[1]):
+                    newLoad[2] += load[2]
+                    newLoad[3] += load[3]
+                    loadFound = True
+                    break
+
+            if not loadFound:
+                for support in supports:
+                    if float(support[0]) == float(load[0]) and float(support[1]) == float(load[1]):
+                        loadFound = True
+
+            if not loadFound:
+                newLoads.append(load)
+        posibleStructures[i] = [newLoads] # TODO brakets added as only one load case is posible curently
+
+    #print("posibleStructures 3: ", posibleStructures)
+
+    return posibleStructures
 
 def OptimizeTruss(zoneNodes, loadCasses, supports, nodeSpasing =None, nodes = None, maxLength = None):
 
-    maxLength = 12
+    maxLength = 42
 
     start = time()
 
@@ -648,60 +435,25 @@ def OptimizeTruss(zoneNodes, loadCasses, supports, nodeSpasing =None, nodes = No
     else:
         Nodes = np.array(nodes)
 
-    StructureCases = constructLoadCases(loadCasses, maxLength, nodes)
+    StructureCases = constructLoadCases(loadCasses, maxLength, nodes, supports)
 
     Members = createInitialStructure(Nodes, zone)
     #plotTruss(Nodes, Members, np.ones((len(Members))) * 30, 0)
     for loadCasses in StructureCases:
         if loadCasses is not None:
+            #print(loadCasses)
 
             f, dof = assignLoadsAndSupports(Nodes, loadCasses, supports)
             vol, a, q, u = solveOptimumProblem(Nodes, Members, f, dof)
-
             if a is not None:
+                #print("Solved")
                 plotTruss(Nodes, Members, a, max(a) * 1e-3)
             else:
                 print("Truss Is not stable")
 
         else:
             print("No Load Case Found")
-
     plt.show()
+    print("finished")
+    print("Time taken: ", time() - start)
 
-    #
-    # # Load and support conditions
-    # f, dof = assignLoadsAndSupports(Nodes, loadCasses, supports)
-    #
-    # # Create the initial structure
-    # Members = createInitialStructure(Nodes, zone)
-    #
-    # print('Nodes: %d Members: %d' % (len(Nodes), len(Members)))
-    #
-    # plotTruss(Nodes, Members, np.ones((len(Members))) * 30, 0)
-    # vol, a, q, u = solveOptimumProblem(Nodes, Members, f, dof)
-    # plotTruss(Nodes, Members, a, max(a) * 1e-3)
-    #
-    # # Start the main member adding loop
-    # itr, vol, ActiveMembers, a, q = 0, 0, 0, 0, 0
-    # for itr in range(1, 5):
-    #
-    #     Members = simplify(Nodes, Members, f, dof)
-    #
-    #     ActiveMembers = Members[Members[:, 3] == True]# Only take members that are active
-    #
-    #     vol, a, q, u = solveOptimumProblem(Nodes, ActiveMembers, f, dof)
-    #
-    #     print("Itr: %d, volume: %f, active members: %d" % (itr, vol, len(ActiveMembers)))
-    #
-    #     plotTruss(Nodes, ActiveMembers, a, max(a) * 1e-3)# plot interation for truss
-    #     #plotTruss(Nodes, ActiveMembers, np.ones((len(a)))*30, 0)
-    #
-    #     if stopViolation(Nodes, Members, u):
-    #         break  # if no elements are added, terminate process
-    #
-    # end = time()
-    # print('Time taken ', end - start)
-    #
-    # plotTruss(Nodes, ActiveMembers, a, max(a) * 1e-3)
-    #
-    # return [vol, a, end - start, itr, len(ActiveMembers), len(Members)]
