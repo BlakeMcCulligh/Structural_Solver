@@ -159,9 +159,9 @@ def lambda_cm(Lm, rm, Fy, E, Nm):
     return Lambda_cm
 
 def ifDiplacementConstraintCritical():
-
+    Nd =1
     for i in range(Nd):
-        Aip[i]*()
+        a=1
 
 def legrangeMultiplyer(Nac, ujk, W):
 
@@ -169,9 +169,7 @@ def legrangeMultiplyer(Nac, ujk, W):
     for c in range(Nac):
         lambda_jk += W/ujk
 
-    gijk =
 
-    -v_imj
 
 
 
