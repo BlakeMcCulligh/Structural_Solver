@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point, LineString, Polygon
 from time import time
 
-from CrossSectonOptimization.Truss.optimize import OptimizeTrussCrossSections
+from CrossSectionOptimization.Truss.optimize import OptimizeTrussCrossSections
 
 def createNodeGrid(zone, nodeSpasing):
     """

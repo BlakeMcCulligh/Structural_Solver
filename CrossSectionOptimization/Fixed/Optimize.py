@@ -1,6 +1,10 @@
 import numpy as np
+from scipy.optimize import minimize
 
-from CrossSectonOptimization.Fixed.Optimize import DMO
+from CrossSectionOptimization.Fixed.CrossSectionCatalog import Catalog, CrossSection
+#from CrossSectionOptimization.Fixed.SolveFrame import FrameSolver
+from CrossSectionOptimization.Fixed.Structure import structure
+
 
 
 # 2D frame
@@ -89,3 +93,95 @@ class FrameSolver:
         U[free] = np.linalg.solve(K[np.ix_(free, free)], F[free])
 
         return K, U, F
+
+
+
+
+
+
+
+
+
+
+
+
+class DMO:
+    @staticmethod
+    def simp(x, p):
+        return x**p
+
+    @staticmethod
+    def simp_deriv(x, p):
+        return p * x**(p - 1)
+
+    @staticmethod
+    def ramp(x, r):
+        return x / (1 + r * (1 - x))
+
+def mass(x, model, catalog, seq):
+    m = 0.0
+    for j, member in enumerate(model.members):
+        L = member.length(model.nodes)
+        for i, sec in enumerate(catalog.sections):
+            w = DMO.ramp(x[j, i], seq)
+            m += w * sec.rho * sec.A * L
+    return m
+
+class FrameOptimizer:
+    def __init__(self, model, catalog, alpha=0.3):
+        self.model = model
+        self.catalog = catalog
+        self.alpha = alpha
+        self.fem = FrameSolver(model, catalog)
+
+    def objective(self, x_flat):
+        x = x_flat.reshape(len(self.model.members), self.catalog.n)
+        K, U, F = self.fem.solve(x, p=2)
+        C = F @ U
+        m = mass(x, self.model, self.catalog, seq=2)
+        return self.alpha * C + (1 - self.alpha) * m
+
+    def optimize(self):
+        n_m = len(self.model.members)
+        n_c = self.catalog.n
+
+        x0 = np.ones(n_m * n_c) / n_c
+
+        cons = {
+            "type": "eq",
+            "fun": lambda x: np.sum(
+                x.reshape(n_m, n_c), axis=1
+            ) - 1.0
+        }
+
+        res = minimize(
+            self.objective,
+            x0,
+            method="SLSQP",
+            constraints=[cons],
+            options={"ftol": 1e-6, "disp": True}
+        )
+
+        return res
+
+# testing
+model = structure()
+
+n0 = model.add_node(0, 0, fixed=(True, True, True))
+n1 = model.add_node(4, 0)
+n2 = model.add_node(4, 3)
+
+model.add_member(n0, n1)
+model.add_member(n1, n2)
+
+model.add_load(n2, fy=-10_000)
+
+catalog = Catalog([
+    CrossSection(A=0.002, I=8e-6, rho=7850, sigma_y=235e6),
+    CrossSection(A=0.004, I=3e-5, rho=7850, sigma_y=235e6),
+])
+
+opt = FrameOptimizer(model, catalog, alpha=0.4)
+result = opt.optimize()
+
+print(result.x.reshape(len(model.members), catalog.n))
