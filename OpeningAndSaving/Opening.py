@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from TopologyOptimization.__main__ import OptimizeTruss
+from TopologyOptimization.Truss.optimize import OptimizeTruss
 from CrossSectionOptimization.Truss.optimize import main
 
 def openTrussTopologyOptimizationExcel(filePath):
@@ -39,7 +39,7 @@ def openTrussTopologyOptimizationExcel(filePath):
     Nodes = np.array(Nodes).T.tolist()
     Supports = np.array(Supports).T.tolist()
 
-    OptimizeTruss(Boundary, LoadCasses, Supports, nodes = Nodes)
+    OptimizeTruss(filePath, Boundary, LoadCasses, Supports, nodes = Nodes)
 
 def openTrussCrossSectionOptimizationExcel(filePath):
     Members_df = pd.read_excel(filePath, sheet_name='Members')
@@ -69,7 +69,9 @@ def openTrussCrossSectionOptimizationExcel(filePath):
     members = np.array(Members).T.tolist()
     supports = np.array(Supports).T.tolist()
 
-    main(nodes, members, loadCasses, supports)
+    main(filePath, nodes, members, loadCasses, supports)
+
+
 
 
 

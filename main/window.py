@@ -32,7 +32,7 @@ class MainWindow(tk.Frame):
         open_menu = tk.Menu(menubar, tearoff="off")
         open_menu.add_command(label='Truss Topology Optimization', command=self.openTrussTopologyOptimization)
         open_menu.add_command(label='Truss Cross-Section Optimization', command=self.openTrussCrossSectionOptimization)
-        menubar.add_cascade(label="Open", menu=open_menu)
+        menubar.add_cascade(label="Analysis Excel File", menu=open_menu)
 
     def closeProgram(self):
         self.root.destroy()

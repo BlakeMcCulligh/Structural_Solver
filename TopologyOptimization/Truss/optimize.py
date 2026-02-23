@@ -8,6 +8,7 @@ from shapely.geometry import Point, LineString, Polygon
 from time import time
 
 from CrossSectionOptimization.Truss.optimize import OptimizeTrussCrossSections
+from OpeningAndSaving.Saving import saveTrussTopologyOptimizationExcel
 
 def createNodeGrid(zone, nodeSpasing):
     """
@@ -276,7 +277,7 @@ def constructLoadCases(loadCasses, maxLength, nodes, supports):
 
     return posibleStructures
 
-def OptimizeTruss(zoneNodes, loadCasses, supports, nodeSpasing =None, nodes = None, maxLength = None):
+def OptimizeTruss(filePath, zoneNodes, loadCasses, supports, nodeSpasing =None, nodes = None, maxLength = None):
 
     maxLength = 42
 
@@ -293,12 +294,31 @@ def OptimizeTruss(zoneNodes, loadCasses, supports, nodeSpasing =None, nodes = No
 
     Members = createInitialStructure(Nodes, zone)
     #plotTruss(Nodes, Members, np.ones((len(Members))) * 30, 0)
+    Vol = []
+    A = []
+    Q = []
+    U = []
     for loadCasses in StructureCases:
         if loadCasses is not None:
-            OptimizeTrussCrossSections(Nodes, Members, loadCasses, supports)
+            vol, a, q, u = OptimizeTrussCrossSections(Nodes, Members, loadCasses, supports)
+            Vol.append(vol)
+            A.append(a)
+            Q.append(q)
+            U.append(u)
         else:
             print("No Load Case Found")
     plt.show()
     print("finished")
     print("Time taken: ", time() - start)
+
+    BestIndex = Vol.index(min(Vol))
+
+    loadCasses = StructureCases[BestIndex]
+    areas = A[BestIndex]
+    deflections = U[BestIndex]
+    forces = Q[BestIndex]
+    volume = Vol[BestIndex]
+
+
+    saveTrussTopologyOptimizationExcel(filePath, nodes, Members, loadCasses, supports, areas, deflections, forces, volume)
 

@@ -3,6 +3,9 @@ import cvxpy as cvx
 import matplotlib.pyplot as plt
 from scipy import sparse
 
+from OpeningAndSaving.Saving import saveTrussCrossSectionOptimizationExcel
+
+
 def assignLoadsAndSupports(Nodes, loadCasses, supports):
     """
     Makes the vectors for the forces and deflections to be used in sitffness matrices
@@ -171,7 +174,7 @@ def OptimizeTrussCrossSections(Nodes, Members, loadCasses, supports):
         print("Truss Is not stable")
         return None, None, None, None
 
-def main(nodes, members, loadCasses, supports):
+def main(filePath, nodes, members, loadCasses, supports):
     """
         Optimizes the cross-sections of a truss
 
@@ -194,3 +197,7 @@ def main(nodes, members, loadCasses, supports):
     print("A: ", A)
     print("q: ", q)
     print("u: ", u)
+
+    saveTrussCrossSectionOptimizationExcel(filePath, nodes, members, loadCasses, supports, A, u, q, vol)
+
+
