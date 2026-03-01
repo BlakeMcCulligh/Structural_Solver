@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-
 def saveTrussCrossSectionOptimizationExcel(filePath, nodes, members, loadCasses, supports, areas, deflections, forces, volume):
 
     Nodes_df = convertNodesToDF(nodes, deflections)
