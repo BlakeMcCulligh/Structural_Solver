@@ -29,7 +29,7 @@ def MemberStiffness(E, A, I, x1, y1, x2, y2):
 
 def assembleGlobalStiffnessMatrix(K_DMO, nodes, members):
     total_dof = len(nodes) * 3
-    K_global = np.zeros((total_dof, total_dof))
+    K_global = np.zeros((total_dof, total_dof)).tolist()
 
     for i, m in enumerate(members):
 
@@ -39,8 +39,8 @@ def assembleGlobalStiffnessMatrix(K_DMO, nodes, members):
 
         for j in range(6):
             for k in range(6):
-                global_i = global_dofs[j]
-                global_j = global_dofs[k]
+                global_i = int(global_dofs[j])
+                global_j = int(global_dofs[k])
                 K_global[global_i, global_j] += K_DMO[i][j, k]
 
     return K_global

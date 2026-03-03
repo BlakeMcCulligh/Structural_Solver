@@ -3,7 +3,8 @@ import tkinter as tk
 from tkinter import filedialog
 
 from CrossSectionAnalysis.main_CrossSectionAnalysis import getSectionProperties
-from OpeningAndSaving.Opening import openTrussTopologyOptimizationExcel, openTrussCrossSectionOptimizationExcel
+from OpeningAndSaving.Opening import openTrussTopologyOptimizationExcel, openTrussCrossSectionOptimizationExcel, \
+    openFrameCrossSectionOptimization
 from Sketch.main import startSketch
 
 
@@ -32,6 +33,7 @@ class MainWindow(tk.Frame):
         open_menu = tk.Menu(menubar, tearoff="off")
         open_menu.add_command(label='Truss Topology Optimization', command=self.openTrussTopologyOptimization)
         open_menu.add_command(label='Truss Cross-Section Optimization', command=self.openTrussCrossSectionOptimization)
+        open_menu.add_command(label='Frame Cross-Section Optimization', command=self.openFrameCrossSectionOptimization)
         menubar.add_cascade(label="Analysis Excel File", menu=open_menu)
 
     def closeProgram(self):
@@ -64,10 +66,16 @@ class MainWindow(tk.Frame):
         selected_file = select_file_gui(fileTypes)
         openTrussTopologyOptimizationExcel(selected_file)
 
-    def openTrussCrossSectionOptimization(selfself):
+    def openTrussCrossSectionOptimization(self):
         fileTypes = [("Excel Files", "*.xlsx")]
         selected_file = select_file_gui(fileTypes)
         openTrussCrossSectionOptimizationExcel(selected_file)
+
+    def openFrameCrossSectionOptimization(self):
+        fileTypes = [("Excel Files", "*.xlsx")]
+        selected_file = select_file_gui(fileTypes)
+        openFrameCrossSectionOptimization(selected_file)
+
 
 
 def select_file_gui(file_Types):

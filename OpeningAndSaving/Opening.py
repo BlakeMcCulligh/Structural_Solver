@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 
 from TopologyOptimization.Truss.optimize import OptimizeTruss
-from CrossSectionOptimization.Truss.optimize import main
+from CrossSectionOptimization.Truss.optimize import TrussMain
+from CrossSectionOptimization.Frame.optimize import FrameMain
 
 def openTrussTopologyOptimizationExcel(filePath):
     Boundary_df = pd.read_excel(filePath, sheet_name='Boundary')
@@ -69,9 +70,41 @@ def openTrussCrossSectionOptimizationExcel(filePath):
     members = np.array(Members).T.tolist()
     supports = np.array(Supports).T.tolist()
 
-    main(filePath, nodes, members, loadCasses, supports)
+    TrussMain(filePath, nodes, members, loadCasses, supports)
 
+def openFrameCrossSectionOptimization(filePath):
+    print("Opening")
+    Members_df = pd.read_excel(filePath, sheet_name='Members')
+    Nodes_df = pd.read_excel(filePath, sheet_name='Nodes')
 
+    Loads_df = pd.read_excel(filePath, sheet_name='Loads')
+    Supports_df = pd.read_excel(filePath, sheet_name='Supports')
 
+    CrossSections_df = pd.read_excel(filePath, sheet_name='CrossSections')
 
+    Other_df = pd.read_excel(filePath, sheet_name='Other')
 
+    Nodes = [Nodes_df["X"].tolist(), Nodes_df["Y"].tolist()]
+    Members = [Members_df["Node1"].tolist(), Members_df["Node2"].tolist()]
+    Supports = [Supports_df["Node"].tolist(), Supports_df["Support x"].tolist(),
+                Supports_df["Support y"].tolist(), Supports_df["Support m"].tolist()]
+    Loads = [Loads_df["Node"].tolist(), Loads_df["x"].tolist(), Loads_df["y"].tolist(), Loads_df["m"].tolist()]
+
+    CrossSectionNames = CrossSections_df["Name"].tolist()
+    CrossSections = [CrossSections_df["A"].tolist(), CrossSections_df["I"].tolist(), CrossSections_df["Density"].tolist()]
+
+    E = Other_df["E"].tolist()[0]
+    A_0 = Other_df["Small A"].tolist()[0]
+    I_0 = Other_df["Small I"].tolist()[0]
+
+    Nodes = np.array(Nodes).T
+    Members = np.array(Members).T
+    Supports = np.array(Supports).T
+    Loads = np.array(Loads).T
+    CrossSections = np.array(CrossSections).T
+    CrossSectionNames = np.array(CrossSectionNames)
+
+    Length = ((Nodes[Members[:,1]][:,0] - Nodes[Members[:,0]][:,0])**2+(Nodes[Members[:,1]][:,1] - Nodes[Members[:,0]][:,1])**2)**0.5
+    Members = np.column_stack((Members, Length))
+
+    FrameMain(Nodes, Members, Loads, Supports, CrossSections, CrossSectionNames, E, A_0, I_0, 0)
