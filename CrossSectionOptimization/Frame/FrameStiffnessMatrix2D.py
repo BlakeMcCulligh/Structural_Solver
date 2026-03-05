@@ -64,6 +64,8 @@ def solveGlobalStiffnessMatrix(K, R, nNodes, supports):
         if support[3] == 1:
             fixed_dofs.append(support[0] * 3 + 2)
 
+
+
     free_dofs = list(set(range(nNodes*3)) - set(fixed_dofs))
     Kff = K[np.ix_(free_dofs, free_dofs)]
     Df = np.linalg.solve(Kff, R[free_dofs])
