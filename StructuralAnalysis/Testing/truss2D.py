@@ -83,17 +83,17 @@ class Truss2D:
     def calcDegressOfFreedom(self):
         self.fixedDOF = []
         for support in self.supports:
-            if support[1] == 1:
+            if support[1]:
                 self.fixedDOF.append(support[0] * 2)
-            if support[2] == 1:
+            if support[2]:
                 self.fixedDOF.append(support[0] * 2 + 1)
         self.freeDOF = list(set(range(len(self.nodes) * 2)) - set(self.fixedDOF))
 
     def calcForces(self):
-        F = np.zeros(len(self.nodes) * 3)
+        F = np.zeros(len(self.nodes) * 2)
         for load in self.loads:
-            F[load[0] * 3] = load[1]
-            F[load[0] * 3 + 1] = load[2]
+            F[load[0] * 2] = load[1]
+            F[load[0] * 2 + 1] = load[2]
         self.F = F
 
     def calcDeflections(self):
@@ -129,12 +129,12 @@ class Truss2D:
         self.sigma = self.F_m_internal / self.A
 
 Nodes = [[0,0],[1,0],[1,1],[0,1]]
-Members = [[0,1],[1,2],[2,3],[3,0],[0,2],[1,3]]
+Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
 Loads = [[2,5,0],[3,0,2]]
 Supports = [[0,True,True],[1,False,True]]
 
-E_set = [1,1,1,1,1,1]
-A_set = [1,1,1,1,1,1]
+E_set = [1,1,1,1,1]
+A_set = [1,1,1,1,1]
 
 Truss = Truss2D()
 Truss.setGeom(Nodes, Members, Loads, Supports)
@@ -144,3 +144,4 @@ Truss.solveLinear()
 Truss.calcMemberDeflections()
 Truss.calcInternalForces()
 Truss.calcNomalStresses()
+print(Truss.U)
