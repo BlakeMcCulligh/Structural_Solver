@@ -6,6 +6,7 @@ class Truss2D:
         self.members = None # [node 1, node 2]
         self.loads = None # [node, x, y]
         self.supports = None # [node, x, y]
+        self.memberGroup = None
         self.A = None # [A] * length members
         self.E = None # [E] * length members
 
@@ -36,13 +37,19 @@ class Truss2D:
     def setE(self, E):
         self.E = np.array(E)
 
+    def setMemberGroup(self, memberGroup):
+        self.memberGroup = memberGroup
+
     def calcLengths(self):
         dx = self.nodes[self.members[:,1],0] - self.nodes[self.members[:,0],0]
         dy = self.nodes[self.members[:,1],1] - self.nodes[self.members[:,0],1]
         self.L = np.sqrt(dx**2 + dy**2)
 
     def calcLocalStiffnessMatrices(self):
-        Mult = self.A * self.E / self.L
+        A = self.A[self.memberGroup]
+        print(A)
+        E = self.E[self.memberGroup]
+        Mult = A * E / self.L
         MultMatrix = np.array([[1,0,-1,0],
          [0,0,0,0],
          [-1,0,1,0],
@@ -114,34 +121,36 @@ class Truss2D:
         self.calcDeflections()
         self.calcReactions()
 
-    def calcMemberDeflections(self):
-        self.U_m_global = []
-        for i, m in enumerate(self.members):
-            self.U_m_global.append([self.U[m[0] * 2], self.U[m[0] * 2 + 1], self.U[m[1] * 2],
-                               self.U[m[1] * 2 + 1]])
-        self.U_m_local = np.array([self.T[i] @ self.U_m_global[i] for i in range(len(self.members))])
+    # def calcMemberDeflections(self):
+    #     self.U_m_global = []
+    #     for i, m in enumerate(self.members):
+    #         self.U_m_global.append([self.U[m[0] * 2], self.U[m[0] * 2 + 1], self.U[m[1] * 2],
+    #                            self.U[m[1] * 2 + 1]])
+    #     self.U_m_local = np.array([self.T[i] @ self.U_m_global[i] for i in range(len(self.members))])
+    #
+    # def calcInternalForces(self):
+    #     self.F_m_internal = np.array([k @ u for k, u in zip(self.K_m_local, self.U_m_local)])
+    #     self.F_m_internal = self.F_m_internal[:,0]
+    #
+    # def calcNomalStresses(self):
+    #     self.sigma = self.F_m_internal / self.A
 
-    def calcInternalForces(self):
-        self.F_m_internal = np.array([k @ u for k, u in zip(self.K_m_local, self.U_m_local)])
-        self.F_m_internal = self.F_m_internal[:,0]
-
-    def calcNomalStresses(self):
-        self.sigma = self.F_m_internal / self.A
-
-Nodes = [[0,0],[1,0],[1,1],[0,1]]
-Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
-Loads = [[2,5,0],[3,0,2]]
-Supports = [[0,True,True],[1,False,True]]
-
-E_set = [1,1,1,1,1]
-A_set = [1,1,1,1,1]
-
-Truss = Truss2D()
-Truss.setGeom(Nodes, Members, Loads, Supports)
-Truss.setA(A_set)
-Truss.setE(E_set)
-Truss.solveLinear()
-Truss.calcMemberDeflections()
-Truss.calcInternalForces()
-Truss.calcNomalStresses()
-print(Truss.U)
+# Nodes = [[0,0],[1,0],[1,1],[0,1]]
+# Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
+# Loads = [[2,5,0],[3,0,2]]
+# Supports = [[0,True,True],[1,False,True]]
+# MemberGroups_set = [0,0,0,0,0]
+#
+# E_set = [1]
+# A_set = [1]
+#
+# Truss = Truss2D()
+# Truss.setGeom(Nodes, Members, Loads, Supports)
+# Truss.setA(A_set)
+# Truss.setE(E_set)
+# Truss.setMemberGroup(MemberGroups_set)
+# Truss.solveLinear()
+# Truss.calcMemberDeflections()
+# Truss.calcInternalForces()
+# Truss.calcNomalStresses()
+# print(Truss.U)

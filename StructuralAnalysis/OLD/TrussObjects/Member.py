@@ -2,7 +2,7 @@ from math import pi
 
 import numpy as np
 
-from StructuralAnalysis.HelperFuctions import getQubicRoots
+from StructuralAnalysis.OLD.HelperFuctions import getQubicRoots
 
 class Member:
     def __init__(self, nodes, crossSection, material):

@@ -7,6 +7,7 @@ class Frame2D:
         self.loads = None # [node, x, y, m]
         self.supports = None # [node, x, y, m]
         self.releases = None # [node, x_i, y_i, m_i, x_j, y_j, m_j]
+        self.memberGroups = None
         self.A = None # [A] * length members
         self.E = None # [E] * length members
         self.I = None # [I] * length members
@@ -33,6 +34,9 @@ class Frame2D:
         self.supports = np.array(supports)
         self.releases = np.array(releases)
 
+    def setMemberGroups(self, MemberGroups):
+        self.memberGroups = MemberGroups
+
     def setA(self, A):
         self.A = np.array(A)
 
@@ -49,7 +53,11 @@ class Frame2D:
 
     def calcLocalStiffnessMatrices(self):
         self.K_m_local = []
-        for A, E, I, L in zip(self.A, self.E, self.I, self.L):
+        for i in range(len(self.members)):
+            A = self.A[self.memberGroups[i]]
+            E = self.E[self.memberGroups[i]]
+            I = self.I[self.memberGroups[i]]
+            L = self.L[i]
             self.K_m_local.append(np.array([
                 [A * E / L, 0, 0, -A * E / L, 0, 0],
                 [0, 12 * E * I / L ** 3, 6 * E * I / L ** 2, 0, -12 * E * I / L ** 3, 6 * E * I / L ** 2],
@@ -158,32 +166,33 @@ class Frame2D:
         self.calcDeflections()
         self.calcReactions()
 
-    def calcMemberDeflections(self):
-        self.U_m_global = []
-        for i, m in enumerate(self.members):
-            self.U_m_global.append([self.U[m[0] * 2], self.U[m[0] * 2 + 1], self.U[m[0] * 2 + 2], self.U[m[1] * 2],
-                               self.U[m[1] * 2 + 1], self.U[m[1] * 2 + 2]])
-        self.U_m_local = np.array([self.T[i] @ self.U_m_global[i] for i in range(len(self.members))])
+    # def calcMemberDeflections(self):
+    #     self.U_m_global = []
+    #     for i, m in enumerate(self.members):
+    #         self.U_m_global.append([self.U[m[0] * 2], self.U[m[0] * 2 + 1], self.U[m[0] * 2 + 2], self.U[m[1] * 2],
+    #                            self.U[m[1] * 2 + 1], self.U[m[1] * 2 + 2]])
+    #     self.U_m_local = np.array([self.T[i] @ self.U_m_global[i] for i in range(len(self.members))])
+    #
+    # def calcInternalForces(self):
+    #     self.F_m_internal = np.array([k @ u for k, u in zip(self.K_m_local, self.U_m_local)])
 
-    def calcInternalForces(self):
-        self.F_m_internal = np.array([k @ u for k, u in zip(self.K_m_local, self.U_m_local)])
-
-Nodes = [[0,0],[1,0],[1,1],[0,1]]
-Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
-Loads = [[2,5,0,0],[3,0,2,0]]
-Supports = [[0,True,True,False],[1,False,True,False]]
-Releases = [[0,0,0,0,0,0,0],[1,0,0,1,0,0,1],[2,0,0,0,0,0,0],[3,0,0,1,0,0,1],[4,0,0,1,0,0,1]]
-
-E_set = [1,1,1,1,1]
-A_set = [1,1,1,1,1]
-I_set = [1,1,1,1,1]
-
-Frame = Frame2D()
-Frame.setGeom(Nodes, Members, Loads, Supports, Releases)
-Frame.setA(A_set)
-Frame.setE(E_set)
-Frame.setI(I_set)
-Frame.solveLinear()
-Frame.calcMemberDeflections()
-Frame.calcInternalForces()
-print(Frame.U)
+# Nodes = [[0,0],[1,0],[1,1],[0,1]]
+# Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
+# Loads = [[2,5,0,0],[3,0,2,0]]
+# Supports = [[0,True,True,False],[1,False,True,False]]
+# Releases = [[0,0,0,0,0,0,0],[1,0,0,1,0,0,1],[2,0,0,0,0,0,0],[3,0,0,1,0,0,1],[4,0,0,1,0,0,1]]
+# MemberGroups_set = [0,0,0,0,0]
+# E_set = [1]
+# A_set = [1]
+# I_set = [1]
+#
+# Frame = Frame2D()
+# Frame.setGeom(Nodes, Members, Loads, Supports, Releases)
+# Frame.setA(A_set)
+# Frame.setE(E_set)
+# Frame.setI(I_set)
+# Frame.setMemberGroups(MemberGroups_set)
+# Frame.solveLinear()
+# Frame.calcMemberDeflections()
+# Frame.calcInternalForces()
+# print(Frame.U)

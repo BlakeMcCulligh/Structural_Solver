@@ -1,10 +1,10 @@
 import numpy as np
 
-from StructuralAnalysis.GeneralObjects.CrossSection import CrossSection
-from StructuralAnalysis.GeneralObjects.Material import Material
-from StructuralAnalysis.TrussObjects.LoadCase import LoadCase
-from StructuralAnalysis.TrussObjects.Member import Member
-from StructuralAnalysis.TrussObjects.Node import Node
+from StructuralAnalysis.OLD.GeneralObjects.CrossSection import CrossSection
+from StructuralAnalysis.OLD.GeneralObjects.Material import Material
+from StructuralAnalysis.OLD.TrussObjects.LoadCase import LoadCase
+from StructuralAnalysis.OLD.TrussObjects.Member import Member
+from StructuralAnalysis.OLD.TrussObjects.Node import Node
 
 
 class Truss:
