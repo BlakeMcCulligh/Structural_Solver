@@ -8,8 +8,10 @@ class CrossSection:
 
         self.A = None
         self.E = None
+        self.G = None
         self.I_main = None
         self.I_weak = None
+        self.J = None
 
     def add2DTruss(self, A: float, E: float):
         self.A = A
@@ -24,11 +26,13 @@ class CrossSection:
         self.A = A
         self.E = E
 
-    def add3DFrame(self, A: float, E: float, I_main: float, I_weak: float):
+    def add3DFrame(self, A: float, E: float, G: float, I_main: float, I_weak: float, J: float):
         self.A = A
         self.E = E
+        self.G = G
         self.I_main = I_main
         self.I_weak = I_weak
+        self.J = J
 
     def optAdd3DTruss(self, E: float):
         self.E = E

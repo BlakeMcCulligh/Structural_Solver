@@ -1,12 +1,12 @@
 import numpy as np
 
 from StructuralAnalysis.LinearSolver.frame2DSolver import Frame2D
+from StructuralAnalysis.LinearSolver.frame3DSolver import Frame3D
 from StructuralAnalysis.LinearSolver.truss2DSolver import Truss2D
 from StructuralAnalysis.LinearSolver.truss3DSolver import Truss3D
 from StructuralAnalysis.member import Member
 from StructuralAnalysis.crossSection import CrossSection
 from StructuralAnalysis.node import Node
-
 
 class Structure:
     def __init__(self):
@@ -17,8 +17,6 @@ class Structure:
         self.nodes = []
         self.members = []
         self.crossSections = []
-
-
 
     def setTruss(self):
         self.isTruss = True
@@ -32,9 +30,8 @@ class Structure:
     def addMember(self, nodeIndexs: list, memberGroupIndex: int):
         self.members.append(Member(self.nodes, self.crossSections, self.is3D, self.isTruss, nodeIndexs, memberGroupIndex))
 
-    def addCrossSection(self, Optimize, E, A = None, I = None, I_weak = None):
+    def addCrossSection(self, Optimize, E, A = None, I = None, I_weak = None, G = None, J = None):
         newCrossSection = CrossSection()
-
         if Optimize:
             if self.is3D:
                 if self.isTruss:
@@ -46,20 +43,17 @@ class Structure:
                     newCrossSection.optAdd2DTruss(E)
                 else:
                     newCrossSection.optAdd2DFrame(E)
-
         else:
             if self.is3D:
                 if self.isTruss:
                     newCrossSection.add3DTruss(A, E)
                 else:
-                    newCrossSection.add3DFrame(A, E, I, I_weak)
+                    newCrossSection.add3DFrame(A, E, G, I, I_weak, J)
             else:
                 if self.isTruss:
                     newCrossSection.add2DTruss(A, E)
                 else:
                     newCrossSection.add2DFrame(A, E, I)
-
-
         self.crossSections.append(newCrossSection)
 
     def addSupport(self, nodeIndex: int, support: list):
@@ -130,7 +124,28 @@ class Structure:
                     RELEASES.append([i] + member.relece)
 
             if self.is3D:
-                print("Yet To Be Implemented")
+                A = []
+                E = []
+                G = []
+                J = []
+                Iy = []
+                Iz = []
+                for crossSection in self.crossSections:
+                    A.append(crossSection.A)
+                    E.append(crossSection.E)
+                    G.append(crossSection.G)
+                    J.append(crossSection.J)
+                    Iy.append(crossSection.I_weak)
+                    Iz.append(crossSection.I_main)
+
+                self.solveObject = Frame3D()
+                self.solveObject.setGeom(NODES, MEMBERS, LOADS, SUPPORTS, RELEASES)
+                self.solveObject.setA(A)
+                self.solveObject.setMaterialProperties(E, G)
+                self.solveObject.setStiffnesses(J, Iy, Iz)
+                self.solveObject.setMemberGroups(CROSSSECTIONS)
+                self.solveObject.solveLinear()
+
             else:
                 A = []
                 E = []
@@ -154,25 +169,7 @@ class Structure:
         else:
             print("The structure has not been solved yet.")
 
-
-# Nodes = [[0,0],[1,0],[1,1],[0,1]]
-# Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
-# Loads = [[2,5,0],[3,0,2]]
-# Supports = [[0,True,True],[1,False,True]]
-# MemberGroups_set = [0,0,0,0,0]
-
-# Nodes = [[0,0],[1,0],[1,1],[0,1]]
-# Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
-# Loads = [[2,5,0,0],[3,0,2,0]]
-# Supports = [[0,True,True,False],[1,False,True,False]]
-# Releases = [[0,0,0,0,0,0,0],[1,0,0,1,0,0,1],[2,0,0,0,0,0,0],[3,0,0,1,0,0,1],[4,0,0,1,0,0,1]]
-# MemberGroups_set = [0,0,0,0,0]
-# E_set = [1]
-# A_set = [1]
-# I_set = [1]
-
 S = Structure()
-S.setTruss()
 S.set3D()
 
 S.addNode([0,0,0])
@@ -180,7 +177,7 @@ S.addNode([1,0,0])
 S.addNode([1,1,0])
 S.addNode([0,1,0])
 
-S.addCrossSection(False, 1, 1)
+S.addCrossSection(False, 1, 1, 1, 1, 1, 1)
 
 S.addMember([0,1], 0)
 S.addMember([1,2], 0)
@@ -188,23 +185,15 @@ S.addMember([2,3], 0)
 S.addMember([3,0], 0)
 S.addMember([0,2], 0)
 
-# S.addNodeLoad(2, [5,0])
-# S.addNodeLoad(3, [0,2])
-S.addNodeLoad(2, [5, 0, 0])
-S.addNodeLoad(3, [0, 2, 0])
+S.addNodeLoad(2, [5, 0, 0, 0, 0, 0])
+S.addNodeLoad(3, [0, 2, 0, 0, 0, 0])
 
-# S.addSupport(0, [True,True])
-# S.addSupport(1, [False,True])
-# S.addSupport(0, [True,True, False])
-# S.addSupport(1, [False,True,False])
-S.addSupport(0, [True,True, True])
-S.addSupport(1, [False,True,True])
-S.addSupport(2, [False,False, True])
-S.addSupport(3, [False,False,True])
+S.addSupport(0, [True,True,True,True,False,False])
+S.addSupport(1, [False,True,False,True,False,False])
 
-# S.addRelece(1, [False, False, True, False, False, True])
-# S.addRelece(3, [False, False, True, False, False, True])
-# S.addRelece(4, [False, False, True, False, False, True])
+S.addRelece(1, [0,0,0,0,0,1,0,0,0,0,0,1])
+S.addRelece(3, [0,0,0,0,0,1,0,0,0,0,0,1])
+S.addRelece(4, [0,0,0,0,0,1,0,0,0,0,0,1])
 
 S.solve()
 
