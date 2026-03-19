@@ -18,6 +18,8 @@ class Structure:
         self.members = []
         self.crossSections = []
 
+        self.optimizationResults = None
+
     def setTruss(self):
         self.isTruss = True
 
@@ -30,19 +32,19 @@ class Structure:
     def addMember(self, nodeIndexs: list, memberGroupIndex: int):
         self.members.append(Member(self.nodes, self.crossSections, self.is3D, self.isTruss, nodeIndexs, memberGroupIndex))
 
-    def addCrossSection(self, Optimize, E, A = None, I = None, I_weak = None, G = None, J = None):
+    def addCrossSection(self, Optimize, E, A = None, I = None, I_weak = None, G = None, J = None, memberType = None):
         newCrossSection = CrossSection()
         if Optimize:
             if self.is3D:
                 if self.isTruss:
                     newCrossSection.optAdd3DTruss(E)
                 else:
-                    newCrossSection.optAdd3DFrame(E)
+                    newCrossSection.optAdd3DFrame(E, G, memberType)
             else:
                 if self.isTruss:
                     newCrossSection.optAdd2DTruss(E)
                 else:
-                    newCrossSection.optAdd2DFrame(E)
+                    newCrossSection.optAdd2DFrame(E, memberType)
         else:
             if self.is3D:
                 if self.isTruss:
@@ -65,7 +67,7 @@ class Structure:
     def addRelece(self, memberIndex: int, relece: list):
         self.members[memberIndex].addRelece(relece)
 
-    def solve(self):
+    def assembleGeoLists(self):
         NODES = []
         for node in self.nodes:
             NODES.append(node.cords)
@@ -83,6 +85,11 @@ class Structure:
         for i, node in enumerate(self.nodes):
             if any(node.support):
                 SUPPORTS.append([i] + node.support)
+
+        return NODES, MEMBERS, LOADS, SUPPORTS
+
+    def solve(self):
+        NODES, MEMBERS, LOADS, SUPPORTS = self.assembleGeoLists()
 
         CROSSSECTIONS = []
         for member in self.members:
@@ -163,21 +170,66 @@ class Structure:
                 self.solveObject.setMemberGroups(CROSSSECTIONS)
                 self.solveObject.solveLinear()
 
+    def optimize(self, MinArea: float, MaxArea: float, initalGuess: list):
+        NODES, MEMBERS, LOADS, SUPPORTS = self.assembleGeoLists()
+
+        CROSSSECTIONS = []
+        for member in self.members:
+            CROSSSECTIONS.append(member.crossSectionIndex)
+
+        if self.isTruss:
+            if self.is3D:
+                pass # todo
+            else:
+                E = []
+                for crossSection in self.crossSections:
+                    E.append(crossSection.E)
+
+                self.solveObject = Truss2D()
+                self.solveObject.setGeom(NODES, MEMBERS, LOADS, SUPPORTS)
+                self.solveObject.setE(E)
+                self.solveObject.setMemberGroup(CROSSSECTIONS)
+                self.optimizationResults = self.solveObject.optimize(MinArea, MaxArea, initalGuess)
+
+        else:
+            if self.is3D:
+                pass # todo
+            else:
+                pass # todo
+
+
     def printDeflections(self):
         if self.solveObject is not None:
             print("Defflections: ", self.solveObject.U)
         else:
             print("The structure has not been solved yet.")
 
+    def printOptimizationResults(self):
+        if self.optimizationResults is not None:
+            if self.isTruss:
+                if self.is3D:
+                    pass  # todo
+                else:
+                    print("A: ", self.optimizationResults)
+            else:
+                if self.is3D:
+                    pass  # todo
+                else:
+                    pass  # todo
+        else:
+            print("The structure has not been optimized yet.")
+
+
 S = Structure()
-S.set3D()
+#S.set3D()
+S.setTruss()
 
-S.addNode([0,0,0])
-S.addNode([1,0,0])
-S.addNode([1,1,0])
-S.addNode([0,1,0])
+S.addNode([0,0])
+S.addNode([1,0])
+S.addNode([1,1])
+S.addNode([0,1])
 
-S.addCrossSection(False, 1, 1, 1, 1, 1, 1)
+S.addCrossSection(True, E=1)
 
 S.addMember([0,1], 0)
 S.addMember([1,2], 0)
@@ -185,19 +237,22 @@ S.addMember([2,3], 0)
 S.addMember([3,0], 0)
 S.addMember([0,2], 0)
 
-S.addNodeLoad(2, [5, 0, 0, 0, 0, 0])
-S.addNodeLoad(3, [0, 2, 0, 0, 0, 0])
+S.addNodeLoad(2, [5, 0])
+S.addNodeLoad(3, [0, 2])
 
-S.addSupport(0, [True,True,True,True,False,False])
-S.addSupport(1, [False,True,False,True,False,False])
+S.addSupport(0, [True,True])
+S.addSupport(1, [False,True])
 
-S.addRelece(1, [0,0,0,0,0,1,0,0,0,0,0,1])
-S.addRelece(3, [0,0,0,0,0,1,0,0,0,0,0,1])
-S.addRelece(4, [0,0,0,0,0,1,0,0,0,0,0,1])
+# S.addRelece(1, [0,0,0,0,0,1,0,0,0,0,0,1])
+# S.addRelece(3, [0,0,0,0,0,1,0,0,0,0,0,1])
+# S.addRelece(4, [0,0,0,0,0,1,0,0,0,0,0,1])
 
-S.solve()
+# S.solve()
+#
+# S.printDeflections()
 
-S.printDeflections()
+S.optimize(0.1, 10, [1])
+S.printOptimizationResults()
 
 
 

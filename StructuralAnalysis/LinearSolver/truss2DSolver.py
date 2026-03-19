@@ -1,5 +1,8 @@
 import numpy as np
 
+from CrossSectionOptimization import truss2DOptimizer
+
+
 class Truss2D:
     def __init__(self):
         self.nodes = None # [x,y]
@@ -22,6 +25,7 @@ class Truss2D:
         self.U = None
         self.U_m_global = None
         self.U_m_local = None
+        self.Reactions = None
         self.F_m_internal = None
         self.sigma = None
 
@@ -47,7 +51,6 @@ class Truss2D:
 
     def calcLocalStiffnessMatrices(self):
         A = self.A[self.memberGroup]
-        print(A)
         E = self.E[self.memberGroup]
         Mult = A * E / self.L
         MultMatrix = np.array([[1,0,-1,0],
@@ -110,7 +113,8 @@ class Truss2D:
         self.U[self.freeDOF] = Uf
 
     def calcReactions(self):
-        self.F[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
+        self.Reactions = self.F
+        self.Reactions[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
 
     def solveLinear(self):
         self.calcLengths()
@@ -120,6 +124,27 @@ class Truss2D:
         self.calcForces()
         self.calcDeflections()
         self.calcReactions()
+
+    def optimizeSolve(self, A):
+        self.A = A
+        self.calcLocalStiffnessMatrices()
+        self.calcTransfromLocalToGlobalStiffnessMatrix()
+        self.assembleGlobalStiffnessMatrix()
+        self.calcDeflections()
+
+    def optimize(self, MinArea: float, MaxArea: float, initalGuess: list):
+
+        self.calcLengths()
+        self.calcTransformationMatrices()
+        self.calcDegressOfFreedom()
+        self.calcForces()
+
+        initalGuess = np.array(initalGuess)
+
+        areas = truss2DOptimizer.optimize(self, [MinArea, MaxArea], initalGuess)
+
+        return areas
+
 
     # def calcMemberDeflections(self):
     #     self.U_m_global = []

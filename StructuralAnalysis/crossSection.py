@@ -36,16 +36,15 @@ class CrossSection:
 
     def optAdd3DTruss(self, E: float):
         self.E = E
-        # TODO
 
-    def optAdd3DFrame(self, E: float):
+    def optAdd3DFrame(self, E: float, G: float, memberType: str):
         self.E = E
-        # TODO
+        self.G = G
+        self.memberType = memberType
 
     def optAdd2DTruss(self, E: float):
         self.E = E
-        # TODO
 
-    def optAdd2DFrame(self, E: float):
+    def optAdd2DFrame(self, E: float, memberType: str):
         self.E = E
-        # TODO
+        self.memberType = memberType
