@@ -1,5 +1,8 @@
 import numpy as np
 
+from CrossSectionOptimization import truss3DOptimizer
+
+
 class Truss3D:
     def __init__(self):
         self.nodes = None # [x,y, z]
@@ -130,19 +133,24 @@ class Truss3D:
         self.calcDeflections()
         self.calcReactions()
 
-# Nodes = [[0,0,0],[1,0,0],[1,1,0],[0,1,0]]
-# Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
-# Loads = [[2,5,0,0],[3,0,2,0]]
-# Supports = [[0,True,True,True],[1,False,True,True],[2,False,False,True],[3,False,False,True]]
-# MemberGroups_set = [0,0,0,0,0]
-#
-# E_set = [1]
-# A_set = [1]
-#
-# Truss = Truss3D()
-# Truss.setGeom(Nodes, Members, Loads, Supports)
-# Truss.setA(A_set)
-# Truss.setE(E_set)
-# Truss.setMemberGroup(MemberGroups_set)
-# Truss.solveLinear()
-# print(Truss.U)
+    def optimizeSolve(self, A):
+        self.A = A
+        self.calcLocalStiffnessMatrices()
+        self.calcTransfromLocalToGlobalStiffnessMatrix()
+        self.assembleGlobalStiffnessMatrix()
+        self.calcDeflections()
+
+    def optimize(self, MinArea: float, MaxArea: float, initalGuess: list):
+
+        self.calcLengths()
+        self.calcTransformationMatrices()
+        self.calcDegressOfFreedom()
+        self.calcForces()
+
+        initalGuess = np.array(initalGuess)
+
+        areas = truss3DOptimizer.optimize(self, [MinArea, MaxArea], initalGuess)
+
+        return areas
+
+

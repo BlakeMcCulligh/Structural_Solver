@@ -159,23 +159,3 @@ class Truss2D:
     #
     # def calcNomalStresses(self):
     #     self.sigma = self.F_m_internal / self.A
-
-# Nodes = [[0,0],[1,0],[1,1],[0,1]]
-# Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
-# Loads = [[2,5,0],[3,0,2]]
-# Supports = [[0,True,True],[1,False,True]]
-# MemberGroups_set = [0,0,0,0,0]
-#
-# E_set = [1]
-# A_set = [1]
-#
-# Truss = Truss2D()
-# Truss.setGeom(Nodes, Members, Loads, Supports)
-# Truss.setA(A_set)
-# Truss.setE(E_set)
-# Truss.setMemberGroup(MemberGroups_set)
-# Truss.solveLinear()
-# Truss.calcMemberDeflections()
-# Truss.calcInternalForces()
-# Truss.calcNomalStresses()
-# print(Truss.U)

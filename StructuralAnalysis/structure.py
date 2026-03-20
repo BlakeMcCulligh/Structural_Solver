@@ -179,7 +179,16 @@ class Structure:
 
         if self.isTruss:
             if self.is3D:
-                pass # todo
+                E = []
+                for crossSection in self.crossSections:
+                    E.append(crossSection.E)
+
+                self.solveObject = Truss3D()
+                self.solveObject.setGeom(NODES, MEMBERS, LOADS, SUPPORTS)
+                self.solveObject.setE(E)
+                self.solveObject.setMemberGroup(CROSSSECTIONS)
+                self.optimizationResults = self.solveObject.optimize(MinArea, MaxArea, initalGuess)
+
             else:
                 E = []
                 for crossSection in self.crossSections:
@@ -208,7 +217,7 @@ class Structure:
         if self.optimizationResults is not None:
             if self.isTruss:
                 if self.is3D:
-                    pass  # todo
+                    print("A: ", self.optimizationResults)
                 else:
                     print("A: ", self.optimizationResults)
             else:
