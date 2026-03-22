@@ -1,14 +1,13 @@
 import numpy as np
 
-from CrossSectionOptimization import truss3DOptimizer
+from CrossSectionOptimization import truss2DOptimizer
 
-
-class Truss3D:
+class Truss2D:
     def __init__(self):
-        self.nodes = None # [x,y, z]
+        self.nodes = None # [x,y]
         self.members = None # [node 1, node 2]
-        self.loads = None # [node, x, y, z]
-        self.supports = None # [node, x, y, z]
+        self.loads = None # [node, x, y]
+        self.supports = None # [node, x, y]
         self.memberGroup = None
         self.A = None # [A] * length members
         self.E = None # [E] * length members
@@ -25,6 +24,7 @@ class Truss3D:
         self.U = None
         self.U_m_global = None
         self.U_m_local = None
+        self.Reactions = None
         self.F_m_internal = None
         self.sigma = None
 
@@ -46,36 +46,29 @@ class Truss3D:
     def calcLengths(self):
         dx = self.nodes[self.members[:,1],0] - self.nodes[self.members[:,0],0]
         dy = self.nodes[self.members[:,1],1] - self.nodes[self.members[:,0],1]
-        dz = self.nodes[self.members[:, 1], 2] - self.nodes[self.members[:, 0], 2]
-        self.L = np.sqrt(dx**2 + dy**2 + dz**2)
+        self.L = np.sqrt(dx**2 + dy**2)
 
     def calcLocalStiffnessMatrices(self):
         A = self.A[self.memberGroup]
-        print(A)
         E = self.E[self.memberGroup]
         Mult = A * E / self.L
-        MultMatrix = np.array([[1,0,0,-1,0,0],
-            [0,0,0,0,0,0],
-            [0,0,0,0,0,0],
-            [-1,0,0,1,0,0],
-            [0,0,0,0,0,0],
-            [0,0,0,0,0,0]])
+        MultMatrix = np.array([[1,0,-1,0],
+         [0,0,0,0],
+         [-1,0,1,0],
+         [0,0,0,0]])
         self.K_m_local = Mult[:, np.newaxis, np.newaxis] * MultMatrix
 
     def calcTransformationMatrices(self):
-        Cx = (self.nodes[self.members[:, 1], 0] - self.nodes[self.members[:, 0], 0]) /self.L
-        Cy = (self.nodes[self.members[:, 1], 1] - self.nodes[self.members[:, 0], 1]) /self.L
-        Cz = (self.nodes[self.members[:, 1], 2] - self.nodes[self.members[:, 0], 2]) / self.L
+        C = (self.nodes[self.members[:, 1], 0] - self.nodes[self.members[:, 0], 0]) /self.L
+        S = (self.nodes[self.members[:, 1], 1] - self.nodes[self.members[:, 0], 1]) /self.L
         T = []
-        for cx, cy, cz in zip(Cx, Cy, Cz):
-            T.append(np.array(
-                [[ cx, cy, cz,   0,  0,  0],
-                 [-cy, cx,  0,   0,  0,  0],
-                 [-cz,  0, cx,   0,  0,  0],
-                 [  0,  0,  0,  cx, cy, cz],
-                 [  0,  0,  0, -cy, cx,  0],
-                 [  0,  0,  0, -cz,  0, cx]]))
-
+        for c, s in zip(C, S):
+            T.append(np.array([
+                [c,s,0,0],
+                [-s,c,0,0],
+                [0,0,c,s],
+                [0,0,-s,c]
+            ]))
         self.T = np.array(T)
         self.T_T = np.array([t.T for t in self.T])
 
@@ -88,11 +81,11 @@ class Truss3D:
         self.calcTransfromLocalToGlobalStiffnessMatrix()
 
     def assembleGlobalStiffnessMatrix(self):
-        K_global = np.zeros((len(self.nodes) * 3, len(self.nodes) * 3)).tolist()
+        K_global = np.zeros((len(self.nodes) * 2, len(self.nodes) * 2)).tolist()
         for index, m in enumerate(self.members):
-            global_dofs = [3 * m[0], 3 * m[0] + 1, 3 * m[0] + 2, 3 * m[1], 3 * m[1] + 1, 3 * m[1] + 2]
-            for i in range(6):
-                for j in range(6):
+            global_dofs = [2 * m[0], 2 * m[0] + 1, 2 * m[1], 2 * m[1] + 1]
+            for i in range(4):
+                for j in range(4):
                     K_global[int(global_dofs[i])][int(global_dofs[j])] += self.K_m_global[index][i, j]
         self.K = np.array(K_global)
 
@@ -100,29 +93,27 @@ class Truss3D:
         self.fixedDOF = []
         for support in self.supports:
             if support[1]:
-                self.fixedDOF.append(support[0] * 3)
+                self.fixedDOF.append(support[0] * 2)
             if support[2]:
-                self.fixedDOF.append(support[0] * 3 + 1)
-            if support[3]:
-                self.fixedDOF.append(support[0] * 3 + 2)
-        self.freeDOF = list(set(range(len(self.nodes) * 3)) - set(self.fixedDOF))
+                self.fixedDOF.append(support[0] * 2 + 1)
+        self.freeDOF = list(set(range(len(self.nodes) * 2)) - set(self.fixedDOF))
 
     def calcForces(self):
-        F = np.zeros(len(self.nodes) * 3)
+        F = np.zeros(len(self.nodes) * 2)
         for load in self.loads:
-            F[load[0] * 3] = load[1]
-            F[load[0] * 3 + 1] = load[2]
-            F[load[0] * 3 + 2] = load[3]
+            F[load[0] * 2] = load[1]
+            F[load[0] * 2 + 1] = load[2]
         self.F = F
 
     def calcDeflections(self):
         Kff = self.K[np.ix_(self.freeDOF, self.freeDOF)]
         Uf = np.linalg.solve(Kff, self.F[self.freeDOF])
-        self.U = np.zeros(len(self.nodes) * 3)
+        self.U = np.zeros(len(self.nodes) * 2)
         self.U[self.freeDOF] = Uf
 
     def calcReactions(self):
-        self.F[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
+        self.Reactions = self.F
+        self.Reactions[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
 
     def solveLinear(self):
         self.calcLengths()
@@ -140,7 +131,14 @@ class Truss3D:
         self.assembleGlobalStiffnessMatrix()
         self.calcDeflections()
 
-    def optimize(self, MinArea: float, MaxArea: float, initalGuess: list):
+    def optimize(self, crossSections, initalGuess: list):
+
+        minBounds = []
+        maxBounds = []
+
+        for crossSection in crossSections:
+            minBounds = minBounds + crossSection.minBounds
+            maxBounds = maxBounds + crossSection.maxBounds
 
         self.calcLengths()
         self.calcTransformationMatrices()
@@ -149,6 +147,6 @@ class Truss3D:
 
         initalGuess = np.array(initalGuess)
 
-        areas = truss3DOptimizer.optimize(self, [MinArea, MaxArea], initalGuess)
+        areas = truss2DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
 
         return areas

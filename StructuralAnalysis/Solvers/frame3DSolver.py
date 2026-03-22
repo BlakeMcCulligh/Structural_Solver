@@ -35,6 +35,7 @@ class Frame3D:
         self.U_m_local = None
         self.F_m_internal = None
         self.sigma = None
+        self.Reactions = None
 
         self.AFormulas = None
         self.IxFormulas = None
@@ -217,7 +218,8 @@ class Frame3D:
         self.U[self.freeDOF] = Uf
 
     def calcReactions(self):
-        self.F[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
+        self.Reactions = self.F
+        self.Reactions[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
 
     def solveLinear(self):
         self.calcLengths()
@@ -311,22 +313,3 @@ class Frame3D:
         areas = frame3DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
 
         return areas
-
-# Nodes = [[0,0,0],[1,0,0],[1,1,0],[0,1,0]]
-# Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
-# Loads = [[2,5,0,0,0,0,0],[3,0,2,0,0,0,0]]
-# Supports = [[0,True,True,True,True,False,False],[1,False,True,False,True,False,False]]
-# Releases = [[1, 0,0,0,0,0,1,0,0,0,0,0,1],[3,0,0,0,0,0,1,0,0,0,0,0,1],[4,0,0,0,0,0,1,0,0,0,0,0,1]]
-# MemberGroups_set = [0,0,0,0,0]
-# E_set = [1]
-# A_set = [1]
-# I_set = [1]
-#
-# Frame = Frame3D()
-# Frame.setGeom(Nodes, Members, Loads, Supports, Releases)
-# Frame.setA(A_set)
-# Frame.setMaterialProperties(E_set, E_set)
-# Frame.setStiffnesses(I_set, I_set, I_set)
-# Frame.setMemberGroups(MemberGroups_set)
-# Frame.solveLinear()
-# print(Frame.U)

@@ -3,18 +3,20 @@ import numpy as np
 from CrossSectionOptimization import frame2DOptimizer
 from StructuralAnalysis.CrossSectionCalculaters import SquareHSS, RectHSS, TubeHSS, Angle
 
-
 class Frame2D:
     def __init__(self):
+        """
+        Handels the large computations for 2D frames.
+        """
         self.nodes = None # [x,y]
         self.members = None # [node 1, node 2]
         self.loads = None # [node, x, y, m]
         self.supports = None # [node, x, y, m]
         self.releases = None # [node, x_i, y_i, m_i, x_j, y_j, m_j]
         self.memberGroups = None
-        self.A = None # [A] * length members
-        self.E = None # [E] * length members
-        self.I = None # [I] * length members
+        self.A = None
+        self.E = None
+        self.I = None
 
         self.L = None
         self.K_m_local = None
@@ -30,6 +32,7 @@ class Frame2D:
         self.U_m_local = None
         self.F_m_internal = None
         self.sigma = None
+        self.Reactions = None
 
         self.AFormulas = None
         self.IFormulas = None
@@ -56,11 +59,17 @@ class Frame2D:
         self.I = np.array(I)
 
     def calcLengths(self):
+        """
+        Calculates the lengths of the members.
+        """
         dx = self.nodes[self.members[:,1],0] - self.nodes[self.members[:,0],0]
         dy = self.nodes[self.members[:,1],1] - self.nodes[self.members[:,0],1]
         self.L = np.sqrt(dx**2 + dy**2)
 
     def calcLocalStiffnessMatrices(self):
+        """
+        Calculates the local stiffness matrices of the members.
+        """
         self.K_m_local = []
         for i in range(len(self.members)):
             A = self.A[self.memberGroups[i]]
@@ -77,6 +86,9 @@ class Frame2D:
             ]))
 
     def applyRelecesTOLocalStiffnessMatrices(self):
+        """
+        Applies the releces to the local stiffness matrices.
+        """
         for MemberReleases in self.releases:
             index = MemberReleases[0]
             k = self.K_m_local[index]
@@ -105,6 +117,9 @@ class Frame2D:
         self.K_m_local = np.array(self.K_m_local)
 
     def calcTransformationMatrices(self):
+        """
+        Calculates the transformation matrices for the members.
+        """
         C = (self.nodes[self.members[:, 1], 0] - self.nodes[self.members[:, 0], 0]) /self.L
         S = (self.nodes[self.members[:, 1], 1] - self.nodes[self.members[:, 0], 1]) /self.L
         T = []
@@ -121,15 +136,25 @@ class Frame2D:
         self.T_T = np.array([t.T for t in self.T])
 
     def calcTransfromLocalToGlobalStiffnessMatrix(self):
+        """
+        Converts the local stiffness matrices to global stiffness matrices for the members
+        :return:
+        """
         self.K_m_global = self.T_T @ self.K_m_local @ self.T
 
     def calcGlobalStiffnessMatrix(self):
+        """
+        Calcs the global stiffness matrices for the members from strart to finish.
+        """
         self.calcLocalStiffnessMatrices()
         self.applyRelecesTOLocalStiffnessMatrices()
         self.calcTransformationMatrices()
         self.calcTransfromLocalToGlobalStiffnessMatrix()
 
     def assembleGlobalStiffnessMatrix(self):
+        """
+        Assmebles the global stiffness matrix for the structure
+        """
         K_global = np.zeros((len(self.nodes) * 3, len(self.nodes) * 3)).tolist()
         for index, m in enumerate(self.members):
             global_dofs = [3 * m[0], 3 * m[0] + 1, 3 * m[0] + 2, 3 * m[1], 3 * m[1] + 1, 3 * m[1] + 2]
@@ -139,6 +164,9 @@ class Frame2D:
         self.K = np.array(K_global)
 
     def calcDegressOfFreedom(self):
+        """
+        Assembles the list of the free degrees of freedom for the structure
+        """
         self.fixedDOF = []
         for support in self.supports:
             if support[1]:
@@ -150,6 +178,9 @@ class Frame2D:
         self.freeDOF = list(set(range(len(self.nodes) * 3)) - set(self.fixedDOF))
 
     def calcForces(self):
+        """
+        Assembles the vector of forces aplyed to the structure
+        """
         F = np.zeros(len(self.nodes) * 3)
         for load in self.loads:
             F[load[0] * 3] = load[1]
@@ -158,15 +189,25 @@ class Frame2D:
         self.F = F
 
     def calcDeflections(self):
+        """
+        Calculates the deflections of each of the degrees of freedom for the structure
+        """
         Kff = self.K[np.ix_(self.freeDOF, self.freeDOF)]
         Uf = np.linalg.solve(Kff, self.F[self.freeDOF])
         self.U = np.zeros(len(self.nodes) * 3)
         self.U[self.freeDOF] = Uf
 
     def calcReactions(self):
-        self.F[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
+        """
+        Calculates the reactions for the structure.
+        """
+        self.Reactions = self.F
+        self.Reactions[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
 
     def solveLinear(self):
+        """
+        solves the structure linearly using the stiffness methodd.
+        """
         self.calcLengths()
         self.calcGlobalStiffnessMatrix()
         self.assembleGlobalStiffnessMatrix()
@@ -176,6 +217,10 @@ class Frame2D:
         self.calcReactions()
 
     def optimizeSolve(self, X):
+        """
+        called from the optimizer to solve the frame
+        :param X: The optimization variables
+        """
         self.A = []
         self.I = []
 
@@ -201,6 +246,12 @@ class Frame2D:
         self.calcDeflections()
 
     def optimize(self, crossSections: list, initalGuess: list):
+        """
+        Runs the optimization of the frame.
+        :param crossSections: list of cross-section objects
+        :param initalGuess: the initial guess for the optimization
+        :return results
+        """
 
         self.AFormulas = []
         self.IFormulas = []
@@ -237,37 +288,6 @@ class Frame2D:
 
         initalGuess = np.array(initalGuess)
 
-        areas = frame2DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
+        results = frame2DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
 
-        return areas
-
-    # def calcMemberDeflections(self):
-    #     self.U_m_global = []
-    #     for i, m in enumerate(self.members):
-    #         self.U_m_global.append([self.U[m[0] * 2], self.U[m[0] * 2 + 1], self.U[m[0] * 2 + 2], self.U[m[1] * 2],
-    #                            self.U[m[1] * 2 + 1], self.U[m[1] * 2 + 2]])
-    #     self.U_m_local = np.array([self.T[i] @ self.U_m_global[i] for i in range(len(self.members))])
-    #
-    # def calcInternalForces(self):
-    #     self.F_m_internal = np.array([k @ u for k, u in zip(self.K_m_local, self.U_m_local)])
-
-# Nodes = [[0,0],[1,0],[1,1],[0,1]]
-# Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]
-# Loads = [[2,5,0,0],[3,0,2,0]]
-# Supports = [[0,True,True,False],[1,False,True,False]]
-# Releases = [[0,0,0,0,0,0,0],[1,0,0,1,0,0,1],[2,0,0,0,0,0,0],[3,0,0,1,0,0,1],[4,0,0,1,0,0,1]]
-# MemberGroups_set = [0,0,0,0,0]
-# E_set = [1]
-# A_set = [1]
-# I_set = [1]
-#
-# Frame = Frame2D()
-# Frame.setGeom(Nodes, Members, Loads, Supports, Releases)
-# Frame.setA(A_set)
-# Frame.setE(E_set)
-# Frame.setI(I_set)
-# Frame.setMemberGroups(MemberGroups_set)
-# Frame.solveLinear()
-# Frame.calcMemberDeflections()
-# Frame.calcInternalForces()
-# print(Frame.U)
+        return results

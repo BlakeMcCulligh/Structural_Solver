@@ -4,6 +4,15 @@ class WrongNumberOfDegressOfFredomGivenError(Exception):
 
 class Member:
     def __init__(self, nodes: list, crossSections: list, is3D: bool, isTruss: bool, nodeIndexs: list, crossSectionIndex: int):
+        """
+        Creation of a member object.
+        :param nodes: the list of node objectsin the structure.
+        :param crossSections: the list of crossSection objects in the structure.
+        :param is3D: is the member a part of a 3D structure.
+        :param isTruss: is the member a part of a truss.
+        :param nodeIndexs: the indexes of the nodes to be the start and end of the member.
+        :param crossSectionIndex: the index of the crossSection of the memebr.
+        """
         self.isTruss = isTruss
         self.is3D = is3D
 
@@ -24,6 +33,10 @@ class Member:
 
 
     def addRelece(self, relece: list):
+        """
+        Updates the member's releces to the paramiter. Only for Frames.
+        :param relece: the new member's releces.
+        """
         if not self.isTruss:
             if self.is3D:
                 if len(relece) == 12:

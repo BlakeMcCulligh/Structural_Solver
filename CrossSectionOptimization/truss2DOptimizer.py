@@ -1,13 +1,7 @@
 
 import scipy.optimize as opt
 
-
-def createBounds(numCrossSections, rangeA):
-    if isinstance(rangeA[0], float):
-        b = opt.Bounds([rangeA[0]]*numCrossSections, [rangeA[1]]*numCrossSections)
-    else:
-        b = opt.Bounds(rangeA[0], rangeA[1])
-    return b
+from CrossSectionOptimization.GeneralFunctions import createBounds
 
 def objectiveFunction(X, Constants):
     [solverObject] = Constants
@@ -23,7 +17,7 @@ def optimize(solverObject, rangeA, initalGuess):
 
     Constants = [solverObject]
 
-    bounds = createBounds(len(initalGuess), rangeA)
+    bounds = createBounds(rangeA)
 
     X = initalGuess
 

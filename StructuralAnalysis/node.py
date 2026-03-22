@@ -7,6 +7,13 @@ class WrongNumberOfDegressOfFredomGivenError(Exception):
 
 class Node:
     def __init__(self, isTruss: bool, is3D: bool, cords: list):
+        """
+        Creation of a Node object.
+        :param isTruss: is the node for a truss.
+        :param is3D: is the node 3D.
+        :param cords: the cordinates of the node.
+        """
+
         self.isTruss = isTruss
         self.is3D = is3D
 
@@ -42,6 +49,10 @@ class Node:
                 self.load = [0, 0, 0]
 
     def addSupport(self, support: list):
+        """
+        Updates the node's supports to the paramiter.
+        :param support: the new node's supports.
+        """
         if self.isTruss:
             if self.is3D:
                 if len(support) == 3:
@@ -66,6 +77,10 @@ class Node:
                     raise WrongNumberOfDegressOfFredomGivenError("Number of degres given must be 3 for a 2D frame")
 
     def addLoad(self, load: list):
+        """
+        Updates the node's loads to the paramiter.
+        :param load: the new node's loads.
+        """
         if self.isTruss:
             if self.is3D:
                 if len(load) == 3:

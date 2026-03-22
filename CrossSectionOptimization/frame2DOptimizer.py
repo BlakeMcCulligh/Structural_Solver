@@ -1,8 +1,7 @@
 
 import scipy.optimize as opt
 
-def createBounds(rangeVarables):
-    return opt.Bounds(rangeVarables[0], rangeVarables[1])
+from CrossSectionOptimization.GeneralFunctions import createBounds
 
 def objectiveFunction(X, Constants):
     [solverObject] = Constants
