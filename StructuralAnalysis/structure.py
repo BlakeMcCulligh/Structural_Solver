@@ -208,7 +208,18 @@ class Structure:
                     RELEASES.append([i] + member.relece)
 
             if self.is3D:
-                pass # todo
+                E = []
+                G = []
+                for crossSection in self.crossSections:
+                    E.append(crossSection.E)
+                    G.append(crossSection.G)
+
+                self.solveObject = Frame3D()
+                self.solveObject.setGeom(NODES, MEMBERS, LOADS, SUPPORTS, RELEASES)
+                self.solveObject.setMaterialProperties(E, G)
+                self.solveObject.setMemberGroups(CROSSSECTIONS)
+                self.optimizationResults = self.solveObject.optimize(self.crossSections, initalGuess)
+
             else:
                 E = []
                 for crossSection in self.crossSections:
@@ -219,8 +230,6 @@ class Structure:
                 self.solveObject.setE(E)
                 self.solveObject.setMemberGroups(CROSSSECTIONS)
                 self.optimizationResults = self.solveObject.optimize(self.crossSections, initalGuess)
-
-
 
     def printDeflections(self):
         if self.solveObject is not None:
@@ -237,7 +246,8 @@ class Structure:
                     print("A: ", self.optimizationResults)
             else:
                 if self.is3D:
-                    pass  # todo
+                    # todo
+                    print("Results: ", self.optimizationResults)
                 else:
                    # todo
                     print("Results: ", self.optimizationResults)
@@ -246,15 +256,15 @@ class Structure:
 
 
 S = Structure()
-#S.set3D()
+S.set3D()
 #S.setTruss()
 
-S.addNode([0,0])
-S.addNode([1,0])
-S.addNode([1,1])
-S.addNode([0,1])
+S.addNode([0,0,0])
+S.addNode([1,0,0])
+S.addNode([1,1,0])
+S.addNode([0,1,0])
 
-S.addCrossSection(True, E=1, memberType="SquareHSS", minBounds=[0.1, 0.01], maxBounds=[10, 0.09])
+S.addCrossSection(True, E=1, G=1, memberType="SquareHSS", minBounds=[0.1, 0.01], maxBounds=[10, 0.09])
 
 S.addMember([0,1], 0)
 S.addMember([1,2], 0)
@@ -262,18 +272,18 @@ S.addMember([2,3], 0)
 S.addMember([3,0], 0)
 S.addMember([0,2], 0)
 
-S.addNodeLoad(2, [5, 0, 0])
-S.addNodeLoad(3, [0, 2, 0])
+S.addNodeLoad(2, [5, 0, 0, 0, 0, 0])
+S.addNodeLoad(3, [0, 2, 0, 0, 0, 0])
+#Supports = [[0,True,True,True,True,False,False],[1,False,True,False,True,False,False]]
+S.addSupport(0, [True,True, True,True, False, False])
+S.addSupport(1, [False,True, False, True, False, False])
 
-S.addSupport(0, [True,True, False])
-S.addSupport(1, [False,True, False])
-
-# S.addRelece(1, [0,0,0,0,0,1,0,0,0,0,0,1])
-# S.addRelece(3, [0,0,0,0,0,1,0,0,0,0,0,1])
-# S.addRelece(4, [0,0,0,0,0,1,0,0,0,0,0,1])
-S.addRelece(1, [0,0,1,0,0,1])
-S.addRelece(3, [0,0,1,0,0,1])
-S.addRelece(4, [0,0,1,0,0,1])
+S.addRelece(1, [0,0,0,0,0,1,0,0,0,0,0,1])
+S.addRelece(3, [0,0,0,0,0,1,0,0,0,0,0,1])
+S.addRelece(4, [0,0,0,0,0,1,0,0,0,0,0,1])
+# S.addRelece(1, [0,0,1,0,0,1])
+# S.addRelece(3, [0,0,1,0,0,1])
+# S.addRelece(4, [0,0,1,0,0,1])
 
 # S.solve()
 #

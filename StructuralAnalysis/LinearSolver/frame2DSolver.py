@@ -1,7 +1,8 @@
 import numpy as np
 
 from CrossSectionOptimization import frame2DOptimizer
-from StructuralAnalysis.CrossSectionCalculaters import SquareHSS, RectHSS, TubeHSS
+from StructuralAnalysis.CrossSectionCalculaters import SquareHSS, RectHSS, TubeHSS, Angle
+
 
 class Frame2D:
     def __init__(self):
@@ -225,8 +226,8 @@ class Frame2D:
                 self.IFormulas.append(TubeHSS.getI)
                 self.numVariables.append(2)
             elif crossSection.Type == "Angle":
-                self.AFormulas.append(RectHSS.getA)
-                self.IFormulas.append(RectHSS.getIx)
+                self.AFormulas.append(Angle.getA)
+                self.IFormulas.append(Angle.getIx)
                 self.numVariables.append(3)
 
         self.calcLengths()

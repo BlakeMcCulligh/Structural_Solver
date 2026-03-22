@@ -2,7 +2,6 @@ import numpy as np
 
 from CrossSectionOptimization import truss2DOptimizer
 
-
 class Truss2D:
     def __init__(self):
         self.nodes = None # [x,y]

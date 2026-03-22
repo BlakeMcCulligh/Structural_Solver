@@ -2,6 +2,10 @@ import math
 
 import numpy as np
 
+from CrossSectionOptimization import frame3DOptimizer
+from StructuralAnalysis.CrossSectionCalculaters import SquareHSS, RectHSS, TubeHSS, Angle
+
+
 class Frame3D:
     def __init__(self):
         self.nodes = None # [x,y, z]
@@ -31,6 +35,12 @@ class Frame3D:
         self.U_m_local = None
         self.F_m_internal = None
         self.sigma = None
+
+        self.AFormulas = None
+        self.IxFormulas = None
+        self.IyFormulas = None
+        self.JFormulas = None
+        self.numVariables = None
 
     def setGeom(self, nodes, members, loads, supports, releases):
         self.nodes = np.array(nodes)
@@ -217,6 +227,90 @@ class Frame3D:
         self.calcForces()
         self.calcDeflections()
         self.calcReactions()
+
+    def optimizeSolve(self, X):
+        self.A = []
+        self.Iz = []
+        self.Iy = []
+        self.J = []
+
+        j = 0
+        for i in range(max(self.memberGroups)+1):
+            if self.numVariables[i] == 2:
+                self.A.append(self.AFormulas[i](X[j], X[j+1]))
+                self.Iz.append(self.IxFormulas[i](X[j], X[j+1]))
+                self.Iy.append(self.IyFormulas[i](X[j], X[j+1]))
+                self.J.append(self.JFormulas[i](X[j], X[j+1]))
+                j += 2
+            elif self.numVariables[i] == 3:
+                self.A.append(self.AFormulas[i](X[j], X[j+1], X[j+2]))
+                self.Iz.append(self.IxFormulas[i](X[j], X[j+1], X[j+2]))
+                self.Iy.append(self.IyFormulas[i](X[j], X[j+1], X[j+2]))
+                self.J.append(self.JFormulas[i](X[j], X[j+1], X[j+2]))
+                j += 3
+            else:
+                print("Error: incorect number of variables")
+
+        self.A = np.array(self.A)
+        self.Iz = np.array(self.Iz)
+        self.Iy = np.array(self.Iy)
+        self.J = np.array(self.J)
+
+        self.calcLocalStiffnessMatrices()
+        self.calcTransfromLocalToGlobalStiffnessMatrix()
+        self.assembleGlobalStiffnessMatrix()
+        self.calcDeflections()
+
+    def optimize(self, crossSections: list, initalGuess: list):
+
+        self.AFormulas = []
+        self.IxFormulas = []
+        self.IyFormulas = []
+        self.JFormulas = []
+        self.numVariables = []
+
+        minBounds = []
+        maxBounds = []
+
+        for crossSection in crossSections:
+            minBounds = minBounds + crossSection.minBounds
+            maxBounds = maxBounds + crossSection.maxBounds
+
+            if crossSection.Type == "SquareHSS":
+                self.AFormulas.append(SquareHSS.getA)
+                self.IxFormulas.append(SquareHSS.getI)
+                self.IyFormulas.append(SquareHSS.getI)
+                self.JFormulas.append(SquareHSS.getJ)
+                self.numVariables.append(2)
+            elif crossSection.Type == "RectHSS":
+                self.AFormulas.append(RectHSS.getA)
+                self.IxFormulas.append(RectHSS.getIx)
+                self.IyFormulas.append(RectHSS.getIy)
+                self.JFormulas.append(RectHSS.getJ)
+                self.numVariables.append(3)
+            elif crossSection.Type == "TubeHSS":
+                self.AFormulas.append(TubeHSS.getA)
+                self.IxFormulas.append(TubeHSS.getI)
+                self.IyFormulas.append(TubeHSS.getI)
+                self.JFormulas.append(TubeHSS.getJ)
+                self.numVariables.append(2)
+            elif crossSection.Type == "Angle":
+                self.AFormulas.append(Angle.getA)
+                self.IxFormulas.append(Angle.getIx)
+                self.IyFormulas.append(Angle.getIy)
+                self.JFormulas.append(Angle.getJ)
+                self.numVariables.append(3)
+
+        self.calcLengths()
+        self.calcTransformationMatrices()
+        self.calcDegressOfFreedom()
+        self.calcForces()
+
+        initalGuess = np.array(initalGuess)
+
+        areas = frame3DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
+
+        return areas
 
 # Nodes = [[0,0,0],[1,0,0],[1,1,0],[0,1,0]]
 # Members = [[0,1],[1,2],[2,3],[3,0],[0,2]]

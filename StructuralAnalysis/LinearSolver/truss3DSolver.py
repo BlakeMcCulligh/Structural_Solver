@@ -152,5 +152,3 @@ class Truss3D:
         areas = truss3DOptimizer.optimize(self, [MinArea, MaxArea], initalGuess)
 
         return areas
-
-

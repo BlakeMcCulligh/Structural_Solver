@@ -37,5 +37,3 @@ class Member:
                     raise WrongNumberOfDegressOfFredomGivenError("Number of degres given must be 6 for a 2D frame Releces")
         else:
             print("releces can not be set for trusses")
-
-
