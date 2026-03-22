@@ -1,5 +1,8 @@
 import numpy as np
 
+from CrossSectionOptimization import frame2DOptimizer
+from StructuralAnalysis.CrossSectionCalculaters import SquareHSS, RectHSS, TubeHSS
+
 class Frame2D:
     def __init__(self):
         self.nodes = None # [x,y]
@@ -26,6 +29,11 @@ class Frame2D:
         self.U_m_local = None
         self.F_m_internal = None
         self.sigma = None
+
+        self.AFormulas = None
+        self.IFormulas = None
+
+        self.numVariables = None
 
     def setGeom(self, nodes, members, loads, supports, releases):
         self.nodes = np.array(nodes)
@@ -165,6 +173,72 @@ class Frame2D:
         self.calcForces()
         self.calcDeflections()
         self.calcReactions()
+
+    def optimizeSolve(self, X):
+        self.A = []
+        self.I = []
+
+        j = 0
+        for i in range(max(self.memberGroups)+1):
+            if self.numVariables[i] == 2:
+                self.A.append(self.AFormulas[i](X[j], X[j+1]))
+                self.I.append(self.IFormulas[i](X[j], X[j+1]))
+                j += 2
+            elif self.numVariables[i] == 3:
+                self.A.append(self.AFormulas[i](X[j], X[j+1], X[j+2]))
+                self.I.append(self.IFormulas[i](X[j], X[j+1], X[j+2]))
+                j += 3
+            else:
+                print("Error: incorect number of variables")
+
+        self.A = np.array(self.A)
+        self.I = np.array(self.I)
+
+        self.calcLocalStiffnessMatrices()
+        self.calcTransfromLocalToGlobalStiffnessMatrix()
+        self.assembleGlobalStiffnessMatrix()
+        self.calcDeflections()
+
+    def optimize(self, crossSections: list, initalGuess: list):
+
+        self.AFormulas = []
+        self.IFormulas = []
+        self.numVariables = []
+
+        minBounds = []
+        maxBounds = []
+
+        for crossSection in crossSections:
+            minBounds = minBounds + crossSection.minBounds
+            maxBounds = maxBounds + crossSection.maxBounds
+
+            if crossSection.Type == "SquareHSS":
+                self.AFormulas.append(SquareHSS.getA)
+                self.IFormulas.append(SquareHSS.getI)
+                self.numVariables.append(2)
+            elif crossSection.Type == "RectHSS":
+                self.AFormulas.append(RectHSS.getA)
+                self.IFormulas.append(RectHSS.getIx)
+                self.numVariables.append(3)
+            elif crossSection.Type == "TubeHSS":
+                self.AFormulas.append(TubeHSS.getA)
+                self.IFormulas.append(TubeHSS.getI)
+                self.numVariables.append(2)
+            elif crossSection.Type == "Angle":
+                self.AFormulas.append(RectHSS.getA)
+                self.IFormulas.append(RectHSS.getIx)
+                self.numVariables.append(3)
+
+        self.calcLengths()
+        self.calcTransformationMatrices()
+        self.calcDegressOfFreedom()
+        self.calcForces()
+
+        initalGuess = np.array(initalGuess)
+
+        areas = frame2DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
+
+        return areas
 
     # def calcMemberDeflections(self):
     #     self.U_m_global = []

@@ -32,19 +32,19 @@ class Structure:
     def addMember(self, nodeIndexs: list, memberGroupIndex: int):
         self.members.append(Member(self.nodes, self.crossSections, self.is3D, self.isTruss, nodeIndexs, memberGroupIndex))
 
-    def addCrossSection(self, Optimize, E, A = None, I = None, I_weak = None, G = None, J = None, memberType = None):
+    def addCrossSection(self, Optimize, E, A = None, I = None, I_weak = None, G = None, J = None, memberType = None, minBounds = None, maxBounds = None):
         newCrossSection = CrossSection()
         if Optimize:
             if self.is3D:
                 if self.isTruss:
                     newCrossSection.optAdd3DTruss(E)
                 else:
-                    newCrossSection.optAdd3DFrame(E, G, memberType)
+                    newCrossSection.optAdd3DFrame(E, G, memberType, minBounds, maxBounds)
             else:
                 if self.isTruss:
                     newCrossSection.optAdd2DTruss(E)
                 else:
-                    newCrossSection.optAdd2DFrame(E, memberType)
+                    newCrossSection.optAdd2DFrame(E, memberType, minBounds, maxBounds)
         else:
             if self.is3D:
                 if self.isTruss:
@@ -170,7 +170,7 @@ class Structure:
                 self.solveObject.setMemberGroups(CROSSSECTIONS)
                 self.solveObject.solveLinear()
 
-    def optimize(self, MinArea: float, MaxArea: float, initalGuess: list):
+    def optimize(self, initalGuess: list, MinArea = None, MaxArea = None):
         NODES, MEMBERS, LOADS, SUPPORTS = self.assembleGeoLists()
 
         CROSSSECTIONS = []
@@ -201,10 +201,25 @@ class Structure:
                 self.optimizationResults = self.solveObject.optimize(MinArea, MaxArea, initalGuess)
 
         else:
+
+            RELEASES = []
+            for i, member in enumerate(self.members):
+                if any(member.relece):
+                    RELEASES.append([i] + member.relece)
+
             if self.is3D:
                 pass # todo
             else:
-                pass # todo
+                E = []
+                for crossSection in self.crossSections:
+                    E.append(crossSection.E)
+
+                self.solveObject = Frame2D()
+                self.solveObject.setGeom(NODES, MEMBERS, LOADS, SUPPORTS, RELEASES)
+                self.solveObject.setE(E)
+                self.solveObject.setMemberGroups(CROSSSECTIONS)
+                self.optimizationResults = self.solveObject.optimize(self.crossSections, initalGuess)
+
 
 
     def printDeflections(self):
@@ -224,21 +239,22 @@ class Structure:
                 if self.is3D:
                     pass  # todo
                 else:
-                    pass  # todo
+                   # todo
+                    print("Results: ", self.optimizationResults)
         else:
             print("The structure has not been optimized yet.")
 
 
 S = Structure()
 #S.set3D()
-S.setTruss()
+#S.setTruss()
 
 S.addNode([0,0])
 S.addNode([1,0])
 S.addNode([1,1])
 S.addNode([0,1])
 
-S.addCrossSection(True, E=1)
+S.addCrossSection(True, E=1, memberType="SquareHSS", minBounds=[0.1, 0.01], maxBounds=[10, 0.09])
 
 S.addMember([0,1], 0)
 S.addMember([1,2], 0)
@@ -246,21 +262,24 @@ S.addMember([2,3], 0)
 S.addMember([3,0], 0)
 S.addMember([0,2], 0)
 
-S.addNodeLoad(2, [5, 0])
-S.addNodeLoad(3, [0, 2])
+S.addNodeLoad(2, [5, 0, 0])
+S.addNodeLoad(3, [0, 2, 0])
 
-S.addSupport(0, [True,True])
-S.addSupport(1, [False,True])
+S.addSupport(0, [True,True, False])
+S.addSupport(1, [False,True, False])
 
 # S.addRelece(1, [0,0,0,0,0,1,0,0,0,0,0,1])
 # S.addRelece(3, [0,0,0,0,0,1,0,0,0,0,0,1])
 # S.addRelece(4, [0,0,0,0,0,1,0,0,0,0,0,1])
+S.addRelece(1, [0,0,1,0,0,1])
+S.addRelece(3, [0,0,1,0,0,1])
+S.addRelece(4, [0,0,1,0,0,1])
 
 # S.solve()
 #
 # S.printDeflections()
 
-S.optimize(0.1, 10, [1])
+S.optimize([1,1])
 S.printOptimizationResults()
 
 

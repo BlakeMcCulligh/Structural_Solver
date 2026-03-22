@@ -87,7 +87,7 @@ class Node:
                 if len(load) == 3:
                     self.load = load
                 else:
-                    raise WrongNumberOfDegressOfFredomGivenError("Number of degres given must be 3 for a 2D frame")
+                    raise WrongNumberOfDegressOfFredomGivenError(f"Number of degres given must be 3 for a 2D frame. {len(load)} were given.")
 
 
 
