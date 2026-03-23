@@ -3,7 +3,6 @@ import pandas as pd
 
 from TopologyOptimization.Truss.optimize import OptimizeTruss
 from CrossSectionOptimization.Truss.optimize import TrussMain
-from CrossSectionOptimization.Frame.optimize import FrameMain
 
 def openTrussTopologyOptimizationExcel(filePath):
     Boundary_df = pd.read_excel(filePath, sheet_name='Boundary')

@@ -3,9 +3,9 @@ import tkinter as tk
 from tkinter import filedialog
 
 from CrossSectionAnalysis.main_CrossSectionAnalysis import getSectionProperties
-from OpeningAndSaving.Opening import openTrussTopologyOptimizationExcel, openTrussCrossSectionOptimizationExcel, \
-    openFrameCrossSectionOptimization
+from OpeningAndSaving.Opening import openTrussTopologyOptimizationExcel, openTrussCrossSectionOptimizationExcel
 from Sketch.main import startSketch
+from main.newStructurePopUp import NewStructurePopUp
 
 
 class MainWindow(tk.Frame):
@@ -17,23 +17,38 @@ class MainWindow(tk.Frame):
 
         self.create_top_menu()
 
+        self.centerWindow()
+
         exitButton = tk.Button(root, text="Complete Sketch", command=self.closeProgram)
         #self.canvas.create_window(100, 100, window=exitButton)
+
+    def centerWindow(self):
+        width = 1000
+        height = 800
+
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        if width > screen_width or height > screen_height:
+            width = screen_width * 0.8
+            height = screen_height * 0.8
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2) - 50
+
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
 
     def create_top_menu(self):
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
 
         new_menu = tk.Menu(menubar, tearoff="off")
-        new_menu.add_command(label='Truss Topology Optimization', command= self.newTrussTopologyOptimization)
-        new_menu.add_command(label='Cross Section Analysis', command= self.startCrossSectionAnalysis)
+        new_menu.add_command(label='Structure', command= self.newStructure)
         menubar.add_cascade(label="New", menu=new_menu)
 
 
         open_menu = tk.Menu(menubar, tearoff="off")
         open_menu.add_command(label='Truss Topology Optimization', command=self.openTrussTopologyOptimization)
         open_menu.add_command(label='Truss Cross-Section Optimization', command=self.openTrussCrossSectionOptimization)
-        open_menu.add_command(label='Frame Cross-Section Optimization', command=self.openFrameCrossSectionOptimization)
         menubar.add_cascade(label="Analysis Excel File", menu=open_menu)
 
     def closeProgram(self):
@@ -71,10 +86,8 @@ class MainWindow(tk.Frame):
         selected_file = select_file_gui(fileTypes)
         openTrussCrossSectionOptimizationExcel(selected_file)
 
-    def openFrameCrossSectionOptimization(self):
-        fileTypes = [("Excel Files", "*.xlsx")]
-        selected_file = select_file_gui(fileTypes)
-        openFrameCrossSectionOptimization(selected_file)
+    def newStructure(self):
+        NewStructurePopUp(self.root)
 
 
 
