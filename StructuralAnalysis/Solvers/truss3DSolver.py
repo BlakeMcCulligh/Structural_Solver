@@ -135,6 +135,20 @@ class Truss3D:
         self.calcDeflections()
         self.calcReactions()
 
+    def calcMemberDeflections(self):
+        self.U_m_global = []
+        for i, m in enumerate(self.members):
+            self.U_m_global.append([self.U[m[0] * 3], self.U[m[0] * 3 + 1], self.U[m[0] * 3 + 2], self.U[m[1] * 3],
+                                    self.U[m[1] * 3 + 1], self.U[m[1] * 3 + 2]])
+        self.U_m_local = np.array([self.T[i] @ self.U_m_global[i] for i in range(len(self.members))])
+
+    def calcInternalForces(self):
+        self.F_m_internal = np.array([k @ u for k, u in zip(self.K_m_local, self.U_m_local)])
+        self.F_m_internal = self.F_m_internal[:, 0]
+
+    def calcNomalStresses(self):
+        self.sigma = self.F_m_internal / self.A
+
     def optimizeSolve(self, A):
         self.A = A
         self.calcLocalStiffnessMatrices()

@@ -1,9 +1,9 @@
 import numpy as np
 
-from StructuralAnalysis.LinearSolver.frame2DSolver import Frame2D
-from StructuralAnalysis.LinearSolver.frame3DSolver import Frame3D
-from StructuralAnalysis.LinearSolver.truss2DSolver import Truss2D
-from StructuralAnalysis.LinearSolver.truss3DSolver import Truss3D
+from StructuralAnalysis.Solvers.frame2DSolver import Frame2D
+from StructuralAnalysis.Solvers.frame3DSolver import Frame3D
+from StructuralAnalysis.Solvers.truss2DSolver import Truss2D
+from StructuralAnalysis.Solvers.truss3DSolver import Truss3D
 from StructuralAnalysis.member import Member
 from StructuralAnalysis.crossSection import CrossSection
 from StructuralAnalysis.node import Node
@@ -237,6 +237,26 @@ class Structure:
                 self.solveObject.setMemberGroups(CROSSSECTIONS)
                 self.solveObject.solveLinear()
 
+        self.solveInternalForces()
+
+    def solveInternalForces(self):
+        if self.isTruss:
+            if self.is3D:
+                self.solveObject.calcMemberDeflections()
+                self.solveObject.calcInternalForces()
+                self.solveObject.calcNomalStresses()
+            else:
+                self.solveObject.calcMemberDeflections()
+                self.solveObject.calcInternalForces()
+                self.solveObject.calcNomalStresses()
+        else:
+            if self.is3D:
+                pass
+                # TODO
+            else:
+                pass
+                # TODO
+
     def optimize(self, initalGuess: list):
         """
         Optimizes the structures cross-sections.
@@ -301,12 +321,29 @@ class Structure:
                 self.solveObject.setMemberGroups(CROSSSECTIONS)
                 self.optimizationResults = self.solveObject.optimize(self.crossSections, initalGuess)
 
-    def printDeflections(self):
-        """prints the deflections of the structures degress of fredom"""
+    def getDeflections(self):
         if self.solveObject is not None:
-            print("Defflections: ", self.solveObject.U)
+            #todo
+            return self.solveObject.U
         else:
             print("The structure has not been solved yet.")
+            return None
+
+    def getForces(self):
+        if self.solveObject is not None:
+            # todo
+            return self.solveObject.F_m_internal
+        else:
+            print("The structure has not been solved yet.")
+            return None
+
+    def getStresses(self):
+        if self.solveObject is not None:
+            #todo
+            return self.solveObject.sigma
+        else:
+            print("The structure has not been solved yet.")
+            return None
 
     def printOptimizationResults(self):
         """
@@ -327,41 +364,76 @@ class Structure:
             print("The structure has not been optimized yet.")
 
 
-S = Structure()
-S.set3D()
-#S.setTruss()
 
-S.addNode([0,0,0])
-S.addNode([1,0,0])
-S.addNode([1,1,0])
-S.addNode([0,1,0])
 
-S.addCrossSection(True, E=1, G=1, memberType="SquareHSS", minBounds=[0.1, 0.01], maxBounds=[10, 0.09])
 
-S.addMember([0,1], 0)
-S.addMember([1,2], 0)
-S.addMember([2,3], 0)
-S.addMember([3,0], 0)
-S.addMember([0,2], 0)
 
-S.addNodeLoad(2, [5, 0, 0, 0, 0, 0])
-S.addNodeLoad(3, [0, 2, 0, 0, 0, 0])
-#Supports = [[0,True,True,True,True,False,False],[1,False,True,False,True,False,False]]
-S.addSupport(0, [True,True, True,True, False, False])
-S.addSupport(1, [False,True, False, True, False, False])
+def testTruss2D():
+    S = Structure()
+    S.setTruss()
 
-S.addRelece(1, [0,0,0,0,0,1,0,0,0,0,0,1])
-S.addRelece(3, [0,0,0,0,0,1,0,0,0,0,0,1])
-S.addRelece(4, [0,0,0,0,0,1,0,0,0,0,0,1])
-# S.addRelece(1, [0,0,1,0,0,1])
-# S.addRelece(3, [0,0,1,0,0,1])
-# S.addRelece(4, [0,0,1,0,0,1])
+    S.addNode([0, 0])
+    S.addNode([1, 0])
+    S.addNode([1, 1])
+    S.addNode([0, 1])
 
-# S.solve()
-# S.printDeflections()
+    S.addCrossSection(False, E=1, A = 2)
 
-S.optimize([1,1])
-S.printOptimizationResults()
+    S.addMember([0, 1], 0)
+    S.addMember([1, 2], 0)
+    S.addMember([2, 3], 0)
+    S.addMember([3, 0], 0)
+    S.addMember([0, 2], 0)
+
+    S.addNodeLoad(2, [5, 0])
+    S.addNodeLoad(3, [0, 2])
+
+    S.addSupport(0, [True, True])
+    S.addSupport(1, [False, True])
+
+    S.solve()
+    print(S.getDeflections())
+    print(S.getForces())
+    print(S.getStresses())
+
+testTruss2D()
+
+#
+# S = Structure()
+# #S.set3D()
+# S.setTruss()
+#
+# S.addNode([0,0,0])
+# S.addNode([1,0,0])
+# S.addNode([1,1,0])
+# S.addNode([0,1,0])
+#
+# S.addCrossSection(True, E=1, G=1, memberType="SquareHSS", minBounds=[0.1, 0.01], maxBounds=[10, 0.09])
+#
+# S.addMember([0,1], 0)
+# S.addMember([1,2], 0)
+# S.addMember([2,3], 0)
+# S.addMember([3,0], 0)
+# S.addMember([0,2], 0)
+#
+# S.addNodeLoad(2, [5, 0, 0, 0, 0, 0])
+# S.addNodeLoad(3, [0, 2, 0, 0, 0, 0])
+# #Supports = [[0,True,True,True,True,False,False],[1,False,True,False,True,False,False]]
+# S.addSupport(0, [True,True, True,True, False, False])
+# S.addSupport(1, [False,True, False, True, False, False])
+#
+# S.addRelece(1, [0,0,0,0,0,1,0,0,0,0,0,1])
+# S.addRelece(3, [0,0,0,0,0,1,0,0,0,0,0,1])
+# S.addRelece(4, [0,0,0,0,0,1,0,0,0,0,0,1])
+# # S.addRelece(1, [0,0,1,0,0,1])
+# # S.addRelece(3, [0,0,1,0,0,1])
+# # S.addRelece(4, [0,0,1,0,0,1])
+#
+# # S.solve()
+# # S.printDeflections()
+#
+# S.optimize([1,1])
+# S.printOptimizationResults()
 
 
 
