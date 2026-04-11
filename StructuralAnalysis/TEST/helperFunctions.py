@@ -29,22 +29,20 @@ def partD(model: Frame3D_T):
     return D_unknown, D_known, D_known_val
 
 def prepMembers(model: Frame3D_T):
+    model.members = np.array(model.members)
+    model.nodes_cord = np.array(model.nodes_cord)
+
+
+    Ls = get_L_ARRAY(model)
+
     DOFs = []
-    Ls = []
     memberPartD = []
     T = []
-    K = []
     for i in range(len(model.members)):
-        DOFs.append(buildDOFVector([model.members[0], model.members[1]]))
-        Ls.append(np.linalg.norm(model.nodes_cord[model.members[0]], model.nodes_cord[model.members[1]]))
+        DOFs.append(buildDOFVector([model.members[i,0], model.members[i,1]]))
         memberPartD.append(member_PartD(model.members_Releases[i]))
         T.append(getMemberT(model,i,Ls))
-        if model.members[3]:
-            K.append(getMeberK(model, i, T, Ls))
-        else:
-            K.append(None)
-
-    return DOFs, Ls, memberPartD, T, K
+    return DOFs, Ls, memberPartD, T
 
 def buildDOFVector(listNodes_INDEX):
     dofs = np.empty(len(listNodes_INDEX) * 6, dtype=np.int64)
@@ -118,56 +116,126 @@ def getMemberT(model: Frame3D_T, memberIndex, Ls):
 
     return transMatrix
 
-def getMeberK(model: Frame3D_T, memberIndex, T, Ls):
-    return np.matmul(np.matmul(np.linalg.inv(T), getMemberk(model, memberIndex, Ls)), T)
+# def getGlobalFixedEndReactionVector(model: Frame3D_T):
+#
+#     # Get the partitioned global fixed end reaction vector
+#     FER_val = np.zeros((len(model.nodes_cord) * 6, 1))
+#
+#
+#     for phys_member in self.members.values():
+#         for member in phys_member.sub_members.values():
+#
+#             member_FER = np.asarray(member.FER(combo.name), dtype=float).reshape(-1)
+#             FER_val[member.dofs, 0] += member_FER
+#     FER1, FER2 = partition(FER_val, D1_indices, D2_indices)
+#
+#     return FER1, FER2
 
-def getMemberk(model: Frame3D_T, memberIndex, Ls):
-    E = model.materials[model.members[3]][0]
-    G = model.materials[model.members[3]][1]
-    Iy = model.members_CrossSectionProps[1]
-    Iz = model.members_CrossSectionProps[2]
-    J = model.members_CrossSectionProps[3]
-    A = model.members_CrossSectionProps[0]
+def get_L_ARRAY(model: Frame3D_T):
+    dx = model.nodes_cord[model.members[:, 1], 0] - model.nodes_cord[model.members[:, 0], 0]
+    dy = model.nodes_cord[model.members[:, 1], 1] - model.nodes_cord[model.members[:, 0], 1]
+    dz = model.nodes_cord[model.members[:, 1], 2] - model.nodes_cord[model.members[:, 0], 2]
+    return np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
 
-    L = Ls[memberIndex]
+def get_k_local_relesed_ARRAY(model: Frame3D_T, k_local_array, k11, k12, k21, k22):
+    k_ARRAY = []
+    for i in range(len(k_local_array)):
+        k_ARRAY.append(np.subtract(k11, np.matmul(np.matmul(k12, np.linalg.inv(k22)), k21)))
+        j = 0
+        for DOF in model.members_Releases[i]:
+            if DOF:
+                k_ARRAY[i] = np.insert(k_ARRAY[i], j, 0, axis=0)
+                k_ARRAY[i] = np.insert(k_ARRAY[i], j, 0, axis=1)
+            j += 1
+    return k_ARRAY
+
+def get_k_local_ARRAY(model: Frame3D_T, Ls):
+
+    E = model.materials[model.members[:, 2], 0]
+    G = model.materials[model.members[:, 2], 1]
+
+    A = model.members_CrossSectionProps[:, 0]
+    Iy = model.members_CrossSectionProps[:, 1]
+    Iz = model.members_CrossSectionProps[:, 2]
+    J = model.members_CrossSectionProps[:, 3]
+
+    L = Ls
 
     # Create the uncondensed local stiffness matrix
-    k = np.array([[A * E / L, 0, 0, 0, 0, 0, -A * E / L, 0, 0, 0, 0, 0],
-               [0, 12 * E * Iz / L ** 3, 0, 0, 0, 6 * E * Iz / L ** 2, 0, -12 * E * Iz / L ** 3, 0, 0, 0,
-                6 * E * Iz / L ** 2],
-               [0, 0, 12 * E * Iy / L ** 3, 0, -6 * E * Iy / L ** 2, 0, 0, 0, -12 * E * Iy / L ** 3, 0,
-                -6 * E * Iy / L ** 2, 0],
-               [0, 0, 0, G * J / L, 0, 0, 0, 0, 0, -G * J / L, 0, 0],
-               [0, 0, -6 * E * Iy / L ** 2, 0, 4 * E * Iy / L, 0, 0, 0, 6 * E * Iy / L ** 2, 0, 2 * E * Iy / L, 0],
-               [0, 6 * E * Iz / L ** 2, 0, 0, 0, 4 * E * Iz / L, 0, -6 * E * Iz / L ** 2, 0, 0, 0, 2 * E * Iz / L],
-               [-A * E / L, 0, 0, 0, 0, 0, A * E / L, 0, 0, 0, 0, 0],
-               [0, -12 * E * Iz / L ** 3, 0, 0, 0, -6 * E * Iz / L ** 2, 0, 12 * E * Iz / L ** 3, 0, 0, 0,
-                -6 * E * Iz / L ** 2],
-               [0, 0, -12 * E * Iy / L ** 3, 0, 6 * E * Iy / L ** 2, 0, 0, 0, 12 * E * Iy / L ** 3, 0,
-                6 * E * Iy / L ** 2, 0],
-               [0, 0, 0, -G * J / L, 0, 0, 0, 0, 0, G * J / L, 0, 0],
-               [0, 0, -6 * E * Iy / L ** 2, 0, 2 * E * Iy / L, 0, 0, 0, 6 * E * Iy / L ** 2, 0, 4 * E * Iy / L, 0],
-               [0, 6 * E * Iz / L ** 2, 0, 0, 0, 2 * E * Iz / L, 0, -6 * E * Iz / L ** 2, 0, 0, 0, 4 * E * Iz / L]])
+    k_local_array = []
+    for i in range(len(model.members)):
+        k_local_array.append(np.array([[A[i] * E[i] / L[i], 0, 0, 0, 0, 0, -A[i] * E[i] / L[i], 0, 0, 0, 0, 0],
+               [0, 12 * E[i] * Iz[i] / L[i] ** 3, 0, 0, 0, 6 * E[i] * Iz[i] / L[i] ** 2, 0, -12 * E[i] * Iz[i] / L[i] ** 3, 0, 0, 0,
+                6 * E[i] * Iz[i] / L[i] ** 2],
+               [0, 0, 12 * E[i] * Iy[i] / L[i] ** 3, 0, -6 * E[i] * Iy[i] / L[i] ** 2, 0, 0, 0, -12 * E[i] * Iy[i] / L[i] ** 3, 0,
+                -6 * E[i] * Iy[i] / L[i] ** 2, 0],
+               [0, 0, 0, G[i] * J[i] / L[i], 0, 0, 0, 0, 0, -G[i] * J[i] / L[i], 0, 0],
+               [0, 0, -6 * E[i] * Iy[i] / L[i] ** 2, 0, 4 * E[i] * Iy[i] / L[i], 0, 0, 0, 6 * E[i] * Iy[i] / L[i] ** 2, 0, 2 * E[i] * Iy[i] / L[i], 0],
+               [0, 6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 4 * E[i] * Iz[i] / L[i], 0, -6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 2 * E[i] * Iz[i] / L[i]],
+               [-A[i] * E[i] / L[i], 0, 0, 0, 0, 0, A[i] * E[i] / L[i], 0, 0, 0, 0, 0],
+               [0, -12 * E[i] * Iz[i] / L[i] ** 3, 0, 0, 0, -6 * E[i] * Iz[i] / L[i] ** 2, 0, 12 * E[i] * Iz[i] / L[i] ** 3, 0, 0, 0,
+                -6 * E[i] * Iz[i] / L[i] ** 2],
+               [0, 0, -12 * E[i] * Iy[i] / L[i] ** 3, 0, 6 * E[i] * Iy[i] / L[i] ** 2, 0, 0, 0, 12 * E[i] * Iy[i] / L[i] ** 3, 0,
+                6 * E[i] * Iy[i] / L[i] ** 2, 0],
+               [0, 0, 0, -G[i] * J[i] / L[i], 0, 0, 0, 0, 0, G[i] * J[i] / L[i], 0, 0],
+               [0, 0, -6 * E[i] * Iy[i] / L[i] ** 2, 0, 2 * E[i] * Iy[i] / L[i], 0, 0, 0, 6 * E[i] * Iy[i] / L[i] ** 2, 0, 4 * E[i] * Iy[i] / L[i], 0],
+               [0, 6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 2 * E[i] * Iz[i] / L[i], 0, -6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 4 * E[i] * Iz[i] / L[i]]]))
 
-    k11, k12, k21, k22 = memberPart(model, k, memberIndex)
-    k = np.subtract(k11, np.matmul(np.matmul(k12, np.linalg.inv(k22)), k21))
-    i = 0
-    for DOF in model.members_Releases[memberIndex]:
-        if DOF:
-            k = np.insert(k, i, 0, axis=0)
-            k = np.insert(k, i, 0, axis=1)
-        i += 1
-    return k
+    return k_local_array
 
-def memberPart(model: Frame3D_T, matrix, i):
-    R_unrelesed, R_relesed = member_PartD(model.members_Releases[i])
-    if matrix.shape[1] == 1:
-        m1 = matrix[R_unrelesed, :]
-        m2 = matrix[R_relesed, :]
-        return m1, m2
-    else:
-        m11 = matrix[R_unrelesed, :][:, R_unrelesed]
-        m12 = matrix[R_unrelesed, :][:, R_relesed]
-        m21 = matrix[R_relesed, :][:, R_unrelesed]
-        m22 = matrix[R_relesed, :][:, R_relesed]
-        return m11, m12, m21, m22
+def memberPart_k_ARRAY(k, R_unrelesed, R_relesed):
+    k1 = k[:,R_unrelesed, :]
+    k2 = k[:,R_relesed, :]
+
+    k11 = k1[:, :, R_unrelesed]
+    k12 = k1[:, :, R_relesed]
+    k21 = k2[:, :, R_unrelesed]
+    k22 = k2[:, :, R_relesed]
+    return k11, k12, k21, k22
+
+def get_FER_ARRAY(fer, members_T, numM, numC):
+    FER_array = []
+    for i in range(numM):
+        invT = np.linalg.inv(members_T[i])
+        sub_FER_array = []
+        for j in range(numC):
+            sub_FER_array.append(np.matmul(invT, fer[i, j]))
+        FER_array.append(sub_FER_array)
+    return FER_array
+
+def get_fer_ARRAY(model, k11, k12, k21, k22, fer1, fer2):
+    ferCondensed_ARRAY = []
+    for i in range(len(k12)):
+        ferCondensed = np.subtract(fer1[i], np.matmul(np.matmul(k12[i], np.linalg.inv(k22[i])), fer2[i]))
+        i = 0
+        for DOF in model.members_Releases:
+            if DOF:
+                ferCondensed = np.insert(ferCondensed, i, 0, axis=0)
+            i += 1
+        ferCondensed_ARRAY.append(ferCondensed)
+    return ferCondensed_ARRAY
+
+def memberPart_fer_ARRAY(fer, R_unrelesed, R_relesed):
+    fer1 = fer[:, R_unrelesed, :]
+    fer2 = fer[:, R_relesed, :]
+    return fer1, fer2
+
+def get_fer_unc_ARRAY(model, pointLoads, distLoads):
+
+    # pointLoads [memberINDEX, caseINDEX, [x, Px, Py, Pz, Mx, My, Mz]]
+    # distLoads [memberINDEX, caseINDEX, [x1, x2, wz1, wz2, wy1, wy2]]
+
+    fer_unc_ARRAY = np.zeros((len(model.members), 12, 1))
+    fer_unc_ARRAY = np.add(fer_unc_ARRAY, get_FixedEndReactions_Pointload_ARRAY(model, pointLoads))
+    fer_unc_ARRAY = np.add(fer_unc_ARRAY, get_FixedEndReactions_Distload_ARRAY(model, distLoads))
+
+    return fer_unc_ARRAY
+
+
+def get_FixedEndReactions_Pointload_ARRAY(model, pointLoads):
+    # pointLoads [memberINDEX, caseINDEX, [x, Px, Py, Pz, Mx, My, Mz]] # TODO
+    pass
+
+def get_FixedEndReactions_Distload_ARRAY(model, distLoads):
+    # distLoads [memberINDEX, caseINDEX, [x1, x2, wz1, wz2, wy1, wy2]] # TODO
+    pass

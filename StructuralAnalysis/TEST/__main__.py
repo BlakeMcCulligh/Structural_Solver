@@ -148,10 +148,11 @@ class Frame3D_T:
 
     def preAnalysis_linear(self): #TODO
         self.D_unknown, self.D_known, self.D_known_val = hf.partD(self)
-        self.members_DOF, self.members_L, self.members_PartD, self.members_T, self.members_K = hf.prepMembers(self)
+        self.members_DOF, self.members_L, self.members_PartD, self.members_T = hf.prepMembers(self)
+
 
     def analysis_linear(self): #TODO
-        pass
+        FER1, FER2 = hf.getGlobalFixedEndReactionVector(self)
 
 
 if __name__ == '__main__':
