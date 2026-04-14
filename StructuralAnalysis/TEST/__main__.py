@@ -1,5 +1,6 @@
 
 import helperFunctions as hf
+import numpy as np
 
 class Frame3D_T:
     def __init__(self) -> None:
@@ -27,7 +28,8 @@ class Frame3D_T:
         self.members_Releases = []
         self.members_DOF = []
         self.members_L = []
-        self.members_PartD = []
+        self.members_PartD_unreleced = []
+        self.members_PartD_releced = []
         self.members_T = []
         self.members_K = []
 
@@ -39,6 +41,8 @@ class Frame3D_T:
         self.D_unknown = None
         self.D_known = None
         self.D_known_val = None
+
+
 
     def addNode(self, X: float, Y: float, Z: float):
         self.nodes_cord.append([X, Y, Z])
@@ -60,7 +64,8 @@ class Frame3D_T:
         self.members_Releases.append([False, False, False, False, False, False, False, False, False, False, False, False])
         self.members_DOF.append([])
         self.members_L.append([])
-        self.members_PartD.append([])
+        self.members_PartD_unreleced.append([])
+        self.members_PartD_releced.append([])
         self.members_T.append([])
         self.members_K.append([])
 
@@ -117,15 +122,15 @@ class Frame3D_T:
             if case not in self.casses:
                 self.casses.append(case)
 
-    def addMemberDistLoad(self, member_index: int, x1: float, x2: float, wz1: float = 0, wz2: float = 0, wy1: float = 0, wy2: float = 0, case: int = 0):
+    def addMemberDistLoad(self, member_index: int, x1: float, x2: float, wx1: float = 0, wx2: float = 0, wy1: float = 0, wy2: float = 0, wz1: float = 0, wz2: float = 0, case: int = 0):
         caseFound = False
         for loads_case in self.members_DistLoads[member_index]:
             caseINDEX, loads = loads_case[0], loads_case[1]
             if caseINDEX == case:
                 caseFound = True
-                loads.append([[x1, x2], [wz1, wz2, wy1, wy2]])
+                loads.append([[x1, x2], [wx1, wx2, wy1, wy2, wz1, wz2]])
         if not caseFound:
-            self.members_DistLoads[member_index].append([case, [[[x1, x2], [wz1, wz2, wy1, wy2]]]])
+            self.members_DistLoads[member_index].append([case, [[[x1, x2], [wx1, wx2, wy1, wy2, wz1, wz2]]]])
             if case not in self.casses:
                 self.casses.append(case)
 
@@ -147,12 +152,26 @@ class Frame3D_T:
             self.casses.append([case])
 
     def preAnalysis_linear(self): #TODO
-        self.D_unknown, self.D_known, self.D_known_val = hf.partD(self)
-        self.members_DOF, self.members_L, self.members_PartD, self.members_T = hf.prepMembers(self)
+        self.materials = np.array(self.materials)
+
+
+        self.D_unknown, self.D_known = hf.partD(self)
+        self.members_DOF, self.members_L, self.members_PartD_unreleced, self.members_PartD_releced, self.members_T = hf.prepMembers(self)
 
 
     def analysis_linear(self): #TODO
-        FER1, FER2 = hf.getGlobalFixedEndReactionVector(self)
+        self.members_CrossSectionProps = np.array(self.members_CrossSectionProps)
+
+        pointLoads, distLoads = hf.assembleLoads(self)
+
+        k_local = hf.get_k_local_ARRAY(self, self.members_L)
+
+        k11, k12, k21, k22 = hf.memberPart_k_ARRAY(k_local, self.members_PartD_unreleced, self.members_PartD_releced, len(self.members))
+
+        FER1, FER2 = hf.getGlobalFixedEndReactionVector_ARRAY(self, pointLoads, distLoads, self.members_PartD_unreleced, self.members_PartD_releced, k12, k22, self.members_T, self.D_unknown, self.D_known)
+
+
+
 
 
 if __name__ == '__main__':
@@ -160,21 +179,27 @@ if __name__ == '__main__':
 
     simple_beam.addNode(0, 0, 0)
     simple_beam.addNode(168, 0, 0)
+    # simple_beam.addNode(168, 5, 0)
 
     simple_beam.addMaterial(29000, 11200, 0.3, 2.836e-4)
 
     simple_beam.addMember(0, 1, 0, True, 20, 100, 150, 250)
+    # simple_beam.addMember(0, 2, 0, True, 20, 100, 150, 250)
 
     simple_beam.defSupport(0, True, True, True, False, False, False)
     simple_beam.defSupport(1, True, True, True, True, False, False)
-
-    simple_beam.addNodeLoad(0, Pz=1, case=0)
-    simple_beam.addMemberPointLoad(0, 1, Pz=1, case=0)
-    simple_beam.addMemberPointLoad(0, 2, Pz=1, case=0)
-    simple_beam.addMemberPointLoad(0, 2, Pz=1, case=1)
-    simple_beam.addMemberDistLoad(0,0,5,5,2,0,0)
-    simple_beam.addMemberDistLoad(0, 0, 5, 5, 2, 0, 0)
-    simple_beam.addMemberSelfWeight()
-    simple_beam.addMemberSelfWeight(case=1)
+    # simple_beam.defSupport(0, True, True, True, True, True, True)
+    # simple_beam.defSupport(1, True, True, True, True, True, True)
+#'M1', 'Fy', -0.01, -0.01, 0, 168
+    # simple_beam.addNodeLoad(0, Pz=1, case=0)
+    # simple_beam.addMemberPointLoad(0, 1, Pz=1, case=0)
+    # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=0)
+    # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=1)
+    # simple_beam.addMemberDistLoad(0,0,5,5,2,0,0)
+    simple_beam.addMemberDistLoad(0, 0, 168, 0, 0, -0.01, -0.01, case=0)
+    #simple_beam.addMemberDistLoad(0, 0, 168, 0, 0, -0.01, -0.01, case=1)
+    # simple_beam.addMemberSelfWeight()
+    # simple_beam.addMemberSelfWeight(case=1)
     simple_beam.preAnalysis_linear()
+    simple_beam.analysis_linear()
 

@@ -1,6 +1,7 @@
 
 import numpy as np
 import math
+import StructuralAnalysis.TEST.fixedEndReactionsCalculaters as ferCalc
 
 from StructuralAnalysis.TEST.__main__ import Frame3D_T
 
@@ -8,25 +9,17 @@ def partD(model: Frame3D_T):
 
     D_unknown = []
     D_known = []
-    D_known_val = []
 
     for i in range(len(model.nodes_cord)):
         sup = model.nodes_Support[i]
-        enf = model.nodes_D_Enforced[i]
 
         for direc in range(6):
-            if sup[direc] == False and enf[direc] is None:
+            if not sup[direc]:
                 D_unknown.append(i * 6 + direc)
-            elif enf[direc] is not None:
-                D_known.append(i * 6 + direc)
-                D_known_val.append(enf[direc])
             else:
                 D_known.append(i * 6 + direc)
-                D_known_val.append(0.0)
 
-    D_known_val = np.array(D_known_val, ndmin=2).T
-
-    return D_unknown, D_known, D_known_val
+    return D_unknown, D_known
 
 def prepMembers(model: Frame3D_T):
     model.members = np.array(model.members)
@@ -34,22 +27,27 @@ def prepMembers(model: Frame3D_T):
 
 
     Ls = get_L_ARRAY(model)
-
     DOFs = []
-    memberPartD = []
+    memberPartD_unrelesed = []
+    memberPartD_relesed = []
     T = []
     for i in range(len(model.members)):
         DOFs.append(buildDOFVector([model.members[i,0], model.members[i,1]]))
-        memberPartD.append(member_PartD(model.members_Releases[i]))
+        p1, p2 = member_PartD(model.members_Releases[i])
+        memberPartD_unrelesed.append(p1)
+        memberPartD_relesed.append(p2)
         T.append(getMemberT(model,i,Ls))
-    return DOFs, Ls, memberPartD, T
+
+
+    return DOFs, Ls, memberPartD_unrelesed, memberPartD_relesed, T
+
 
 def buildDOFVector(listNodes_INDEX):
     dofs = np.empty(len(listNodes_INDEX) * 6, dtype=np.int64)
     local = np.arange(6, dtype=np.int64)
-    for i in listNodes_INDEX:
+    for i, node in enumerate(listNodes_INDEX):
         start = i * 6
-        dofs[start:start + 6] = i * 6 + local
+        dofs[start:start + 6] = node * 6 + local
     return dofs
 
 def member_PartD(member_Releases):
@@ -116,20 +114,35 @@ def getMemberT(model: Frame3D_T, memberIndex, Ls):
 
     return transMatrix
 
-# def getGlobalFixedEndReactionVector(model: Frame3D_T):
-#
-#     # Get the partitioned global fixed end reaction vector
-#     FER_val = np.zeros((len(model.nodes_cord) * 6, 1))
-#
-#
-#     for phys_member in self.members.values():
-#         for member in phys_member.sub_members.values():
-#
-#             member_FER = np.asarray(member.FER(combo.name), dtype=float).reshape(-1)
-#             FER_val[member.dofs, 0] += member_FER
-#     FER1, FER2 = partition(FER_val, D1_indices, D2_indices)
-#
-#     return FER1, FER2
+def getGlobalFixedEndReactionVector_ARRAY(model: Frame3D_T, pointLoads, distLoads, R_unrelesed, R_relesed, k12, k22, members_T, D_unknown, D_known):
+
+    numM = len(model.members)
+    numC = len(model.casses)
+
+    fer_unc_ARRAY = get_fer_unc_ARRAY(model, pointLoads, distLoads)
+    fer1, fer2 = memberPart_fer_ARRAY(fer_unc_ARRAY, R_unrelesed, R_relesed)
+    ferCondensed_ARRAY = get_fer_ARRAY(model, k12, k22, fer1, fer2, numM, numC)
+    FER_array = get_FER_ARRAY(ferCondensed_ARRAY, members_T, numM, numC)
+
+    FER_val = [np.zeros((len(model.nodes_cord) * 6, 1))] * numC
+    for i in range(numM):
+        for j in range(numC):
+            FER = FER_array[i][j]
+            member_FER = np.asarray(FER, dtype=float).reshape(-1)
+            FER_val[j][model.members_DOF[i], 0] += member_FER
+
+    FER1, FER2 = partFER(FER_val, D_unknown, D_known, numC)
+
+    return FER1, FER2
+
+def partFER(FER_val, D1_indices, D2_indices, numC):
+    FER1 = []
+    FER2 = []
+    for j in range(numC):
+        FER_val_sub = FER_val[j]
+        FER1.append(FER_val_sub[D1_indices, :])
+        FER2.append(FER_val_sub[D2_indices, :])
+    return FER1, FER2
 
 def get_L_ARRAY(model: Frame3D_T):
     dx = model.nodes_cord[model.members[:, 1], 0] - model.nodes_cord[model.members[:, 0], 0]
@@ -150,7 +163,6 @@ def get_k_local_relesed_ARRAY(model: Frame3D_T, k_local_array, k11, k12, k21, k2
     return k_ARRAY
 
 def get_k_local_ARRAY(model: Frame3D_T, Ls):
-
     E = model.materials[model.members[:, 2], 0]
     G = model.materials[model.members[:, 2], 1]
 
@@ -181,17 +193,22 @@ def get_k_local_ARRAY(model: Frame3D_T, Ls):
                [0, 0, -6 * E[i] * Iy[i] / L[i] ** 2, 0, 2 * E[i] * Iy[i] / L[i], 0, 0, 0, 6 * E[i] * Iy[i] / L[i] ** 2, 0, 4 * E[i] * Iy[i] / L[i], 0],
                [0, 6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 2 * E[i] * Iz[i] / L[i], 0, -6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 4 * E[i] * Iz[i] / L[i]]]))
 
-    return k_local_array
+    return np.array(k_local_array)
 
-def memberPart_k_ARRAY(k, R_unrelesed, R_relesed):
-    k1 = k[:,R_unrelesed, :]
-    k2 = k[:,R_relesed, :]
-
-    k11 = k1[:, :, R_unrelesed]
-    k12 = k1[:, :, R_relesed]
-    k21 = k2[:, :, R_unrelesed]
-    k22 = k2[:, :, R_relesed]
-    return k11, k12, k21, k22
+def memberPart_k_ARRAY(k_array, R_unrelesed_array, R_relesed_array, numM):
+    k11_array = []
+    k12_array = []
+    k21_array = []
+    k22_array = []
+    for i in range(numM):
+        k = np.array(k_array[i])
+        R_unrelesed = np.array(R_unrelesed_array[i], dtype=int)
+        R_relesed = np.array(R_relesed_array[i], dtype=int)
+        k11_array.append(k[R_unrelesed, :][:, R_unrelesed])
+        k12_array.append(k[R_unrelesed, :][:, R_relesed])
+        k21_array.append(k[R_relesed, :][:, R_unrelesed])
+        k22_array.append(k[R_relesed, :][:, R_relesed])
+    return k11_array, k12_array, k21_array, k22_array
 
 def get_FER_ARRAY(fer, members_T, numM, numC):
     FER_array = []
@@ -203,28 +220,39 @@ def get_FER_ARRAY(fer, members_T, numM, numC):
         FER_array.append(sub_FER_array)
     return FER_array
 
-def get_fer_ARRAY(model, k11, k12, k21, k22, fer1, fer2):
+def get_fer_ARRAY(model, k12, k22, fer1, fer2, numM, numC):
     ferCondensed_ARRAY = []
-    for i in range(len(k12)):
-        ferCondensed = np.subtract(fer1[i], np.matmul(np.matmul(k12[i], np.linalg.inv(k22[i])), fer2[i]))
-        i = 0
-        for DOF in model.members_Releases:
-            if DOF:
-                ferCondensed = np.insert(ferCondensed, i, 0, axis=0)
-            i += 1
-        ferCondensed_ARRAY.append(ferCondensed)
-    return ferCondensed_ARRAY
+    for i in range(numM):
+        k_12, k_22, fer_1, fer_2 = k12[i], k22[i], fer1[i], fer2[i]
+
+        ferCondensed = np.subtract(fer_1, np.matmul(np.matmul(k_12, np.linalg.inv(k_22)), fer_2))[:,0] # TODO figure out whay there is extra brakets
+        j = 0
+        product = []
+        for a in range(numC):
+            sub_ferCondensed = ferCondensed[a]
+            for DOF in model.members_Releases[i]:
+                if DOF:
+                    sub_ferCondensed = np.insert(sub_ferCondensed, j, 0, axis=0)
+                j += 1
+            product.append(sub_ferCondensed)
+        ferCondensed_ARRAY.append(product)
+
+    return np.array(ferCondensed_ARRAY)
 
 def memberPart_fer_ARRAY(fer, R_unrelesed, R_relesed):
-    fer1 = fer[:, R_unrelesed, :]
-    fer2 = fer[:, R_relesed, :]
-    return fer1, fer2
+    fer1_array = []
+    fer2_array = []
+    for i in range(len(fer)):
+        fer1_a = []
+        fer2_a = []
+        for j in range(len(fer[i])):
+            fer1_a.append(fer[i][j][R_unrelesed])
+            fer2_a.append(fer[i][j][R_relesed])
+        fer1_array.append(fer1_a)
+        fer2_array.append(fer2_a)
+    return np.array(fer1_array), np.array(fer2_array)
 
 def get_fer_unc_ARRAY(model, pointLoads, distLoads):
-
-    # pointLoads [memberINDEX, caseINDEX, [x, Px, Py, Pz, Mx, My, Mz]]
-    # distLoads [memberINDEX, caseINDEX, [x1, x2, wz1, wz2, wy1, wy2]]
-
     fer_unc_ARRAY = np.zeros((len(model.members), 12, 1))
     fer_unc_ARRAY = np.add(fer_unc_ARRAY, get_FixedEndReactions_Pointload_ARRAY(model, pointLoads))
     fer_unc_ARRAY = np.add(fer_unc_ARRAY, get_FixedEndReactions_Distload_ARRAY(model, distLoads))
@@ -233,9 +261,88 @@ def get_fer_unc_ARRAY(model, pointLoads, distLoads):
 
 
 def get_FixedEndReactions_Pointload_ARRAY(model, pointLoads):
-    # pointLoads [memberINDEX, caseINDEX, [x, Px, Py, Pz, Mx, My, Mz]] # TODO
-    pass
+    # pointLoads [memberINDEX, caseINDEX, location, data], data: [x, Px, Py, Pz, Mx, My, Mz]
+    Reactions = []
+    for i, loadCasses in enumerate(pointLoads):
+        L = model.members_L[i]
+        reactionsMember = []
+        for j, loads in enumerate(loadCasses):
+            reactions = np.zeros((12, 1))
+            if loads is not None:
+                for k, load in enumerate(loads):
+                    if load[1] != 0:
+                        reactions = np.add(reactions, ferCalc.pointLoadX(load[1], load[0], L))
+                    if load[2] != 0:
+                        reactions = np.add(reactions, ferCalc.pointLoadY(load[2], load[0], L))
+                    if load[3] != 0:
+                        reactions = np.add(reactions, ferCalc.pointLoadZ(load[2], load[0], L))
+                    if load[4] != 0:
+                        reactions = np.add(reactions, ferCalc.momentX(load[3], load[0], L))
+                    if load[5] != 0:
+                        reactions = np.add(reactions, ferCalc.momentY(load[4], load[0], L))
+                    if load[6] != 0:
+                        reactions = np.add(reactions, ferCalc.momentZ(load[5], load[0], L))
+            reactionsMember.append(reactions)
+        Reactions.append(reactionsMember)
+    return Reactions
 
 def get_FixedEndReactions_Distload_ARRAY(model, distLoads):
-    # distLoads [memberINDEX, caseINDEX, [x1, x2, wz1, wz2, wy1, wy2]] # TODO
-    pass
+    # distLoads [memberINDEX, caseINDEX, location, data], data: [x1, x2, wx1, wx2, wy1, wy2, wz1, wz2]
+    Reactions = []
+    for i, loadCasses in enumerate(distLoads):
+        L = model.members_L[i]
+        reactionsMember = []
+        for j, loads in enumerate(loadCasses):
+            reactions = np.zeros((12, 1))
+            for k, load in enumerate(loads):
+                if not (load[2] == 0 and load[3] == 0):
+                    reactions = np.add(reactions, ferCalc.distributedLoadX([load[2],load[3]], [load[0], load[1]], L))
+                if not (load[4] == 0 and load[5] == 0):
+                    reactions = np.add(reactions, ferCalc.distributedLoadY([load[4],load[5]], [load[0], load[1]], L))
+                if not (load[6] == 0 and load[7] == 0):
+                    reactions = np.add(reactions, ferCalc.distributedLoadZ([load[6],load[7]], [load[0], load[1]], L))
+            reactionsMember.append(reactions)
+        Reactions.append(reactionsMember)
+    return Reactions
+
+
+
+def assembleLoads(model: Frame3D_T):
+    pointLoads = assemblePointLoads(model)
+    distLoads = assembleDistLoads(model)
+    return pointLoads, distLoads
+
+def assemblePointLoads(model: Frame3D_T):
+    # pointLoads [memberINDEX, caseINDEX, location, data], data: [x, Px, Py, Pz, Mx, My, Mz]
+    newPointLoads = []
+    for i, loadCasses in enumerate(model.members_PointLoads):
+        newLoads  = [None] * len(model.casses)
+        for loads in loadCasses:
+            newLoad  = []
+            for j in range(len(loads[1][0])):
+                newLoad.append([loads[1][0][j]] + loads[1][1][j])
+            newLoads[loads[0]] = newLoad
+        newPointLoads.append(newLoads)
+    return newPointLoads
+
+def assembleDistLoads(model: Frame3D_T):
+    # distLoads [memberINDEX, caseINDEX, location, data], data: [x1, x2, wx1, wx2, wy1, wy2, wz1, wz2]
+    newDistLoads = []
+    for i, loadCasses in enumerate(model.members_DistLoads):
+        newLoads = [None] * len(model.casses)
+
+        for loads in loadCasses:
+            newLoad = []
+            for j in range(len(loads[1])):
+                newLoad.append(loads[1][j][0] + loads[1][j][1])
+            newLoads[loads[0]] = newLoad
+
+        for j in range(len(newLoads)):
+            if newLoads[j] is None:
+                # noinspection PyTypeChecker
+                newLoads[j] = []
+
+        newDistLoads.append(newLoads)
+
+    return newDistLoads
+
