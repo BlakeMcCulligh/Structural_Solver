@@ -151,25 +151,34 @@ class Frame3D_T:
         if caseADDED and case not in self.casses:
             self.casses.append([case])
 
-    def preAnalysis_linear(self): #TODO
+    def preAnalysis_linear(self):
         self.materials = np.array(self.materials)
-
-
         self.D_unknown, self.D_known = hf.partD(self)
         self.members_DOF, self.members_L, self.members_PartD_unreleced, self.members_PartD_releced, self.members_T = hf.prepMembers(self)
 
 
-    def analysis_linear(self): #TODO
+    def analysis_linear(self):
+        numN = len(self.nodes_cord)
+        numM = len(self.members)
+
         self.members_CrossSectionProps = np.array(self.members_CrossSectionProps)
 
         pointLoads, distLoads = hf.assembleLoads(self)
 
         k_local = hf.get_k_local_ARRAY(self, self.members_L)
 
-        k11, k12, k21, k22 = hf.memberPart_k_ARRAY(k_local, self.members_PartD_unreleced, self.members_PartD_releced, len(self.members))
+        k11, k12, k21, k22 = hf.memberPart_k_ARRAY(k_local, self.members_PartD_unreleced, self.members_PartD_releced, numM)
 
         FER1, FER2 = hf.getGlobalFixedEndReactionVector_ARRAY(self, pointLoads, distLoads, self.members_PartD_unreleced, self.members_PartD_releced, k12, k22, self.members_T, self.D_unknown, self.D_known)
 
+        P1, P2 = hf.partitionedGlobalNodalForceVector(self, numN)
+
+        # TODO
+        # get K_global
+
+        # get K11, K12, K21, K22
+
+        # get D
 
 
 

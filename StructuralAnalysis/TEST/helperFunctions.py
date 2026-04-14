@@ -1,4 +1,3 @@
-
 import numpy as np
 import math
 import StructuralAnalysis.TEST.fixedEndReactionsCalculaters as ferCalc
@@ -6,10 +5,8 @@ import StructuralAnalysis.TEST.fixedEndReactionsCalculaters as ferCalc
 from StructuralAnalysis.TEST.__main__ import Frame3D_T
 
 def partD(model: Frame3D_T):
-
     D_unknown = []
     D_known = []
-
     for i in range(len(model.nodes_cord)):
         sup = model.nodes_Support[i]
 
@@ -18,14 +15,11 @@ def partD(model: Frame3D_T):
                 D_unknown.append(i * 6 + direc)
             else:
                 D_known.append(i * 6 + direc)
-
     return D_unknown, D_known
 
 def prepMembers(model: Frame3D_T):
     model.members = np.array(model.members)
     model.nodes_cord = np.array(model.nodes_cord)
-
-
     Ls = get_L_ARRAY(model)
     DOFs = []
     memberPartD_unrelesed = []
@@ -37,10 +31,7 @@ def prepMembers(model: Frame3D_T):
         memberPartD_unrelesed.append(p1)
         memberPartD_relesed.append(p2)
         T.append(getMemberT(model,i,Ls))
-
-
     return DOFs, Ls, memberPartD_unrelesed, memberPartD_relesed, T
-
 
 def buildDOFVector(listNodes_INDEX):
     dofs = np.empty(len(listNodes_INDEX) * 6, dtype=np.int64)
@@ -61,19 +52,15 @@ def member_PartD(member_Releases):
     return R_unrelesed, R_relesed
 
 def getMemberT(model: Frame3D_T, memberIndex, Ls):
-
     Xi = model.nodes_cord[model.members[memberIndex][0]][0]
     Xj = model.nodes_cord[model.members[memberIndex][1]][0]
     Yi = model.nodes_cord[model.members[memberIndex][0]][1]
     Yj = model.nodes_cord[model.members[memberIndex][1]][1]
     Zi = model.nodes_cord[model.members[memberIndex][0]][2]
     Zj = model.nodes_cord[model.members[memberIndex][1]][2]
-
     L = Ls[memberIndex]
-
     # Calculate the direction cosines for the local x-axis
     x = [(Xj - Xi) / L, (Yj - Yi) / L, (Zj - Zi) / L]
-
     # Vertical members
     if math.isclose(Xi, Xj) and math.isclose(Zi, Zj):
         if Yj > Yi:
@@ -82,57 +69,45 @@ def getMemberT(model: Frame3D_T, memberIndex, Ls):
         else:
             y = [1, 0, 0]
             z = [0, 0, 1]
-
     # Horizontal members
     elif math.isclose(Yi, Yj):
         y = [0, 1, 0]
         z = np.cross(x, y)
         z = np.divide(z, (z[0] ** 2 + z[1] ** 2 + z[2] ** 2) ** 0.5)
-
     # Members neither vertical nor horizontal
     else:
         proj = [Xj - Xi, 0, Zj - Zi]
-
         if Yj > Yi:
             z = np.cross(proj, x)
         else:
             z = np.cross(x, proj)
-
         z = np.divide(z, (z[0] ** 2 + z[1] ** 2 + z[2] ** 2) ** 0.5)
         y = np.cross(z, x)
         y = np.divide(y, (y[0] ** 2 + y[1] ** 2 + y[2] ** 2) ** 0.5)
-
     # Create the direction cosines matrix
     dirCos = np.array([x, y, z])
-
     # Build the transformation matrix
     transMatrix = np.zeros((12, 12))
     transMatrix[0:3, 0:3] = dirCos
     transMatrix[3:6, 3:6] = dirCos
     transMatrix[6:9, 6:9] = dirCos
     transMatrix[9:12, 9:12] = dirCos
-
     return transMatrix
 
 def getGlobalFixedEndReactionVector_ARRAY(model: Frame3D_T, pointLoads, distLoads, R_unrelesed, R_relesed, k12, k22, members_T, D_unknown, D_known):
-
     numM = len(model.members)
     numC = len(model.casses)
-
     fer_unc_ARRAY = get_fer_unc_ARRAY(model, pointLoads, distLoads)
     fer1, fer2 = memberPart_fer_ARRAY(fer_unc_ARRAY, R_unrelesed, R_relesed)
     ferCondensed_ARRAY = get_fer_ARRAY(model, k12, k22, fer1, fer2, numM, numC)
     FER_array = get_FER_ARRAY(ferCondensed_ARRAY, members_T, numM, numC)
-
     FER_val = [np.zeros((len(model.nodes_cord) * 6, 1))] * numC
     for i in range(numM):
         for j in range(numC):
             FER = FER_array[i][j]
             member_FER = np.asarray(FER, dtype=float).reshape(-1)
             FER_val[j][model.members_DOF[i], 0] += member_FER
-
     FER1, FER2 = partFER(FER_val, D_unknown, D_known, numC)
-
     return FER1, FER2
 
 def partFER(FER_val, D1_indices, D2_indices, numC):
@@ -165,15 +140,11 @@ def get_k_local_relesed_ARRAY(model: Frame3D_T, k_local_array, k11, k12, k21, k2
 def get_k_local_ARRAY(model: Frame3D_T, Ls):
     E = model.materials[model.members[:, 2], 0]
     G = model.materials[model.members[:, 2], 1]
-
     A = model.members_CrossSectionProps[:, 0]
     Iy = model.members_CrossSectionProps[:, 1]
     Iz = model.members_CrossSectionProps[:, 2]
     J = model.members_CrossSectionProps[:, 3]
-
     L = Ls
-
-    # Create the uncondensed local stiffness matrix
     k_local_array = []
     for i in range(len(model.members)):
         k_local_array.append(np.array([[A[i] * E[i] / L[i], 0, 0, 0, 0, 0, -A[i] * E[i] / L[i], 0, 0, 0, 0, 0],
@@ -192,7 +163,6 @@ def get_k_local_ARRAY(model: Frame3D_T, Ls):
                [0, 0, 0, -G[i] * J[i] / L[i], 0, 0, 0, 0, 0, G[i] * J[i] / L[i], 0, 0],
                [0, 0, -6 * E[i] * Iy[i] / L[i] ** 2, 0, 2 * E[i] * Iy[i] / L[i], 0, 0, 0, 6 * E[i] * Iy[i] / L[i] ** 2, 0, 4 * E[i] * Iy[i] / L[i], 0],
                [0, 6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 2 * E[i] * Iz[i] / L[i], 0, -6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 4 * E[i] * Iz[i] / L[i]]]))
-
     return np.array(k_local_array)
 
 def memberPart_k_ARRAY(k_array, R_unrelesed_array, R_relesed_array, numM):
@@ -224,8 +194,7 @@ def get_fer_ARRAY(model, k12, k22, fer1, fer2, numM, numC):
     ferCondensed_ARRAY = []
     for i in range(numM):
         k_12, k_22, fer_1, fer_2 = k12[i], k22[i], fer1[i], fer2[i]
-
-        ferCondensed = np.subtract(fer_1, np.matmul(np.matmul(k_12, np.linalg.inv(k_22)), fer_2))[:,0] # TODO figure out whay there is extra brakets
+        ferCondensed = np.subtract(fer_1, np.matmul(np.matmul(k_12, np.linalg.inv(k_22)), fer_2))[:,0] # TODO figure out why there is extra brakets
         j = 0
         product = []
         for a in range(numC):
@@ -236,7 +205,6 @@ def get_fer_ARRAY(model, k12, k22, fer1, fer2, numM, numC):
                 j += 1
             product.append(sub_ferCondensed)
         ferCondensed_ARRAY.append(product)
-
     return np.array(ferCondensed_ARRAY)
 
 def memberPart_fer_ARRAY(fer, R_unrelesed, R_relesed):
@@ -256,9 +224,7 @@ def get_fer_unc_ARRAY(model, pointLoads, distLoads):
     fer_unc_ARRAY = np.zeros((len(model.members), 12, 1))
     fer_unc_ARRAY = np.add(fer_unc_ARRAY, get_FixedEndReactions_Pointload_ARRAY(model, pointLoads))
     fer_unc_ARRAY = np.add(fer_unc_ARRAY, get_FixedEndReactions_Distload_ARRAY(model, distLoads))
-
     return fer_unc_ARRAY
-
 
 def get_FixedEndReactions_Pointload_ARRAY(model, pointLoads):
     # pointLoads [memberINDEX, caseINDEX, location, data], data: [x, Px, Py, Pz, Mx, My, Mz]
@@ -305,8 +271,6 @@ def get_FixedEndReactions_Distload_ARRAY(model, distLoads):
         Reactions.append(reactionsMember)
     return Reactions
 
-
-
 def assembleLoads(model: Frame3D_T):
     pointLoads = assemblePointLoads(model)
     distLoads = assembleDistLoads(model)
@@ -330,19 +294,28 @@ def assembleDistLoads(model: Frame3D_T):
     newDistLoads = []
     for i, loadCasses in enumerate(model.members_DistLoads):
         newLoads = [None] * len(model.casses)
-
         for loads in loadCasses:
             newLoad = []
             for j in range(len(loads[1])):
                 newLoad.append(loads[1][j][0] + loads[1][j][1])
             newLoads[loads[0]] = newLoad
-
         for j in range(len(newLoads)):
             if newLoads[j] is None:
                 # noinspection PyTypeChecker
                 newLoads[j] = []
-
         newDistLoads.append(newLoads)
-
     return newDistLoads
 
+def partitionedGlobalNodalForceVector(model, numN):
+    p_array = []
+    for loadCaseI in model.casses:
+        p = np.zeros((numN * 6, 1))
+        for i in range(numN):
+            if np.size(model.nodes_loads[loadCaseI]) != 0:
+                local = np.array(model.nodes_loads[loadCaseI][1])
+            else:
+                local = np.zeros(6, dtype=float)
+            dofs = buildDOFVector([i])
+            p[dofs, 0] += local
+        p_array.append(p)
+    return partFER(p_array, model.D_unknown, model.D_known, len(model.casses))
