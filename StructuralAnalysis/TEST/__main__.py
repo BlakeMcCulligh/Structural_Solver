@@ -42,8 +42,6 @@ class Frame3D_T:
         self.D_known = None
         self.D_known_val = None
 
-
-
     def addNode(self, X: float, Y: float, Z: float):
         self.nodes_cord.append([X, Y, Z])
         self.nodes_loads.append([])
@@ -134,32 +132,33 @@ class Frame3D_T:
             if case not in self.casses:
                 self.casses.append(case)
 
-    def addMemberSelfWeight(self, case: int = 0, factorX: float = 0, factorY: float = 0, factorZ: float = -1):
-        caseADDED = False
-        for selfWeight in self.members_SelfWeight:
-            caseFound = False
-            for load_case in selfWeight:
-                if load_case[0] == case:
-                    load_case[1][0] += factorX
-                    load_case[1][1] += factorY
-                    load_case[1][2] += factorZ
-                    caseFound = True
-            if not caseFound:
-                caseADDED = True
-                selfWeight.append([case, [factorX, factorY, factorZ]])
-
-        if caseADDED and case not in self.casses:
-            self.casses.append([case])
+    # TODO needs to be implemented
+    # def addMemberSelfWeight(self, case: int = 0, factorX: float = 0, factorY: float = 0, factorZ: float = -1):
+    #     caseADDED = False
+    #     for selfWeight in self.members_SelfWeight:
+    #         caseFound = False
+    #         for load_case in selfWeight:
+    #             if load_case[0] == case:
+    #                 load_case[1][0] += factorX
+    #                 load_case[1][1] += factorY
+    #                 load_case[1][2] += factorZ
+    #                 caseFound = True
+    #         if not caseFound:
+    #             caseADDED = True
+    #             selfWeight.append([case, [factorX, factorY, factorZ]])
+    #
+    #     if caseADDED and case not in self.casses:
+    #         self.casses.append([case])
 
     def preAnalysis_linear(self):
         self.materials = np.array(self.materials)
         self.D_unknown, self.D_known = hf.partD(self)
         self.members_DOF, self.members_L, self.members_PartD_unreleced, self.members_PartD_releced, self.members_T = hf.prepMembers(self)
 
-
     def analysis_linear(self):
         numN = len(self.nodes_cord)
         numM = len(self.members)
+        numC = len(self.casses)
 
         self.members_CrossSectionProps = np.array(self.members_CrossSectionProps)
 
@@ -173,15 +172,17 @@ class Frame3D_T:
 
         P1, P2 = hf.partitionedGlobalNodalForceVector(self, numN)
 
-        # TODO
-        # get K_global
+        k_global_members = hf.k_member_make_global(k_local, self.members_T)
 
-        # get K11, K12, K21, K22
+        K_global = hf.get_K_Global(self, k_global_members, numN, numM)
 
-        # get D
+        K11, K12, K21, K22 = hf.partition_K_gloabl(K_global, self.D_unknown, self.D_known)
 
+        D, DX, DY, DZ, RX, RY, RZ = hf.get_D(K11, K12, P1, FER1, self.D_unknown, self.D_known, numN, numC)
 
+        #TODO add optional solvers for other parts of the structure EX. reactions, internal forces
 
+        return D, DX, DY, DZ, RX, RY, RZ
 
 if __name__ == '__main__':
     simple_beam = Frame3D_T()
@@ -210,5 +211,5 @@ if __name__ == '__main__':
     # simple_beam.addMemberSelfWeight()
     # simple_beam.addMemberSelfWeight(case=1)
     simple_beam.preAnalysis_linear()
-    simple_beam.analysis_linear()
+    print(simple_beam.analysis_linear())
 

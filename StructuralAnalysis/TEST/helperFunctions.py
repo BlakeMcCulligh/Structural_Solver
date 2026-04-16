@@ -319,3 +319,83 @@ def partitionedGlobalNodalForceVector(model, numN):
             p[dofs, 0] += local
         p_array.append(p)
     return partFER(p_array, model.D_unknown, model.D_known, len(model.casses))
+
+def k_member_make_global(k_local_array, T_array):
+    k_member_global = []
+    for i in range(len(T_array)):
+        k_member_global.append(np.matmul(np.matmul(np.linalg.inv(T_array[i]), k_local_array[i]), T_array[i]))
+    return k_member_global
+
+def get_K_Global(model, k_global, numN, numM):
+    K = np.zeros((numN * 6, numN * 6))
+    for i in range(numM):
+        K[np.ix_(model.members_DOF[i], model.members_DOF[i])] += np.asarray(k_global[i], dtype=float)
+    return K
+
+def partition_K_gloabl(K_global, R_unrelesed, R_relesed):
+    K11 = (K_global[R_unrelesed, :][:, R_unrelesed])
+    K12 = (K_global[R_unrelesed, :][:, R_relesed])
+    K21 = (K_global[R_relesed, :][:, R_unrelesed])
+    K22 = (K_global[R_relesed, :][:, R_relesed])
+    return K11, K12, K21, K22
+
+def get_D(K11, K12, P1_array, FER1_array, Index_Unsupported, Index_Supported, numN, numC):
+    D1_array = []
+    D2 = np.zeros((len(Index_Supported),1))
+    for i in range(numC):
+        P1 = np.array(P1_array[i])
+        FER1 = np.array(FER1_array[i])
+        if K11.shape == (0, 0):
+            D1_array.append([])
+        else:
+            try:
+                D1_array.append(np.linalg.solve(K11, np.subtract(np.subtract(P1, FER1), np.matmul(K12, D2))))
+            except:
+                raise Exception('The stiffness matrix is singular, which implies rigid body motion. The structure is unstable. Aborting analysis.')
+    D_array = assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN, numC)
+    DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array = get_direcction_deflections(D_array, numN, numC)
+    return D_array, DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array
+
+def assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN, numC):
+    D_array = []
+    for a in range(numC):
+        D1 = np.array(D1_array[a])
+        D = np.zeros((numN * 6, 1))
+        for j in range(numN):
+            for i in range(6):
+                if j * 6 + i in Index_Supported:
+                    D[(j * 6 + i, 0)] = D2[Index_Supported.index(j * 6 + i), 0]
+                else:
+                    D[(j * 6 + i, 0)] = D1[Index_Unsupported.index(j * 6 + i), 0]
+        D_array.append(D)
+    return D_array
+
+
+def get_direcction_deflections(D_array, numN, numC):
+    DX_array = []
+    DY_array = []
+    DZ_array = []
+    RX_array = []
+    RY_array = []
+    RZ_array = []
+    for i in range(numC):
+        DX_case = []
+        DY_case = []
+        DZ_case = []
+        RX_case = []
+        RY_case = []
+        RZ_case = []
+        for j in range(numN):
+            DX_case.append(D_array[i][j * 6 + 0, 0])
+            DY_case.append(D_array[i][j * 6 + 1, 0])
+            DZ_case.append(D_array[i][j * 6 + 2, 0])
+            RX_case.append(D_array[i][j * 6 + 3, 0])
+            RY_case.append(D_array[i][j * 6 + 4, 0])
+            RZ_case.append(D_array[i][j * 6 + 5, 0])
+        DX_array.append(DX_case)
+        DY_array.append(DY_case)
+        DZ_array.append(DZ_case)
+        RX_array.append(RX_case)
+        RY_array.append(RY_case)
+        RZ_array.append(RZ_case)
+    return DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array

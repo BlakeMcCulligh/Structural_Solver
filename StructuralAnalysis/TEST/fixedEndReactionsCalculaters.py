@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def pointLoadX(magnatude: float, location: float, L: float):
     reactions = np.zeros((12, 1))
     reactions[0, 0] = -magnatude * (L - location) / L
