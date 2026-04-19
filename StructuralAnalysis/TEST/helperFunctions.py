@@ -94,12 +94,9 @@ def getMemberT(model: Frame3D_T, memberIndex, Ls):
     transMatrix[9:12, 9:12] = dirCos
     return transMatrix
 
-def getGlobalFixedEndReactionVector_ARRAY(model: Frame3D_T, pointLoads, distLoads, R_unrelesed, R_relesed, k12, k22, members_T, D_unknown, D_known):
+def getGlobalFixedEndReactionVector_ARRAY(model: Frame3D_T, members_T, D_unknown, D_known, ferCondensed_ARRAY):
     numM = len(model.members)
     numC = len(model.casses)
-    fer_unc_ARRAY = get_fer_unc_ARRAY(model, pointLoads, distLoads)
-    fer1, fer2 = memberPart_fer_ARRAY(fer_unc_ARRAY, R_unrelesed, R_relesed)
-    ferCondensed_ARRAY = get_fer_ARRAY(model, k12, k22, fer1, fer2, numM, numC)
     FER_array = get_FER_ARRAY(ferCondensed_ARRAY, members_T, numM, numC)
     FER_val = [np.zeros((len(model.nodes_cord) * 6, 1))] * numC
     for i in range(numM):
@@ -353,7 +350,7 @@ def get_D(K11, K12, P1_array, FER1_array, Index_Unsupported, Index_Supported, nu
             except:
                 raise Exception('The stiffness matrix is singular, which implies rigid body motion. The structure is unstable. Aborting analysis.')
     D_array = assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN, numC)
-    DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array = get_direcction_deflections(D_array, numN, numC)
+    DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array = get_node_direcction_deflections(D_array, numN, numC)
     return D_array, DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array
 
 def assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN, numC):
@@ -370,8 +367,7 @@ def assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN, num
         D_array.append(D)
     return D_array
 
-
-def get_direcction_deflections(D_array, numN, numC):
+def get_node_direcction_deflections(D_array, numN, numC):
     DX_array = []
     DY_array = []
     DZ_array = []
@@ -398,4 +394,75 @@ def get_direcction_deflections(D_array, numN, numC):
         RX_array.append(RX_case)
         RY_array.append(RY_case)
         RZ_array.append(RZ_case)
-    return DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array
+    return np.array(DX_array), np.array(DY_array), np.array(DZ_array), np.array(RX_array), np.array(RY_array), np.array(RZ_array)
+
+def get_member_direction_deflections(model, DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array, numM, numC):
+    D_member_array = []
+    for i in range(numC):
+        D_sub = []
+        for j in range(numM):
+            Dx1 = DX_array[i, model.members[j,0]]
+            Dy1 = DY_array[i, model.members[j,0]]
+            Dz1 = DZ_array[i, model.members[j,0]]
+            Rx1 = RX_array[i, model.members[j,0]]
+            Ry1 = RY_array[i, model.members[j,0]]
+            Rz1 = RZ_array[i, model.members[j,0]]
+            Dx2 = DX_array[i, model.members[j, 1]]
+            Dy2 = DY_array[i, model.members[j, 1]]
+            Dz2 = DZ_array[i, model.members[j, 1]]
+            Rx2 = RX_array[i, model.members[j, 1]]
+            Ry2 = RY_array[i, model.members[j, 1]]
+            Rz2 = RZ_array[i, model.members[j, 1]]
+            D_sub.append(np.array([Dx1, Dy1, Dz1, Rx1, Ry1, Rz1, Dx2, Dy2, Dz2, Rx2, Ry2, Rz2]))
+        D_member_array.append(D_sub)
+    return np.array(D_member_array)
+
+def getd(T_array, D_array, numM, numC):
+    d = []
+    for i in range(numC):
+        d_sub = []
+        for j in range(numM):
+            d_sub.append(T_array[j] @ D_array[i][j])
+        d.append(d_sub)
+    return np.array(d)
+
+def getF(T_array, f_array, numM, numC):
+    F = []
+    for i in range(numC):
+        F_sub = []
+        for j in range(numM):
+            F_sub.append(np.linalg.inv(T_array[j]) @ f_array[i, j])
+        F.append(F_sub)
+    return np.array(F)
+
+def getf(k_array, d_array, fer_array, numM, numC):
+    f = []
+    for i in range(numC):
+        f_sub = []
+        for j in range(numM):
+            f_sub.append(k_array[j] @ d_array[i, j] + fer_array[i, j])
+        f.append(f_sub)
+    return np.array(f)
+
+def getWeight(model: Frame3D_T):
+    return model.materials[model.members[:,2],3] * model.members_CrossSectionProps[:,0] * model.members_L
+
+def getReactions(model: Frame3D_T, F_array, numC, numM, numN):
+    reactions = []
+    for i in range(numC):
+        reactions_sub = []
+        for j in range(numN):
+            r = [0.0] * 6
+            for s in range(6):
+                if model.nodes_Support[i][s]:
+                    for k in range(numM):
+                        if model.members[k, 0] == j:
+                            if not model.members_Releases[k][s]: r[s] += F_array[i, k, s, 0]
+                        elif model.members[k, 1] == j:
+                            if not model.members_Releases[k][s+6]: r[s] += F_array[i, k, s+6, 0]
+                    for jointLoadCase in model.nodes_loads[j]:
+                        if jointLoadCase[0] == i:
+                            r[s] += jointLoadCase[1][s]
+            reactions_sub.append(r)
+        reactions.append(reactions_sub)
+    return reactions
