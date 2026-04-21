@@ -1,6 +1,8 @@
 import numpy as np
 import math
+
 import StructuralAnalysis.TEST.fixedEndReactionsCalculaters as ferCalc
+import StructuralAnalysis.TEST.memberForceSolvers as MFSolvers
 
 from StructuralAnalysis.TEST.__main__ import Frame3D_T
 
@@ -271,10 +273,11 @@ def get_FixedEndReactions_Distload_ARRAY(model, distLoads):
 def assembleLoads(model: Frame3D_T):
     pointLoads = assemblePointLoads(model)
     distLoads = assembleDistLoads(model)
+    print(pointLoads)
     return pointLoads, distLoads
 
 def assemblePointLoads(model: Frame3D_T):
-    # pointLoads [memberINDEX, caseINDEX, location, data], data: [x, Px, Py, Pz, Mx, My, Mz]
+    # pointLoads [memberINDEX, caseINDEX, data], data: [x, Px, Py, Pz, Mx, My, Mz]
     newPointLoads = []
     for i, loadCasses in enumerate(model.members_PointLoads):
         newLoads  = [None] * len(model.casses)
@@ -284,10 +287,11 @@ def assemblePointLoads(model: Frame3D_T):
                 newLoad.append([loads[1][0][j]] + loads[1][1][j])
             newLoads[loads[0]] = newLoad
         newPointLoads.append(newLoads)
+    print(newPointLoads)
     return newPointLoads
 
 def assembleDistLoads(model: Frame3D_T):
-    # distLoads [memberINDEX, caseINDEX, location, data], data: [x1, x2, wx1, wx2, wy1, wy2, wz1, wz2]
+    # distLoads [memberINDEX, caseINDEX, data], data: [x1, x2, wx1, wx2, wy1, wy2, wz1, wz2]
     newDistLoads = []
     for i, loadCasses in enumerate(model.members_DistLoads):
         newLoads = [None] * len(model.casses)
@@ -440,7 +444,7 @@ def getf(k_array, d_array, fer_array, numM, numC):
     for i in range(numC):
         f_sub = []
         for j in range(numM):
-            f_sub.append(k_array[j] @ d_array[i, j] + fer_array[i, j])
+            f_sub.append(k_array[j] @ d_array[i, j] + fer_array[j, i])
         f.append(f_sub)
     return np.array(f)
 
@@ -466,3 +470,14 @@ def getReactions(model: Frame3D_T, F_array, numC, numM, numN):
             reactions_sub.append(r)
         reactions.append(reactions_sub)
     return reactions
+
+def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
+    seg, seg_InternalLoads, seg_DistLoads = MFSolvers.segment_Member(model, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
+
+
+    # TODO
+    x = 1
+    mINDEX = 0
+    comboINDEX = 0
+    VY, VZ = MFSolvers.shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads)
+    print(VY, VZ)

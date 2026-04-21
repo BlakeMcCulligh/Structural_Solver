@@ -194,16 +194,18 @@ class Frame3D_T:
         if getWeight:
             weight = hf.getWeight(self)
 
-        if getReactions:
+        if getReactions or getInternalForces:
             D_members = hf.get_member_direction_deflections(self, DX, DY, DZ, RX, RY, RZ, numM, numC)
             d = hf.getd(self.members_T, D_members, numM, numC)
             f = hf.getf(k_local, d, ferCondensed, numM, numC)
-            F = hf.getF(self.members_T, f, numM, numC)
-            reactions = hf.getReactions(self, F, numC, numM, numN)
 
-        if getInternalForces:
-            #TODO
-            pass
+            if getReactions:
+                F = hf.getF(self.members_T, f, numM, numC)
+                reactions = hf.getReactions(self, F, numC, numM, numN)
+
+            if getInternalForces:
+                hf.solveInternalForces(self, pointLoads, distLoads, f, fer_unc_ARRAY, d, numM, numC)
+                # TODO
 
         if getStresses:
             #TODO
@@ -237,5 +239,5 @@ if __name__ == '__main__':
     # simple_beam.addMemberSelfWeight()
     # simple_beam.addMemberSelfWeight(case=1)
     simple_beam.preAnalysis_linear()
-    print(simple_beam.analysis_linear(getWeight=True,getReactions=True))
+    print(simple_beam.analysis_linear(getWeight=True,getInternalForces=True))
 
