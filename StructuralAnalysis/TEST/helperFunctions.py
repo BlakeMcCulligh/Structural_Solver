@@ -481,3 +481,5 @@ def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_ar
     comboINDEX = 0
     VY, VZ = MFSolvers.shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads)
     print(VY, VZ)
+
+    print(MFSolvers.min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
