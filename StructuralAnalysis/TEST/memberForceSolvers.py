@@ -120,6 +120,26 @@ def segment_Member(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, 
         seg_DistLoads.append(seg_sub_DistLoads)
     return seg, seg_InternalLoads, seg_DistLoads
 
+def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFunction, POIFunction, comboINDEXS = None):
+    if comboINDEXS is None: comboINDEXS = model.casses
+    if comboINDEXS is None: comboINDEXS = model.casses
+    global_Y, global_Z, governing_combo_Y, governing_combo_Z = None, None, None, None
+    seg, seg_InternalLoads, seg_DistLoads = seg[mINDEX], seg_InternalLoads[mINDEX], seg_DistLoads[mINDEX]
+    for comboINDEX in comboINDEXS:
+        abs_Y, abs_Z = [], []
+        L = np.array(seg[comboINDEX][1]) - np.array(seg[comboINDEX][0])
+        for segINDEX in range(len(seg)):
+            abs_Y.append(absFunction(POIFunction(seg_DistLoads[comboINDEX][1][segINDEX][0], seg_DistLoads[comboINDEX][1][segINDEX][1], seg_InternalLoads[comboINDEX][1][segINDEX][1], seg_InternalLoads[comboINDEX][1][segINDEX][0], L[comboINDEX], -1)))
+            abs_Z.append(absFunction(POIFunction(seg_DistLoads[comboINDEX][2][segINDEX][0], seg_DistLoads[comboINDEX][2][segINDEX][1], seg_InternalLoads[comboINDEX][2][segINDEX][1], seg_InternalLoads[comboINDEX][2][segINDEX][0], L[comboINDEX], 1)))
+        abs_Y, abs_Z = absFunction(abs_Y), absFunction(abs_Z)
+        if global_Y is None or abs_Y > global_Y: global_Y, governing_combo_Y = abs_Y, comboINDEX
+        if global_Z is None or abs_Z > global_Z: global_Z, governing_combo_Z = abs_Z, comboINDEX
+    return global_Y, governing_combo_Y, global_Z, governing_combo_Z
+
+
+""" --------------- SHEAR --------------- """
+
+
 def shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
@@ -136,46 +156,75 @@ def shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
         return VY, VZ
     return 0, 0
 
-def seg_V_POI(i, d_L, i_L, L, d_i):
-    w1, w2, V1 = d_L[d_i][i][0], d_L[d_i][i][1], i_L[d_i][i][0]
-    x = shearLocOfInterist(w1, w2, L)
-    shear1 = V1 + w1 * x + x ** 2 * (-w1 + w2) / (2 * L)
-    shear2 = V1
-    shear3 = V1 + w1 * L + L ** 2 * (-w1 + w2) / (2 * L)
-    return [shear1, shear2, shear3]
-
 def shearLocOfInterist(w1, w2, L):
     if w1 - w2 == 0: x1 = 0
     else: x1 = w1 * L / (w1 - w2)
     if round(x1, 10) < 0 or round(x1, 10) > round(L, 10): x1 = 0
     return x1
 
-def max_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    if comboINDEXS is None: comboINDEXS = model.casses
-    Vmax_global_Y, Vmax_global_Z, governing_combo_Y, governing_combo_Z = None, None, None, None
-    seg, seg_InternalLoads, seg_DistLoads = seg[mINDEX], seg_InternalLoads[mINDEX], seg_DistLoads[mINDEX]
-    for comboINDEX in comboINDEXS:
-        Vmax_Y, Vmax_Z = [], []
-        L = np.array(seg[comboINDEX][1]) - np.array(seg[comboINDEX][0])
-        for segINDEX in range(len(seg)):
-            Vmax_Y.append(max(seg_V_POI(segINDEX, seg_DistLoads[comboINDEX], seg_InternalLoads[comboINDEX], L[segINDEX], 1)))
-            Vmax_Z.append(max(seg_V_POI(segINDEX, seg_DistLoads[comboINDEX], seg_InternalLoads[comboINDEX], L[segINDEX], 2)))
-        Vmax_Y, Vmax_Z = min(Vmax_Y), min(Vmax_Z)
-        if Vmax_global_Y is None or Vmax_Y > Vmax_global_Y: Vmax_global_Y, governing_combo_Y = Vmax_Y, comboINDEX
-        if Vmax_global_Z is None or Vmax_Z > Vmax_global_Z: Vmax_global_Z, governing_combo_Z = Vmax_Z, comboINDEX
-    return Vmax_global_Y, governing_combo_Y, Vmax_global_Z, governing_combo_Z
+def seg_V_POI(w1, w2, M_1, V1, L, sign):
+    x = shearLocOfInterist(w1, w2, L)
+    shear1 = V1 + w1 * x + x ** 2 * (-w1 + w2) / (2 * L)
+    shear2 = V1
+    shear3 = V1 + w1 * L + L ** 2 * (-w1 + w2) / (2 * L)
+    return [shear1, shear2, shear3]
 
-def min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS=None):
-    if comboINDEXS is None: comboINDEXS = model.casses
-    Vmin_global_Y, Vmin_global_Z, governing_combo_Y, governing_combo_Z = None, None, None, None
-    seg, seg_InternalLoads, seg_DistLoads = seg[mINDEX], seg_InternalLoads[mINDEX], seg_DistLoads[mINDEX]
-    for comboINDEX in comboINDEXS:
-        Vmin_Y, Vmin_Z = [], []
-        L = np.array(seg[comboINDEX][1]) - np.array(seg[comboINDEX][0])
-        for segINDEX in range(len(seg)):
-            Vmin_Y.append(min(seg_V_POI(segINDEX, seg_DistLoads[comboINDEX], seg_InternalLoads[comboINDEX], L[segINDEX], 1)))
-            Vmin_Z.append(min(seg_V_POI(segINDEX, seg_DistLoads[comboINDEX], seg_InternalLoads[comboINDEX], L[segINDEX], 2)))
-        Vmin_Y, Vmin_Z = min(Vmin_Y), min(Vmin_Z)
-        if Vmin_global_Y is None or Vmin_Y < Vmin_global_Y: Vmin_global_Y, governing_combo_Y = Vmin_Y, comboINDEX
-        if Vmin_global_Z is None or Vmin_Z < Vmin_global_Z: Vmin_global_Z, governing_combo_Z = Vmin_Z, comboINDEX
-    return Vmin_global_Y, governing_combo_Y, Vmin_global_Z, governing_combo_Z
+def max_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_V_POI, comboINDEXS)
+
+def min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_V_POI, comboINDEXS)
+
+
+""" --------------- MOMENT --------------- """
+
+
+def moment_calc(M1, V1, w1, w2, L, x, sign):
+    return sign*M1 - V1*x - w1*x**2/2 - x**3*(-w1 + w2)/(6*L)
+
+def moment(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
+    seg = seg[mINDEX][comboINDEX]
+    seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
+    seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
+    for i in range(len(seg)):
+        if round(seg[i][0], 10) <= round(x, 10) < round(seg[i][1], 10):
+            MZ = moment_calc(seg_InternalLoads[2][i][1], seg_InternalLoads[2][i][0], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], (seg[i][1]-seg[i][0]), (x - seg[i][0]), 1)
+            MY = moment_calc(seg_InternalLoads[1][i][1], seg_InternalLoads[1][i][0], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], (seg[i][1]-seg[i][0]), (x - seg[i][0]), -1)
+            return MZ, MY
+    if math.isclose(x, model.members_L[mINDEX]):
+        i = len(seg) - 1
+        MZ = moment_calc(seg_InternalLoads[2][i][1], seg_InternalLoads[2][i][0], seg_DistLoads[2][i][0],seg_DistLoads[2][i][1], (seg[i][1] - seg[i][0]), (x - seg[i][0]), 1)
+        MY = moment_calc(seg_InternalLoads[1][i][1], seg_InternalLoads[1][i][0], seg_DistLoads[1][i][0],seg_DistLoads[1][i][1], (seg[i][1] - seg[i][0]), (x - seg[i][0]), -1)
+        return MY, MZ
+    return 0, 0
+
+def momentLocOfInterist(w1, w2, V1, L):
+    a = -(w2 - w1) / (2 * L)
+    b = -w1
+    c = -V1
+    if a == 0:
+        if b != 0: x1 = -c / b
+        else: x1 = 0
+        x2 = 0
+    elif b ** 2 - 4 * a * c < 0:
+        x1, x2 = 0, 0
+    else:
+        x1 = (-b + (b ** 2 - 4 * a * c) ** 0.5) / (2 * a)
+        x2 = (-b - (b ** 2 - 4 * a * c) ** 0.5) / (2 * a)
+    if round(x1, 10) < 0 or round(x1, 10) > round(L, 10): x1 = 0
+    if round(x2, 10) < 0 or round(x2, 10) > round(L, 10): x2 = 0
+    return x1, x2
+
+def seg_M_POI(w1, w2, M_1, V1, L, sign):
+    x1, x2 = momentLocOfInterist(w1, w2, V1, L)
+    M1 = moment_calc(M_1, V1, w1, w2, L, x1, sign)
+    M2 = moment_calc(M_1, V1, w1, w2, L, x2, sign)
+    M3 = moment_calc(M_1, V1, w1, w2, L, 0, sign)
+    M4 = moment_calc(M_1, V1, w1, w2, L, L, sign)
+    return [M1, M2, M3, M4]
+
+def max_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_M_POI,comboINDEXS)
+
+def min_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_M_POI,comboINDEXS)
