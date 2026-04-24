@@ -476,7 +476,7 @@ def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_ar
 
 
     # TODO
-    x = 1
+    x = 5
     mINDEX = 0
     comboINDEX = 0
     VY, VZ = MFSolvers.shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads)
@@ -484,4 +484,9 @@ def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_ar
 
     print(MFSolvers.min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
 
-    print(MFSolvers.min_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
+    print(MFSolvers.max_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
+
+    print(MFSolvers.torque(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads))
+
+    print(MFSolvers.min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
+    print(MFSolvers.max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))

@@ -120,21 +120,18 @@ def segment_Member(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, 
         seg_DistLoads.append(seg_sub_DistLoads)
     return seg, seg_InternalLoads, seg_DistLoads
 
-def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFunction, POIFunction, comboINDEXS = None):
+def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFunction, POIFunction, Direc, sign = None, comboINDEXS = None):
     if comboINDEXS is None: comboINDEXS = model.casses
-    if comboINDEXS is None: comboINDEXS = model.casses
-    global_Y, global_Z, governing_combo_Y, governing_combo_Z = None, None, None, None
+    global_, governing_combo = None, None
     seg, seg_InternalLoads, seg_DistLoads = seg[mINDEX], seg_InternalLoads[mINDEX], seg_DistLoads[mINDEX]
     for comboINDEX in comboINDEXS:
-        abs_Y, abs_Z = [], []
+        abs_ = []
         L = np.array(seg[comboINDEX][1]) - np.array(seg[comboINDEX][0])
         for segINDEX in range(len(seg)):
-            abs_Y.append(absFunction(POIFunction(seg_DistLoads[comboINDEX][1][segINDEX][0], seg_DistLoads[comboINDEX][1][segINDEX][1], seg_InternalLoads[comboINDEX][1][segINDEX][1], seg_InternalLoads[comboINDEX][1][segINDEX][0], L[comboINDEX], -1)))
-            abs_Z.append(absFunction(POIFunction(seg_DistLoads[comboINDEX][2][segINDEX][0], seg_DistLoads[comboINDEX][2][segINDEX][1], seg_InternalLoads[comboINDEX][2][segINDEX][1], seg_InternalLoads[comboINDEX][2][segINDEX][0], L[comboINDEX], 1)))
-        abs_Y, abs_Z = absFunction(abs_Y), absFunction(abs_Z)
-        if global_Y is None or abs_Y > global_Y: global_Y, governing_combo_Y = abs_Y, comboINDEX
-        if global_Z is None or abs_Z > global_Z: global_Z, governing_combo_Z = abs_Z, comboINDEX
-    return global_Y, governing_combo_Y, global_Z, governing_combo_Z
+            abs_.append(absFunction(POIFunction(seg_DistLoads[comboINDEX][Direc][segINDEX][0], seg_DistLoads[comboINDEX][Direc][segINDEX][1], seg_InternalLoads[comboINDEX][Direc][segINDEX][0], seg_InternalLoads[comboINDEX][Direc][segINDEX][1], L[comboINDEX], sign)))
+        abs_ = absFunction(abs_)
+        if global_ is None or abs_ > global_: global_, governing_combo = abs_, comboINDEX
+    return global_, governing_combo
 
 
 """ --------------- SHEAR --------------- """
@@ -162,7 +159,7 @@ def shearLocOfInterist(w1, w2, L):
     if round(x1, 10) < 0 or round(x1, 10) > round(L, 10): x1 = 0
     return x1
 
-def seg_V_POI(w1, w2, M_1, V1, L, sign):
+def seg_V_POI(w1, w2, V1, M_1, L, sign):
     x = shearLocOfInterist(w1, w2, L)
     shear1 = V1 + w1 * x + x ** 2 * (-w1 + w2) / (2 * L)
     shear2 = V1
@@ -170,10 +167,14 @@ def seg_V_POI(w1, w2, M_1, V1, L, sign):
     return [shear1, shear2, shear3]
 
 def max_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_V_POI, comboINDEXS)
+    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_V_POI, 1, comboINDEXS=comboINDEXS)
+    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_V_POI, 2, comboINDEXS=comboINDEXS)
+    return Y, Z
 
 def min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_V_POI, comboINDEXS)
+    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_V_POI, 1, comboINDEXS=comboINDEXS)
+    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_V_POI, 2, comboINDEXS=comboINDEXS)
+    return Y, Z
 
 
 """ --------------- MOMENT --------------- """
@@ -215,7 +216,7 @@ def momentLocOfInterist(w1, w2, V1, L):
     if round(x2, 10) < 0 or round(x2, 10) > round(L, 10): x2 = 0
     return x1, x2
 
-def seg_M_POI(w1, w2, M_1, V1, L, sign):
+def seg_M_POI(w1, w2, V1, M_1, L, sign):
     x1, x2 = momentLocOfInterist(w1, w2, V1, L)
     M1 = moment_calc(M_1, V1, w1, w2, L, x1, sign)
     M2 = moment_calc(M_1, V1, w1, w2, L, x2, sign)
@@ -224,7 +225,76 @@ def seg_M_POI(w1, w2, M_1, V1, L, sign):
     return [M1, M2, M3, M4]
 
 def max_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_M_POI,comboINDEXS)
+    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_M_POI, 1, sign=-1, comboINDEXS = comboINDEXS)
+    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
+    return Y, Z
 
 def min_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_M_POI,comboINDEXS)
+    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_M_POI, 1, sign=-1, comboINDEXS=comboINDEXS)
+    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
+    return Y, Z
+
+
+""" --------------- TORQUE --------------- """
+
+
+def torque(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads):
+    seg = seg[mINDEX][comboINDEX]
+    seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
+    for i in range(len(seg)):
+        if round(seg[i][0], 10) <= round(x, 10) < round(seg[i][1], 10):
+            return seg_InternalLoads[0][i][1]
+    if math.isclose(x, model.members_L[mINDEX]):
+        i = len(seg) - 1
+        return seg_InternalLoads[0][i][1]
+    return 0
+
+def seg_T_POI(w1, w2, P1, M1, L, sign):
+    return [M1]
+
+def max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_T_POI, 0, comboINDEXS=comboINDEXS)
+
+def min_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_T_POI, 0, comboINDEXS=comboINDEXS)
+
+
+""" --------------- AXIAL --------------- """
+
+
+def axial_calc(p1, p2, P1, L, x):
+    return P1 + (p2 - p1)/(2*L)*x**2 + p1*x
+
+def axial(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
+    seg = seg[mINDEX][comboINDEX]
+    seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
+    seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
+    for i in range(len(seg)):
+        if round(seg[i][0], 10) <= round(x, 10) < round(seg[i][1], 10):
+            return axial_calc(seg_DistLoads[0][1][0], seg_DistLoads[0][1][1], seg_InternalLoads[0][i][0], (seg[i][1] - seg[i][0]), (x-seg[i][0]))
+    if math.isclose(x, model.members_L[mINDEX]):
+        i = len(seg) - 1
+        return axial_calc(seg_DistLoads[0][1][0], seg_DistLoads[0][1][1], seg_InternalLoads[0][i][0], (seg[i][1] - seg[i][0]), (x-seg[i][0]))
+    return 0
+
+def axialLocOfInterist(p1, p2, L):
+    if p1 - p2 != 0:
+        x1 = L * p1 / (p1 - p2)
+    else:
+        x1 = 0
+    if round(x1, 10) < 0 or round(x1, 10) > round(L, 10):
+        x1 = 0
+    return x1
+
+def seg_P_POI(w1, w2, P1, M1, L, sign):
+    x1 = axialLocOfInterist(w1, w2, L)
+    P_1 = axial_calc(w1, w2, P1, L, x1)
+    P_2 = axial_calc(w1, w2, P1, L, 0)
+    P_3 = axial_calc(w1, w2, P1, L, L)
+    return [P_1, P_2, P_3]
+
+def max_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_P_POI, 0, comboINDEXS)
+
+def min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_P_POI, 0, comboINDEXS)
