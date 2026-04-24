@@ -8,10 +8,10 @@ from StructuralAnalysis.CrossSectionCalculaters import SquareHSS, RectHSS, TubeH
 
 class Frame3D:
     def __init__(self):
-        self.nodes = None # [x,y, z]
+        self.nodes = None # [location,y, z]
         self.members = None # [node 1, node 2]
-        self.loads = None # [node, x, y, z, mx, my, mz]
-        self.supports = None # [node, x, y, x, mx, my, mz]
+        self.loads = None # [node, location, y, z, mx, my, mz]
+        self.supports = None # [node, location, y, location, mx, my, mz]
         self.releases = None # [node, x_i, y_i, z_i, mx_i, my_i, mz_i, x_j, y_j, z_j, mx_j, my_j, mz_j]
         self.memberGroups = None
         self.A = None # [A] * length members

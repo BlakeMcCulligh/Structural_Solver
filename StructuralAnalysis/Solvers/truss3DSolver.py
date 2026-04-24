@@ -5,10 +5,10 @@ from CrossSectionOptimization import truss3DOptimizer
 
 class Truss3D:
     def __init__(self):
-        self.nodes = None # [x,y, z]
+        self.nodes = None # [location,y, z]
         self.members = None # [node 1, node 2]
-        self.loads = None # [node, x, y, z]
-        self.supports = None # [node, x, y, z]
+        self.loads = None # [node, location, y, z]
+        self.supports = None # [node, location, y, z]
         self.memberGroup = None
         self.A = None # [A] * length members
         self.E = None # [E] * length members
@@ -144,10 +144,9 @@ class Truss3D:
 
     def calcInternalForces(self):
         self.F_m_internal = np.array([k @ u for k, u in zip(self.K_m_local, self.U_m_local)])
-        self.F_m_internal = self.F_m_internal[:, 0]
 
-    def calcNomalStresses(self):
-        self.sigma = self.F_m_internal / self.A
+    # def calcNomalStresses(self):
+    #     self.sigma = self.F_m_internal / self.A
 
     def optimizeSolve(self, A):
         self.A = A

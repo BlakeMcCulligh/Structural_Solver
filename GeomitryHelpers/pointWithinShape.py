@@ -38,7 +38,7 @@ def ray_intersects_arc(p, arc):
     # Solve circle intersection
     dx = math.sqrt(r*r - dy*dy)
 
-    # Intersection x-values
+    # Intersection location-values
     xi1 = arc.Center.x - dx
     xi2 = arc.Center.x + dx
 
@@ -63,7 +63,7 @@ def ray_intersects_line(p, a, b):
     if p.y < a.y or p.y >= b.y:
         return False
 
-    # Compute x coordinate of intersection
+    # Compute location coordinate of intersection
     if almost_equal(a.y, b.y):  # horizontal edge → ignore
         return False
 

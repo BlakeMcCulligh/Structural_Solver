@@ -1,10 +1,10 @@
 import numpy as np
 import math
 
-import StructuralAnalysis.TEST.fixedEndReactionsCalculaters as ferCalc
-import StructuralAnalysis.TEST.memberForceSolvers as MFSolvers
+import StructuralAnalysis.frame3DSolver.fixedEndReactionsCalculaters as ferCalc
+import StructuralAnalysis.frame3DSolver.memberForceSolvers as MFSolvers
 
-from StructuralAnalysis.TEST.__main__ import Frame3D_T
+from StructuralAnalysis.frame3DSolver.__main__ import Frame3D_T
 
 def partD(model: Frame3D_T):
     D_unknown = []
@@ -472,11 +472,12 @@ def getReactions(model: Frame3D_T, F_array, numC, numM, numN):
     return reactions
 
 def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
-    seg, seg_InternalLoads, seg_DistLoads = MFSolvers.segment_Member(model, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
+    seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta = MFSolvers.segment_Member(model, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
 
 
     # TODO
-    x = 5
+    x = 40
+
     mINDEX = 0
     comboINDEX = 0
     VY, VZ = MFSolvers.shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads)
@@ -490,3 +491,5 @@ def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_ar
 
     print(MFSolvers.min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
     print(MFSolvers.max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
+
+    print(MFSolvers.deflection(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta))

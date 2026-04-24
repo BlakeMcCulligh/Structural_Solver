@@ -82,7 +82,7 @@ class CrossSection:
         Assignes the values for a 3D frame
         :param A: Area
         :param E: Elastic Modulus
-        :param G: Shear Modulus
+        :param G: shear Modulus
         :param I_main: Stifness Modulus for the strong axis
         :param I_weak: Stifness Modulus for the weak axis
         :param J: Stifness Modulus for torsion
@@ -109,7 +109,7 @@ class CrossSection:
         """
         Assignes the values for a 3D frame to be optimized
         :param E: Elastic Modulus
-        :param G: Shear Modulus
+        :param G: shear Modulus
         :param memberType: Type of member
         :param minBounds: minimum bounds on the optimization variables
         :param maxBounds: maximum bounds on the optimization variables

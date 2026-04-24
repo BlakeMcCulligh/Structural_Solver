@@ -231,7 +231,7 @@ if __name__ == '__main__':
     # simple_beam.defSupport(1, True, True, True, True, True, True)
 #'M1', 'Fy', -0.01, -0.01, 0, 168
     #simple_beam.addNodeLoad(0, Pz=1, case=0)
-    simple_beam.addMemberPointLoad(0, 50, Py=10, case=0)
+    simple_beam.addMemberPointLoad(0, 50, Px=50, case=0)
     # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=0)
     # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=1)
     # simple_beam.addMemberDistLoad(0,0,5,5,2,0,0)

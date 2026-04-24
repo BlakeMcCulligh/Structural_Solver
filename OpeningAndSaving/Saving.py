@@ -62,7 +62,7 @@ def convertSupportsToDF(supports):
 
     Supports_df = {"X": supports[0],
                    "Y": supports[1],
-                   "Support x": supports[2],
+                   "Support location": supports[2],
                    "Support y": supports[3]}
     Supports_df = pd.DataFrame(Supports_df)
 
@@ -75,7 +75,7 @@ def convertLoadCassesToDF(loadCasses):
     print("loadCasses:", loadCasses)
     for i, loadCase in enumerate(loadCasses):
         LoadCase = np.array(loadCase).T.tolist()
-        load = {f"LoadCase{i + 1} x": LoadCase[0],
+        load = {f"LoadCase{i + 1} location": LoadCase[0],
                 f"LoadCase{i + 1} y": LoadCase[1],
                 f"LoadCase{i + 1} fx": LoadCase[2],
                 f"LoadCase{i + 1} fy": LoadCase[3]}

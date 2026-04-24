@@ -8,10 +8,10 @@ class Frame2D:
         """
         Handels the large computations for 2D frames.
         """
-        self.nodes = None # [x,y]
+        self.nodes = None # [location,y]
         self.members = None # [node 1, node 2]
-        self.loads = None # [node, x, y, m]
-        self.supports = None # [node, x, y, m]
+        self.loads = None # [node, location, y, m]
+        self.supports = None # [node, location, y, m]
         self.releases = None # [node, x_i, y_i, m_i, x_j, y_j, m_j]
         self.memberGroups = None
         self.A = None

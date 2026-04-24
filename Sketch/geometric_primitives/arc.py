@@ -147,7 +147,7 @@ def get_angle_of_point(center_x, center_y, point_x, point_y):
     """
     Calculates the angle of a point on a circle relative to the center.
 
-    The angle is measured counter-clockwise from the positive x-axis (3 o'clock position).
+    The angle is measured counter-clockwise from the positive location-axis (3 o'clock position).
     Returns the angle in degrees in the range [-180, 180].
     """
     # Calculate the difference in coordinates

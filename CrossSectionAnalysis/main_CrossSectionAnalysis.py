@@ -34,9 +34,9 @@ def getSectionProperties(poly):
     gamma = sec.get_gamma() # Warping constant
 
     properties = {"A": A,
-                  "C x": c_x,
+                  "C location": c_x,
                   "C y": c_y,
-                  "q x": q_x,
+                  "q location": q_x,
                   "q y": q_y,
                   "I xx": I_xx_c,
                   "I yy": I_yy_c,
@@ -44,7 +44,7 @@ def getSectionProperties(poly):
                   "z yy": z_yy_plus,
                   "s xx": sxx,
                   "s yy": syy,
-                  "r x": r_x,
+                  "r location": r_x,
                   "r y": r_y,
                   "J": j,
                   "Cw": gamma
@@ -80,8 +80,8 @@ def getSectionProperties(poly):
 #     x11_se, y11_se = sec.get_sc_p() # Principal axis shear centre (elasticity approach) (``x11_se``, ``y22_se``)
 #     x_st, y_st = sec.get_sc_t() #Centroidal axis shear centre (Trefftz's method) (``x_st``, ``y_st``)
 #
-#     a_sx, a_sy = sec.get_as() # Shear area for loading about the centroidal axis (``a_sx``, ``a_sy``)
-#     a_s11, a_s22 = sec.get_as_p() # Shear area for loading about the princicpal bending axis (``a_s11``, ``a_s22``)
+#     a_sx, a_sy = sec.get_as() # shear area for loading about the centroidal axis (``a_sx``, ``a_sy``)
+#     a_s11, a_s22 = sec.get_as_p() # shear area for loading about the princicpal bending axis (``a_s11``, ``a_s22``)
 #
 #     x_pc, y_pc = sec.get_pc() # Centroidal axis plastic centroid (``x_pc``, ``y_pc``)
 #     x11_pc, y22_pc = sec.get_pc_p() # Principal bending axis plastic centroid (``x11_pc``, ``y22_pc``)
@@ -137,6 +137,6 @@ def getSectionProperties(poly):
 # sec.plot_centroids()
 #
 # stress = sec.calculate_stress(n=10e3, mxx=10e6, vx=25e3, vy=50e3)
-# stress.plot_stress(stress="vm", normalize=False, fmt="{x:.2f}")
+# stress.plot_stress(stress="vm", normalize=False, fmt="{location:.2f}")
 #
-# stress.plot_stress_vector(stress="vy_zxy", fmt="{x:.2f}")
+# stress.plot_stress_vector(stress="vy_zxy", fmt="{location:.2f}")

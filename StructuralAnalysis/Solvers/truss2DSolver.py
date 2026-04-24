@@ -4,10 +4,10 @@ from CrossSectionOptimization import truss2DOptimizer
 
 class Truss2D:
     def __init__(self):
-        self.nodes = None # [x,y]
+        self.nodes = None # [location,y]
         self.members = None # [node 1, node 2]
-        self.loads = None # [node, x, y]
-        self.supports = None # [node, x, y]
+        self.loads = None # [node, location, y]
+        self.supports = None # [node, location, y]
         self.memberGroup = None
         self.A = None # [A] * length members
         self.E = None # [E] * length members
@@ -133,10 +133,11 @@ class Truss2D:
 
     def calcInternalForces(self):
         self.F_m_internal = np.array([k @ u for k, u in zip(self.K_m_local, self.U_m_local)])
+        print(self.F_m_internal)
         self.F_m_internal = self.F_m_internal[:, 0]
 
-    def calcNomalStresses(self):
-        self.sigma = self.F_m_internal / self.A
+    # def calcNomalStresses(self):
+    #     self.sigma = self.F_m_internal / self.A
 
     def optimizeSolve(self, A):
         self.A = A

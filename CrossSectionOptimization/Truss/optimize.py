@@ -12,8 +12,8 @@ def assignLoadsAndSupports(Nodes, loadCasses, supports):
     Makes the vectors for the forces and deflections to be used in sitffness matrices
 
     :param Nodes: Array of nodes
-    :param loadCasses: list of load casses: a list of loads: [x cordanit, y cordanit, x loade, y load]
-    :param supports: list of supports: [x cordanit, y cordanit, x support, y support]
+    :param loadCasses: list of load casses: a list of loads: [location cordanit, y cordanit, location loade, y load]
+    :param supports: list of supports: [location cordanit, y cordanit, location support, y support]
     :return: vector of forces, vector of deflections
     """
 
@@ -50,7 +50,7 @@ def solveOptimumProblem(Nodes, Members, f, dof):
     Solves for the optimum areas for all the acitve members
 
     :param Nodes: Array of nodes
-    :param Members: Array of active members: [node 1 index, node 2 index, length]
+    :param Members: Array of active members: [node 1 i, node 2 i, length]
     :param f: list of forces actcting on each node for each load case
     :param dof: list of degress of freedom for each node
     :return: volume, areas, forces, deformations
@@ -65,7 +65,7 @@ def solveOptimumProblem(Nodes, Members, f, dof):
     q = [cvx.Variable(len(Members), name='q_lc' + str(k)) for k in range(len(f))]  # Element elastic energy
     beta = cvx.Variable(len(f), nonneg=True)  # Dual variables of lower bound on case weighting = slacks of eqn
 
-    # setting objective function
+    # setting objective absFunction
     obj = cvx.Minimize((cvx.sum(l @ a) - cvx.sum(lb * beta)))
 
     # setting equilibrium constraints
@@ -101,7 +101,7 @@ def calcBi(Nodes, Members, dof=None):
     Calculates the equilibrium matrix. In reduced form if dof information is given
 
     :param Nodes: Array of nodes
-    :param Members: Array of members ether active or inactive [node 1 index, node 2 index, length]
+    :param Members: Array of members ether active or inactive [node 1 i, node 2 i, length]
     :param dof: Array Degrese of freedom for each node
     :return: the equilibrium matrix
     """
@@ -131,7 +131,7 @@ def plotTruss(Nodes, Members, a, threshold):
     Plots the truss
 
     :param Nodes: Array of nodes
-    :param Members: Array of members: [node 1 index, node 2 index, length]
+    :param Members: Array of members: [node 1 i, node 2 i, length]
     :param a: Area assigned to the member
     :param threshold: Required area of the member to be printed
     """

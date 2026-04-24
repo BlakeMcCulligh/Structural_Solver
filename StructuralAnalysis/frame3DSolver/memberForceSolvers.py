@@ -1,19 +1,23 @@
 import math
 import numpy as np
 
-from StructuralAnalysis.TEST.__main__ import Frame3D_T
+from StructuralAnalysis.frame3DSolver.__main__ import Frame3D_T
 
 def segment_Member(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
     seg = []
     seg_InternalLoads = []
     seg_DistLoads = []
+    seg_thata = []
+    seg_delta = []
     for mINDEX in range(numM):
         seg_sub = []
         seg_sub_InternalLoads = []
         seg_sub_DistLoads = []
+        seg_sub_thata = []
+        seg_sub_delta = []
         for cINDEX in range(numC):
             # Create a list of discontinuity locations
-            disconts = [0, model.members_L[mINDEX]]
+            disconts = [0, float(model.members_L[mINDEX])]
             for load in pointLoads[mINDEX][cINDEX]:
                 disconts.append(load[0])
             for load in distLoads[mINDEX][cINDEX]:
@@ -59,21 +63,24 @@ def segment_Member(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, 
             seg_L = []
             seg_distLoad_X, seg_distLoad_Y, seg_distLoad_Z = [], [], []
             seg_InternalLoad_X, seg_InternalLoad_Y, seg_InternalLoad_Z = [], [], [] # P1, X_T1 # V1, M1 # V1, M1
-            for i in range(len(seg_x1)-1):
+            for i in range(len(seg_x1)):
                 x = seg_x1[i]
-                seg_L.append(seg_x1[i+1] - seg_x1[i])
+                seg_L.append(seg_x2[i] - seg_x1[i])
+
+                seg_InternalLoad_X.append([f[0, 0], f[3, 0]])  # P1, X_T1
+                seg_InternalLoad_Y.append([f[2, 0], f[4, 0] + f[2, 0] * x])  # V1, M1
+                seg_InternalLoad_Z.append([f[1, 0], f[5, 0] - f[1, 0] * x])  # V1, M1
+
                 seg_distLoad_Z.append([0,0]) # w1, w2
                 seg_distLoad_Y.append([0,0]) # w1, w2
-                seg_distLoad_X.append([0,0]) # p1, p2
+                seg_distLoad_X.append([0,0]) # w1, p2
+
                 if i > 0:
                     seg_thetaZ1.append(seg_thetaZ1[i-1] - (-seg_InternalLoad_Z[i-1][0] * seg_L[i-1] **2 / 2 - seg_distLoad_Z[i-1][0] * seg_L[i-1] ** 3/6 + seg_L[i-1] * seg_InternalLoad_Z[i-1][1] + seg_L[i-1] **4*(seg_distLoad_Z[i-1][0] - seg_distLoad_Z[i-1][1])/(24 * seg_L[i-1])) / seg_EIz[i-1])
                     seg_deltaZ1.append((seg_deltaZ1[i-1] + seg_thetaZ1[i-1]* seg_L[i-1] + seg_InternalLoad_Z[i-1][0]*seg_L[i-1]**3/(6*seg_EIz[i-1]) + seg_distLoad_Z[i-1][0]*x**4/(24*seg_EIz[i-1]) +seg_L[i-1]**2*(-seg_InternalLoad_Z[i-1][1])/(2*seg_EIz[i-1]) + x**5*(-seg_distLoad_Z[i-1][0] + seg_distLoad_Z[i-1][1])/(120*seg_EIz[i-1]*seg_L[i-1])))
                     seg_thetaY1.append(seg_thetaY1[i-1] + (-seg_InternalLoad_Y[i-1][0]*seg_L[i-1]**2/2 - seg_distLoad_Y[i-1][0]*seg_L[i-1]**3/6 + seg_L[i-1]*(-seg_InternalLoad_Y[i-1][1]) + seg_L[i-1]**4*(seg_distLoad_Y[i-1][0] - seg_distLoad_Y[i-1][1])/(24*seg_L[i-1]))/seg_EIy[i-1])
                     seg_deltaY1.append((seg_deltaY1[i-1] - seg_thetaY1[i-1]*seg_L[i-1] + seg_InternalLoad_Y[i-1][0]*seg_L[i-1]**3/(6*seg_EIy[i-1]) + seg_distLoad_Y[i-1][0]*seg_L[i-1]**4/(24*seg_EIy[i-1]) -seg_L[i-1]**2*(-seg_distLoad_Y[i-1][1])/(2*seg_EIy[i-1]) - seg_L[i-1]**5*(seg_distLoad_Y[i-1][0] - seg_distLoad_Y[i-1][1])/(120*seg_EIy[i-1]*seg_L[i-1])))
                     seg_deltaX1.append(seg_deltaX1[i-1] - 1/seg_EA[i-1]*(seg_InternalLoad_X[i-1][0]*seg_L[i-1] + seg_distLoad_X[i-1][0]*seg_L[i-1]**2/2 + (seg_distLoad_X[i-1][1] - seg_distLoad_X[i-1][0])*seg_L[i-1]**3/(6*seg_L[i-1])))
-                seg_InternalLoad_X.append([f[0, 0],f[3, 0]]) # P1, X_T1
-                seg_InternalLoad_Y.append([f[2, 0],f[4, 0] + f[2, 0] * x]) # V1, M1
-                seg_InternalLoad_Z.append([f[1, 0],f[5, 0] - f[1, 0] * x]) # V1, M1
                 for pointLoad in pointLoads[mINDEX][cINDEX]:
                     if round(pointLoad[0], 10) <= round(x, 10):
                         seg_InternalLoad_X[i][0] += pointLoad[1]
@@ -115,10 +122,14 @@ def segment_Member(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, 
             seg_sub.append([seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
             seg_sub_InternalLoads.append([seg_InternalLoad_X, seg_InternalLoad_Y, seg_InternalLoad_Z]) # [P1, T1], [Vy1, My1], [Vz1, Mz1]
             seg_sub_DistLoads.append([seg_distLoad_X, seg_distLoad_Y, seg_distLoad_Z]) # [wx1, wx2], [wy1, wy2], [wz1, wz2]
+            seg_sub_thata.append([seg_thetaY1, seg_thetaZ1])
+            seg_sub_delta.append([seg_deltaX1, seg_deltaY1, seg_deltaZ1])
         seg.append(seg_sub)
         seg_InternalLoads.append(seg_sub_InternalLoads)
         seg_DistLoads.append(seg_sub_DistLoads)
-    return seg, seg_InternalLoads, seg_DistLoads
+        seg_thata.append(seg_sub_thata)
+        seg_delta.append(seg_sub_delta)
+    return seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta
 
 def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFunction, POIFunction, Direc, sign = None, comboINDEXS = None):
     if comboINDEXS is None: comboINDEXS = model.casses
@@ -141,15 +152,15 @@ def shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
     seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
-    for i in range(len(seg)):
-        if round(seg[i][0], 10) <= round(x, 10) < round(seg[i][1], 10):
-            VY = seg_InternalLoads[1][i][0] + seg_DistLoads[1][i][0] * (x - seg[i][0]) + (x - seg[i][0]) ** 2 * (-seg_DistLoads[1][i][0] + seg_DistLoads[1][i][1]) / (2 * (seg[i][1]-seg[i][0]))
-            VZ = seg_InternalLoads[2][i][0] + seg_DistLoads[2][i][0] * (x - seg[i][0]) + (x - seg[i][0]) ** 2 * (-seg_DistLoads[2][i][0] + seg_DistLoads[2][i][1]) / (2 * (seg[i][1] - seg[i][0]))
+    for i in range(len(seg[0])):
+        if round(seg[0][i], 10) <= round(x, 10) < round(seg[1][i], 10):
+            VY = seg_InternalLoads[1][i][0] + seg_DistLoads[1][i][0] * (x - seg[0][i]) + (x - seg[0][i]) ** 2 * (-seg_DistLoads[1][i][0] + seg_DistLoads[1][i][1]) / (2 * (seg[1][i]-seg[0][i]))
+            VZ = seg_InternalLoads[2][i][0] + seg_DistLoads[2][i][0] * (x - seg[0][i]) + (x - seg[0][i]) ** 2 * (-seg_DistLoads[2][i][0] + seg_DistLoads[2][i][1]) / (2 * (seg[1][i] - seg[0][i]))
             return VY, VZ
     if math.isclose(x, model.members_L[mINDEX]):
-        lastIndex = len(seg) - 1
-        VY = seg_InternalLoads[1][lastIndex][0] + seg_DistLoads[1][lastIndex][0] * (x - seg[lastIndex][0]) + (x - seg[lastIndex][0]) ** 2 * (-seg_DistLoads[1][lastIndex][0] + seg_DistLoads[1][lastIndex][1]) / (2 * (seg[lastIndex][1]-seg[lastIndex][0]))
-        VZ = seg_InternalLoads[2][lastIndex][0] + seg_DistLoads[2][lastIndex][0] * (x - seg[lastIndex][0]) + (x - seg[lastIndex][0]) ** 2 * (-seg_DistLoads[2][lastIndex][0] + seg_DistLoads[2][lastIndex][1]) / (2 * (seg[lastIndex][1] - seg[lastIndex][0]))
+        lastIndex = len(seg[0]) - 1
+        VY = seg_InternalLoads[1][lastIndex][0] + seg_DistLoads[1][lastIndex][0] * (x - seg[0][lastIndex]) + (x - seg[0][lastIndex]) ** 2 * (-seg_DistLoads[1][lastIndex][0] + seg_DistLoads[1][lastIndex][1]) / (2 * (seg[1][lastIndex] - seg[0][lastIndex]))
+        VZ = seg_InternalLoads[2][lastIndex][0] + seg_DistLoads[2][lastIndex][0] * (x - seg[0][lastIndex]) + (x - seg[0][lastIndex]) ** 2 * (-seg_DistLoads[2][lastIndex][0] + seg_DistLoads[2][lastIndex][1]) / (2 * (seg[1][lastIndex] - seg[0][lastIndex]))
         return VY, VZ
     return 0, 0
 
@@ -187,15 +198,15 @@ def moment(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
     seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
-    for i in range(len(seg)):
-        if round(seg[i][0], 10) <= round(x, 10) < round(seg[i][1], 10):
-            MZ = moment_calc(seg_InternalLoads[2][i][1], seg_InternalLoads[2][i][0], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], (seg[i][1]-seg[i][0]), (x - seg[i][0]), 1)
-            MY = moment_calc(seg_InternalLoads[1][i][1], seg_InternalLoads[1][i][0], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], (seg[i][1]-seg[i][0]), (x - seg[i][0]), -1)
+    for i in range(len(seg[0])):
+        if round(seg[0][i], 10) <= round(x, 10) < round(seg[1][i], 10):
+            MZ = moment_calc(seg_InternalLoads[2][i][1], seg_InternalLoads[2][i][0], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], (seg[1][i]-seg[0][i]), (x - seg[0][i]), 1)
+            MY = moment_calc(seg_InternalLoads[1][i][1], seg_InternalLoads[1][i][0], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], (seg[1][i]-seg[0][i]), (x - seg[0][i]), -1)
             return MZ, MY
     if math.isclose(x, model.members_L[mINDEX]):
-        i = len(seg) - 1
-        MZ = moment_calc(seg_InternalLoads[2][i][1], seg_InternalLoads[2][i][0], seg_DistLoads[2][i][0],seg_DistLoads[2][i][1], (seg[i][1] - seg[i][0]), (x - seg[i][0]), 1)
-        MY = moment_calc(seg_InternalLoads[1][i][1], seg_InternalLoads[1][i][0], seg_DistLoads[1][i][0],seg_DistLoads[1][i][1], (seg[i][1] - seg[i][0]), (x - seg[i][0]), -1)
+        i = len(seg[0]) - 1
+        MZ = moment_calc(seg_InternalLoads[2][i][1], seg_InternalLoads[2][i][0], seg_DistLoads[2][i][0],seg_DistLoads[2][i][1], (seg[1][i] - seg[0][i]), (x - seg[0][i]), 1)
+        MY = moment_calc(seg_InternalLoads[1][i][1], seg_InternalLoads[1][i][0], seg_DistLoads[1][i][0],seg_DistLoads[1][i][1], (seg[1][i] - seg[0][i]), (x - seg[0][i]), -1)
         return MY, MZ
     return 0, 0
 
@@ -241,11 +252,11 @@ def min_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS
 def torque(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
-    for i in range(len(seg)):
-        if round(seg[i][0], 10) <= round(x, 10) < round(seg[i][1], 10):
+    for i in range(len(seg[0])):
+        if round(seg[0][i], 10) <= round(x, 10) < round(seg[1][i], 10):
             return seg_InternalLoads[0][i][1]
     if math.isclose(x, model.members_L[mINDEX]):
-        i = len(seg) - 1
+        i = len(seg[0]) - 1
         return seg_InternalLoads[0][i][1]
     return 0
 
@@ -269,12 +280,12 @@ def axial(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
     seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
-    for i in range(len(seg)):
-        if round(seg[i][0], 10) <= round(x, 10) < round(seg[i][1], 10):
-            return axial_calc(seg_DistLoads[0][1][0], seg_DistLoads[0][1][1], seg_InternalLoads[0][i][0], (seg[i][1] - seg[i][0]), (x-seg[i][0]))
+    for i in range(len(seg[0])):
+        if round(seg[0][i], 10) <= round(x, 10) < round(seg[1][i], 10):
+            return axial_calc(seg_DistLoads[0][1][0], seg_DistLoads[0][1][1], seg_InternalLoads[0][i][0], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
     if math.isclose(x, model.members_L[mINDEX]):
-        i = len(seg) - 1
-        return axial_calc(seg_DistLoads[0][1][0], seg_DistLoads[0][1][1], seg_InternalLoads[0][i][0], (seg[i][1] - seg[i][0]), (x-seg[i][0]))
+        i = len(seg[0]) - 1
+        return axial_calc(seg_DistLoads[0][1][0], seg_DistLoads[0][1][1], seg_InternalLoads[0][i][0], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
     return 0
 
 def axialLocOfInterist(p1, p2, L):
@@ -298,3 +309,33 @@ def max_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS 
 
 def min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
     return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_P_POI, 0, comboINDEXS)
+
+
+""" --------------- DEFLECTION --------------- """
+
+
+def axial_deflection_calc(delta_x1, EA, P1, w1, w2, L, x):
+    return delta_x1 - 1/EA*(P1 * x + w1 * x ** 2 / 2 + (w2 - w1) * x ** 3 / (6 * L))
+
+def deflection_calc(delta1, theta1, V1, EI, w1, w2, M1, L, x):
+    return delta1 + theta1*x + V1*x**3/(6 * EI) + w1*x**4/(24 * EI) + x**2*(-M1)/(2 * EI) + x**5*(-w1 + w2)/(120 * EI * L)
+
+def deflection(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta): # TODO results dont seem correct at a glance
+    seg = seg[mINDEX][comboINDEX]
+    seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
+    seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
+    seg_thata = seg_thata[mINDEX][comboINDEX]
+    seg_delta = seg_delta[mINDEX][comboINDEX]
+    for i in range(len(seg[0])):
+        if round(seg[0][i], 10) <= round(x, 10) < round(seg[1][i], 10):
+            DX = axial_deflection_calc(seg_delta[0][i], seg[4][i], seg_InternalLoads[0][i][0], seg_DistLoads[0][i][0], seg_DistLoads[0][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
+            DY = deflection_calc(seg_delta[1][i], seg_thata[0][i], seg_InternalLoads[1][i][0], seg[3][i], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], seg_InternalLoads[1][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
+            DZ = deflection_calc(seg_delta[2][i], seg_thata[1][i], seg_InternalLoads[2][i][0], seg[2][i], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], seg_InternalLoads[2][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
+            return DX, DY, DZ
+    if math.isclose(x, model.members_L[mINDEX]):
+        i = len(seg[0]) - 1
+        DX = axial_deflection_calc(seg_delta[0][i], seg[4][i], seg_InternalLoads[0][i][0], seg_DistLoads[0][i][0], seg_DistLoads[0][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
+        DY = deflection_calc(seg_delta[1][i], seg_thata[0][i], seg_InternalLoads[1][i][0], seg[3][i], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], seg_InternalLoads[1][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
+        DZ = deflection_calc(seg_delta[2][i], seg_thata[1][i], seg_InternalLoads[2][i][0], seg[2][i], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], seg_InternalLoads[2][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
+        return DX, DY, DZ
+    return 0,0,0

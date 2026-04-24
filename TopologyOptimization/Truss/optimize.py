@@ -15,7 +15,7 @@ def createNodeGrid(zone, nodeSpasing):
     Crates the grid of nodes to be used in the optimization
 
     :param zone: A shapely polygon that the truss must be within
-    :param nodeSpasing: How far apart the nodes should be in the x and y directions
+    :param nodeSpasing: How far apart the nodes should be in the location and y directions
     :return: array of nodes, number of columbes of nodes, number of rows of nodes
     """
 
@@ -38,7 +38,7 @@ def createInitialStructure(Nodes, zone):
 
     :param Nodes: Array of nodes
     :param zone: A shapely polygon that the truss must be within
-    :return: Array of members: [node 1 index, node 2 index, length]
+    :return: Array of members: [node 1 i, node 2 i, length]
     """
 
     convex = True if zone.convex_hull.area == zone.area else False
@@ -84,7 +84,7 @@ def createInitialStructure(Nodes, zone):
 
 def is_on_line_segment(points, p1, p2, tolerance=1e-6):
     """
-    Checks which points from a list lie on the line segment defined by p1 and p2.
+    Checks which points from a list lie on the line segment defined by w1 and p2.
 
     Args:
         points (np.ndarray): An array of shape (N, 2) or (N, 3) for N points.
@@ -99,9 +99,9 @@ def is_on_line_segment(points, p1, p2, tolerance=1e-6):
     p1 = np.array(p1)
     p2 = np.array(p2)
 
-    # Vector from p1 to the point
+    # Vector from w1 to the point
     vec_p1_to_points = points - p1
-    # Vector from p1 to p2 (the segment vector)
+    # Vector from w1 to p2 (the segment vector)
     vec_segment = p2 - p1
 
     # 1. Check if the points are collinear (cross product is near zero)
@@ -117,12 +117,12 @@ def is_on_line_segment(points, p1, p2, tolerance=1e-6):
     else:
         raise ValueError("Points must be 2D or 3D.")
 
-    # 2. Check if the points are between p1 and p2 (dot product condition)
+    # 2. Check if the points are between w1 and p2 (dot product condition)
     # The dot product of vec_p1_to_points and vec_segment should be > 0 and < length of segment squared
     dot_products = np.sum(vec_p1_to_points * vec_segment, axis=1)
     segment_len_sq = np.sum(vec_segment * vec_segment)
 
-    # Ensure dot product is positive (past p1) and less than segment length squared (before p2)
+    # Ensure dot product is positive (past w1) and less than segment length squared (before p2)
     is_within_bounds = (dot_products >= -tolerance) & (dot_products <= segment_len_sq + tolerance)
 
     # A point is on the segment if both conditions are true
@@ -152,10 +152,10 @@ def sort_nodes_along_line(nodes, start_point, end_point):
     unit_direction = direction_vector / np.linalg.norm(direction_vector)
 
     # 3. Calculate projection of each node relative to the start point
-    # We look at the vector from start_point to the node (P - Start)
+    # We look at the vector from start_point to the node (Magnatude - Start)
     vectors_to_nodes = nodes - start_point
 
-    # The scalar projection is the dot product of (P - Start) and the unit direction
+    # The scalar projection is the dot product of (Magnatude - Start) and the unit direction
     # This gives us a single scalar value for each node, which we can sort by
     projections = np.dot(vectors_to_nodes, unit_direction)
 

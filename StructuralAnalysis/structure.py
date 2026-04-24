@@ -40,7 +40,7 @@ class Structure:
     def addNode(self, cords: list):
         """
         Adds a node to the structure.
-        :param cords: list of cords [x, y] if 2D, [x, y, z] if 3D
+        :param cords: list of cords [location, y] if 2D, [location, y, z] if 3D
         """
         self.nodes.append(Node(self.isTruss, self.is3D, cords))
 
@@ -48,7 +48,7 @@ class Structure:
         """
         Adds a member to the structure.
         :param nodeIndexs: list of the node indexs the member is to conect [node 1, node 2].
-        :param crossSectionIndex: index of the cross-section the member is to be.
+        :param crossSectionIndex: i of the cross-section the member is to be.
         """
         self.members.append(Member(self.nodes, self.crossSections, self.is3D, self.isTruss, nodeIndexs, crossSectionIndex))
 
@@ -57,7 +57,7 @@ class Structure:
         Adds a cross-section to the structure.
         :param Optimize: is the cross-seection an optimization cross-section. (boolean)
         :param E: Elastic modulus of the cross-section. (float)
-        :param G: Shear modulus of the cross-section. (float)
+        :param G: shear modulus of the cross-section. (float)
         :param A: Area of the cross-section. (float)
         :param I: moment of inertia of the cross-section around the strong axis if 3D. (float)
         :param I_weak: moment of inertia of the cross-section around the weak axis. Only needed for 3D. (float)
@@ -95,7 +95,7 @@ class Structure:
     def addSupport(self, nodeIndex: int, support: list):
         """
         Adds a support to the structure.
-        :param nodeIndex: index of the node the support is to be applied to. (int)
+        :param nodeIndex: i of the node the support is to be applied to. (int)
         :param support: what degress of fredom the support is to be applied to. (list) of booleans
                         if 2D truss: length = 2
                         if 3D truss: length = 3
@@ -107,7 +107,7 @@ class Structure:
     def addNodeLoad(self, nodeIndex: int, load: list):
         """
         Adds a point load at a node to the structure.
-        :param nodeIndex: index of the node the load is to be applied to. (int)
+        :param nodeIndex: i of the node the load is to be applied to. (int)
         :param load: magnitude of the load in each degree of fredom. (list) of floats
                      if 2D truss: length = 2
                      if 3D truss: length = 3
@@ -116,10 +116,19 @@ class Structure:
         """
         self.nodes[nodeIndex].addLoad(load)
 
+    def addPointLoad(self, memberIndex: int, load: list, location: float):
+        self.members[memberIndex].addPointLoad(load, location)
+
+    def addUniformlyDistributedLoad(self, memberIndex: int, load: list):
+        self.members[memberIndex].addUniformlyDistributedLoad(load)
+
+    def addDistributedLoad(self, memberIndex: int, load: list, location: list):
+        self.members[memberIndex].addDistributedLoad(load, location)
+
     def addRelece(self, memberIndex: int, relece: list):
         """
         Adds a relece to the structure. Only used for frames.
-        :param memberIndex: index of the member the relece is to be applied to. (int)
+        :param memberIndex: i of the member the relece is to be applied to. (int)
         :param relece: what degress of fredom are to be releced for both ends of the member. (list) of floats
                        if 2D frame: length = 6
                        if 3D frame: length = 12
@@ -129,7 +138,7 @@ class Structure:
     def assembleGeoLists(self):
         """
         Assembles the lists of geometric properties to be sent to the solver.
-        helper function for the solve and optimize functions.
+        helper absFunction for the solve and optimize functions.
         :return: Nodes, Members, Loads, Supports
         """
         NODES = []
@@ -244,11 +253,11 @@ class Structure:
             if self.is3D:
                 self.solveObject.calcMemberDeflections()
                 self.solveObject.calcInternalForces()
-                self.solveObject.calcNomalStresses()
+                #self.solveObject.calcNomalStresses()
             else:
                 self.solveObject.calcMemberDeflections()
                 self.solveObject.calcInternalForces()
-                self.solveObject.calcNomalStresses()
+                #self.solveObject.calcNomalStresses()
         else:
             if self.is3D:
                 pass
@@ -337,13 +346,13 @@ class Structure:
             print("The structure has not been solved yet.")
             return None
 
-    def getStresses(self):
-        if self.solveObject is not None:
-            #todo
-            return self.solveObject.sigma
-        else:
-            print("The structure has not been solved yet.")
-            return None
+    # def getStresses(self):
+    #     if self.solveObject is not None:
+    #         #todo
+    #         return self.solveObject.sigma
+    #     else:
+    #         print("The structure has not been solved yet.")
+    #         return None
 
     def printOptimizationResults(self):
         """
@@ -388,13 +397,19 @@ def testTruss2D():
     S.addNodeLoad(2, [5, 0])
     S.addNodeLoad(3, [0, 2])
 
+    S.addPointLoad(4, [5, 0], 0.5)
+    S.addUniformlyDistributedLoad(2, [2,0])
+    S.addDistributedLoad(3,[0,0,0,1], [0, 1])
+
+
+
     S.addSupport(0, [True, True])
     S.addSupport(1, [False, True])
 
     S.solve()
     print(S.getDeflections())
     print(S.getForces())
-    print(S.getStresses())
+    #print(S.getStresses())
 
 testTruss2D()
 
