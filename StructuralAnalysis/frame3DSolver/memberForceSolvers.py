@@ -131,7 +131,7 @@ def segment_Member(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, 
         seg_delta.append(seg_sub_delta)
     return seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta
 
-def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFunction, POIFunction, Direc, sign = None, comboINDEXS = None):
+def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFunction, absFunctionDirection, POIFunction, Direc, sign = None, comboINDEXS = None):
     if comboINDEXS is None: comboINDEXS = model.casses
     global_, governing_combo = None, None
     seg, seg_InternalLoads, seg_DistLoads = seg[mINDEX], seg_InternalLoads[mINDEX], seg_DistLoads[mINDEX]
@@ -141,7 +141,10 @@ def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFuncti
         for segINDEX in range(len(seg)):
             abs_.append(absFunction(POIFunction(seg_DistLoads[comboINDEX][Direc][segINDEX][0], seg_DistLoads[comboINDEX][Direc][segINDEX][1], seg_InternalLoads[comboINDEX][Direc][segINDEX][0], seg_InternalLoads[comboINDEX][Direc][segINDEX][1], L[comboINDEX], sign)))
         abs_ = absFunction(abs_)
-        if global_ is None or abs_ > global_: global_, governing_combo = abs_, comboINDEX
+        if absFunctionDirection == "max":
+            if global_ is None or abs_ > global_: global_, governing_combo = abs_, comboINDEX
+        elif absFunctionDirection == "min":
+            if global_ is None or abs_ < global_: global_, governing_combo = abs_, comboINDEX
     return global_, governing_combo
 
 
@@ -178,13 +181,13 @@ def seg_V_POI(w1, w2, V1, M_1, L, sign):
     return [shear1, shear2, shear3]
 
 def max_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_V_POI, 1, comboINDEXS=comboINDEXS)
-    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_V_POI, 2, comboINDEXS=comboINDEXS)
+    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_V_POI, 1, comboINDEXS=comboINDEXS)
+    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max", seg_V_POI, 2, comboINDEXS=comboINDEXS)
     return Y, Z
 
 def min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_V_POI, 1, comboINDEXS=comboINDEXS)
-    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_V_POI, 2, comboINDEXS=comboINDEXS)
+    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min", seg_V_POI, 1, comboINDEXS=comboINDEXS)
+    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min", seg_V_POI, 2, comboINDEXS=comboINDEXS)
     return Y, Z
 
 
@@ -236,13 +239,13 @@ def seg_M_POI(w1, w2, V1, M_1, L, sign):
     return [M1, M2, M3, M4]
 
 def max_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_M_POI, 1, sign=-1, comboINDEXS = comboINDEXS)
-    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
+    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_M_POI, 1, sign=-1, comboINDEXS = comboINDEXS)
+    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
     return Y, Z
 
 def min_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_M_POI, 1, sign=-1, comboINDEXS=comboINDEXS)
-    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
+    Y = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_M_POI, 1, sign=-1, comboINDEXS=comboINDEXS)
+    Z = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
     return Y, Z
 
 
@@ -264,10 +267,10 @@ def seg_T_POI(w1, w2, P1, M1, L, sign):
     return [M1]
 
 def max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_T_POI, 0, comboINDEXS=comboINDEXS)
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_T_POI, 0, comboINDEXS=comboINDEXS)
 
 def min_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_T_POI, 0, comboINDEXS=comboINDEXS)
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_T_POI, 0, comboINDEXS=comboINDEXS)
 
 
 """ --------------- AXIAL --------------- """
@@ -305,10 +308,10 @@ def seg_P_POI(w1, w2, P1, M1, L, sign):
     return [P_1, P_2, P_3]
 
 def max_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, seg_P_POI, 0, comboINDEXS)
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_P_POI, 0, comboINDEXS)
 
 def min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, seg_P_POI, 0, comboINDEXS)
+    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_P_POI, 0, comboINDEXS)
 
 
 """ --------------- DEFLECTION --------------- """
@@ -331,11 +334,50 @@ def deflection(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoa
             DX = axial_deflection_calc(seg_delta[0][i], seg[4][i], seg_InternalLoads[0][i][0], seg_DistLoads[0][i][0], seg_DistLoads[0][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
             DY = deflection_calc(seg_delta[1][i], seg_thata[0][i], seg_InternalLoads[1][i][0], seg[3][i], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], seg_InternalLoads[1][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
             DZ = deflection_calc(seg_delta[2][i], seg_thata[1][i], seg_InternalLoads[2][i][0], seg[2][i], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], seg_InternalLoads[2][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
-            return DX, DY, DZ
+            return [DX, DY, DZ]
     if math.isclose(x, model.members_L[mINDEX]):
         i = len(seg[0]) - 1
         DX = axial_deflection_calc(seg_delta[0][i], seg[4][i], seg_InternalLoads[0][i][0], seg_DistLoads[0][i][0], seg_DistLoads[0][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
         DY = deflection_calc(seg_delta[1][i], seg_thata[0][i], seg_InternalLoads[1][i][0], seg[3][i], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], seg_InternalLoads[1][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
         DZ = deflection_calc(seg_delta[2][i], seg_thata[1][i], seg_InternalLoads[2][i][0], seg[2][i], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], seg_InternalLoads[2][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
-        return DX, DY, DZ
-    return 0,0,0
+        return [DX, DY, DZ]
+    return [0,0,0]
+
+def difflectionExtremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, absFunctionDirection, comboINDEXS, members_L):
+    if comboINDEXS is None: comboINDEXS = model.casses
+    global_, governing_combo = [None, None, None], [None, None, None]
+    L = members_L[mINDEX]
+    for comboINDEX in comboINDEXS:
+        dmax = deflection(model, 0, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta)
+        for i in range(100):
+            d = deflection(model, L * i / 99, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta)
+            for j in range(3):
+                if absFunctionDirection == "max":
+                    if d[j] > dmax[j]:
+                        print("d", dmax)
+                        dmax[j] = d[j]
+                elif absFunctionDirection == "min":
+                    if d[j] < dmax[j]:
+                        dmax[j] = d[j]
+        for j in range(3):
+            if global_[j] is None:
+                global_[j] = dmax[j]
+                governing_combo[j] = comboINDEX
+            else:
+                if absFunctionDirection == "max":
+                    # noinspection PyTypeChecker
+                    if dmax[j] > global_[j]:
+                        global_[j] = dmax[j]
+                        governing_combo[j] = comboINDEX
+                elif absFunctionDirection == "min":
+                    # noinspection PyTypeChecker
+                    if dmax[j] < global_[j]:
+                        global_[j] = dmax[j]
+                        governing_combo[j] = comboINDEX
+    return global_, governing_combo
+
+def max_difflection(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, comboINDEXS = None):
+    return difflectionExtremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta,"max", comboINDEXS, model.members_L)
+
+def min_difflection(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, comboINDEXS = None):
+    return difflectionExtremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta,"min", comboINDEXS, model.members_L)

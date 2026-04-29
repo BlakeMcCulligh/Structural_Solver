@@ -493,3 +493,4 @@ def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_ar
     print(MFSolvers.max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
 
     print(MFSolvers.deflection(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta))
+    print("D", MFSolvers.max_difflection(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta))
