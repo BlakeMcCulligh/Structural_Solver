@@ -240,13 +240,13 @@ def get_FixedEndReactions_Pointload_ARRAY(model, pointLoads):
                     if load[2] != 0:
                         reactions = np.add(reactions, ferCalc.pointLoadY(load[2], load[0], L))
                     if load[3] != 0:
-                        reactions = np.add(reactions, ferCalc.pointLoadZ(load[2], load[0], L))
+                        reactions = np.add(reactions, ferCalc.pointLoadZ(load[3], load[0], L))
                     if load[4] != 0:
-                        reactions = np.add(reactions, ferCalc.momentX(load[3], load[0], L))
+                        reactions = np.add(reactions, ferCalc.momentX(load[4], load[0], L))
                     if load[5] != 0:
-                        reactions = np.add(reactions, ferCalc.momentY(load[4], load[0], L))
+                        reactions = np.add(reactions, ferCalc.momentY(load[5], load[0], L))
                     if load[6] != 0:
-                        reactions = np.add(reactions, ferCalc.momentZ(load[5], load[0], L))
+                        reactions = np.add(reactions, ferCalc.momentZ(load[6], load[0], L))
             reactionsMember.append(reactions)
         Reactions.append(reactionsMember)
     return Reactions
@@ -273,7 +273,6 @@ def get_FixedEndReactions_Distload_ARRAY(model, distLoads):
 def assembleLoads(model: Frame3D_T):
     pointLoads = assemblePointLoads(model)
     distLoads = assembleDistLoads(model)
-    print(pointLoads)
     return pointLoads, distLoads
 
 def assemblePointLoads(model: Frame3D_T):
@@ -287,7 +286,6 @@ def assemblePointLoads(model: Frame3D_T):
                 newLoad.append([loads[1][0][j]] + loads[1][1][j])
             newLoads[loads[0]] = newLoad
         newPointLoads.append(newLoads)
-    print(newPointLoads)
     return newPointLoads
 
 def assembleDistLoads(model: Frame3D_T):
@@ -473,24 +471,20 @@ def getReactions(model: Frame3D_T, F_array, numC, numM, numN):
 
 def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
     seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta = MFSolvers.segment_Member(model, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
+    abs_F = []
+    abs_M = []
+    for mINDEX in range(numM):
+        FX_min, _ = MFSolvers.min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        FX_max, _ = MFSolvers.max_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        FY_min, FZ_min, _, _ = MFSolvers.min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        FY_max, FZ_max, _, _ = MFSolvers.max_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        MX_min, _ = MFSolvers.min_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        MX_max, _ = MFSolvers.max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        MY_min, MZ_min, _, _ = MFSolvers.min_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        MY_max, MZ_max, _, _ = MFSolvers.max_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        abs_F.append([max(FX_max,abs(FX_min)), max(FY_max,abs(FY_min)), max(FZ_max,abs(FZ_min))])
+        abs_M.append([max(MX_max, abs(MX_min)), max(MY_max, abs(MY_min)), max(MZ_max, abs(MZ_min))])
+    return abs_F, abs_M
 
 
-    # TODO
-    x = 40
 
-    mINDEX = 0
-    comboINDEX = 0
-    VY, VZ = MFSolvers.shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads)
-    print(VY, VZ)
-
-    print(MFSolvers.min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
-
-    print(MFSolvers.max_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
-
-    print(MFSolvers.torque(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads))
-
-    print(MFSolvers.min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
-    print(MFSolvers.max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads))
-
-    print(MFSolvers.deflection(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta))
-    print("D", MFSolvers.max_difflection(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta))

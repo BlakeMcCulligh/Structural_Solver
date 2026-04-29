@@ -169,7 +169,6 @@ class Frame3D_T:
         k11, k12, k21, k22 = hf.memberPart_k_ARRAY(k_local, self.members_PartD_unreleced, self.members_PartD_releced, numM)
 
         fer_unc_ARRAY = hf.get_fer_unc_ARRAY(self, pointLoads, distLoads)
-
         fer1, fer2 = hf.memberPart_fer_ARRAY(fer_unc_ARRAY, self.members_PartD_unreleced, self.members_PartD_releced)
 
         ferCondensed = hf.get_fer_ARRAY(self, k12, k22, fer1, fer2, numM, numC)
@@ -204,8 +203,8 @@ class Frame3D_T:
                 reactions = hf.getReactions(self, F, numC, numM, numN)
 
             if getInternalForces:
-                hf.solveInternalForces(self, pointLoads, distLoads, f, fer_unc_ARRAY, d, numM, numC)
-                # TODO
+                abs_F, abs_M = hf.solveInternalForces(self, pointLoads, distLoads, f, fer_unc_ARRAY, d, numM, numC)
+                internalForces = [abs_F, abs_M]
 
         if getStresses:
             #TODO
@@ -231,7 +230,7 @@ if __name__ == '__main__':
     # simple_beam.defSupport(1, True, True, True, True, True, True)
 #'M1', 'Fy', -0.01, -0.01, 0, 168
     #simple_beam.addNodeLoad(0, Pz=1, case=0)
-    simple_beam.addMemberPointLoad(0, 50, Py=50, case=0)
+    simple_beam.addMemberPointLoad(0, 50, Pz=50, case=0)
     # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=0)
     # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=1)
     # simple_beam.addMemberDistLoad(0,0,5,5,2,0,0)
