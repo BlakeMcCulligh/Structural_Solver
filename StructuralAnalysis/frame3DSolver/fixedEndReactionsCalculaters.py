@@ -1,52 +1,72 @@
 import numpy as np
 
-def pointLoadX(magnatude: float, location: float, L: float):
-    reactions = np.zeros((12, 1))
-    reactions[0, 0] = -magnatude * (L - location) / L
-    reactions[6, 0] = -magnatude * location / L
-    return reactions
+def pointLoadX_batch(F, x, L):
+    F = np.asarray(F)
+    x = np.asarray(x)
+    b = L - x
+    n = len(F)
+    R = np.zeros((n, 12))
+    R[:, 0] = -F * b / L
+    R[:, 6] = -F * x / L
+    return R
 
-def pointLoadY(magnatude: float, location: float, L: float):
-    b = L - location
-    reactions = np.zeros((12, 1))
-    reactions[1, 0] = -magnatude* b ** 2 * (L + 2 * location) / L ** 3
-    reactions[5, 0] = -magnatude* location * b ** 2 / L ** 2
-    reactions[7, 0] = -magnatude* location ** 2 * (L + 2 * b) / L ** 3
-    reactions[11, 0] = magnatude* location ** 2 * b / L ** 2
-    return reactions
+def pointLoadY_batch(F, x, L):
+    F = np.asarray(F)
+    x = np.asarray(x)
+    b = L - x
+    n = len(F)
+    R = np.zeros((n, 12))
+    R[:, 1]  = -F * b**2 * (L + 2*x) / L**3
+    R[:, 5]  = -F * x * b**2 / L**2
+    R[:, 7]  = -F * x**2 * (L + 2*b) / L**3
+    R[:,11]  =  F * x**2 * b / L**2
+    return R
 
-def pointLoadZ(magnatude: float, location: float, L: float):
-    b = L - location
-    reactions = np.zeros((12, 1))
-    reactions[2, 0] = -magnatude* b ** 2 * (L + 2 * location) / L ** 3
-    reactions[4, 0] = magnatude* location * b ** 2 / L ** 2
-    reactions[8, 0] = -magnatude* location ** 2 * (L + 2 * b) / L ** 3
-    reactions[10, 0] = -magnatude* location ** 2 * b / L ** 2
-    return reactions
+def pointLoadZ_batch(F, x, L):
+    F = np.asarray(F)
+    x = np.asarray(x)
+    b = L - x
+    n = len(F)
+    R = np.zeros((n, 12))
+    R[:, 2]  = -F * b**2 * (L + 2*x) / L**3
+    R[:, 4]  =  F * x * b**2 / L**2
+    R[:, 8]  = -F * x**2 * (L + 2*b) / L**3
+    R[:,10]  = -F * x**2 * b / L**2
+    return R
 
-def momentX(magnatude: float, location: float, L: float):
-    reactions = np.zeros((12, 1))
-    reactions[3, 0] = -magnatude * (L - location) / L
-    reactions[9, 0] = -magnatude * location / L
-    return reactions
+def momentX_batch(M, x, L):
+    M = np.asarray(M)
+    x = np.asarray(x)
+    b = L - x
+    n = len(M)
+    R = np.zeros((n, 12))
+    R[:, 3] = -M * b / L
+    R[:, 9] = -M * x / L
+    return R
 
-def momentY(magnatude: float, location: float, L: float):
-    b = L - location
-    reactions = np.zeros((12, 1))
-    reactions[2, 0] = -6 * magnatude * location * b / L ** 3
-    reactions[4, 0] = magnatude * b * (2 * location - b) / L ** 2
-    reactions[8, 0] = 6 * magnatude * location * b / L ** 3
-    reactions[10, 0] = magnatude * location * (2 * b - location) / L ** 2
-    return reactions
+def momentY_batch(M, x, L):
+    M = np.asarray(M)
+    x = np.asarray(x)
+    b = L - x
+    n = len(M)
+    R = np.zeros((n, 12))
+    R[:, 2]  = -6 * M * x * b / L**3
+    R[:, 4]  =  M * b * (2*x - b) / L**2
+    R[:, 8]  =  6 * M * x * b / L**3
+    R[:,10]  =  M * x * (2*b - x) / L**2
+    return R
 
-def momentZ(magnatude: float, location: float, L: float):
-    b = L - location
-    reactions = np.zeros((12, 1))
-    reactions[1, 0] = 6 * magnatude * location * b / L ** 3
-    reactions[5, 0] = magnatude * b * (2 * location - b) / L ** 2
-    reactions[7, 0] = -6 * magnatude * location * b / L ** 3
-    reactions[11, 0] = magnatude * location * (2 * b - location) / L ** 2
-    return reactions
+def momentZ_batch(M, x, L):
+    M = np.asarray(M)
+    x = np.asarray(x)
+    b = L - x
+    n = len(M)
+    R = np.zeros((n, 12))
+    R[:, 1]  =  6 * M * x * b / L**3
+    R[:, 5]  =  M * b * (2*x - b) / L**2
+    R[:, 7]  = -6 * M * x * b / L**3
+    R[:,11]  =  M * x * (2*b - x) / L**2
+    return R
 
 def distributedLoadX(w: list, loc: list, L: float):
     reactions = np.zeros((12, 1))

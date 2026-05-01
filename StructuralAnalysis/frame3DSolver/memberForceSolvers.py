@@ -1,9 +1,9 @@
 import math
 import numpy as np
 
-from StructuralAnalysis.frame3DSolver.__main__ import Frame3D_T
+from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
 
-def segment_Member(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
+def segment_Member(model: Frame3D, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
     seg = []
     seg_InternalLoads = []
     seg_DistLoads = []

@@ -1,170 +1,275 @@
+from mimetypes import knownfiles
+
 import numpy as np
-import math
 
 import StructuralAnalysis.frame3DSolver.fixedEndReactionsCalculaters as ferCalc
 import StructuralAnalysis.frame3DSolver.memberForceSolvers as MFSolvers
 
-from StructuralAnalysis.frame3DSolver.__main__ import Frame3D_T
+from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
 
-def partD(model: Frame3D_T):
-    D_unknown = []
-    D_known = []
-    for i in range(len(model.nodes_cord)):
-        sup = model.nodes_Support[i]
+def partD(model: Frame3D):
+    """
+    Builds lists of unreleased and released degree of freedom.
 
-        for direc in range(6):
-            if not sup[direc]:
-                D_unknown.append(i * 6 + direc)
-            else:
-                D_known.append(i * 6 + direc)
+    :param model: Frame3D. 3D frame object to get the DOFs for.
+    :return:
+        D_unknown: ndarray. A ndarray of the indices for the released DOFs.
+        D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
+    """
+    n_nodes = model.nodes_Support.shape[0]
+    dof_indices = np.arange(n_nodes * 6).reshape(n_nodes, 6)
+    D_unknown = dof_indices[~model.nodes_Support].ravel()
+    D_known = dof_indices[model.nodes_Support].ravel()
     return D_unknown, D_known
 
-def prepMembers(model: Frame3D_T):
-    model.members = np.array(model.members)
-    model.nodes_cord = np.array(model.nodes_cord)
-    Ls = get_L_ARRAY(model)
-    DOFs = []
-    memberPartD_unrelesed = []
-    memberPartD_relesed = []
-    T = []
-    for i in range(len(model.members)):
-        DOFs.append(buildDOFVector([model.members[i,0], model.members[i,1]]))
-        p1, p2 = member_PartD(model.members_Releases[i])
-        memberPartD_unrelesed.append(p1)
-        memberPartD_relesed.append(p2)
-        T.append(getMemberT(model,i,Ls))
-    return DOFs, Ls, memberPartD_unrelesed, memberPartD_relesed, T
+def prepMembers(model: Frame3D):
+    """
+    Prepars the members for an analysis. This function can be run at the start of an optimization and
+    does not need to be rerun is only cross-sections are changed.
 
-def buildDOFVector(listNodes_INDEX):
-    dofs = np.empty(len(listNodes_INDEX) * 6, dtype=np.int64)
-    local = np.arange(6, dtype=np.int64)
-    for i, node in enumerate(listNodes_INDEX):
-        start = i * 6
-        dofs[start:start + 6] = node * 6 + local
-    return dofs
+    :param model: Frame3D. 3D frame to prepare.
+    :return:
+        DOFs: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# Members, 12)
+        L: ndarray. A ndarray of the lengths of the members. shape: (# Members)
+        member_unrelesed_DOFs: list: 3D list of unreleased DOFs for each member. shape: (# Members, varys: # unrelesed DOFs)
+        member_relesed_DOFs: list: 3D list of released DOFs for each member. shape: (# Members, varys: # released DOFs)
+        T: ndarray: 4D ndarray of the transformation matrices for each member. shape: (# Members, 12, 12)
+    """
 
-def member_PartD(member_Releases):
-    R_unrelesed = []
-    R_relesed = []
-    for i in range(12):
-        if not member_Releases[i]:
-            R_unrelesed.append(i)
-        else:
-            R_relesed.append(i)
-    return R_unrelesed, R_relesed
+    L = get_L(model)
+    members = model.members[:, :2]
+    DOFs = buildDOFVector(members)
+    member_unrelesed_DOFs, member_relesed_DOFs = member_PartD(model.members_Releases)
+    T = getMemberT(model, L)
+    pointLoads = assemblePointLoads(model)
+    distLoads = assembleDistLoads(model)
+    return DOFs, L, member_unrelesed_DOFs, member_relesed_DOFs, T, pointLoads, distLoads
 
-def getMemberT(model: Frame3D_T, memberIndex, Ls):
-    Xi = model.nodes_cord[model.members[memberIndex][0]][0]
-    Xj = model.nodes_cord[model.members[memberIndex][1]][0]
-    Yi = model.nodes_cord[model.members[memberIndex][0]][1]
-    Yj = model.nodes_cord[model.members[memberIndex][1]][1]
-    Zi = model.nodes_cord[model.members[memberIndex][0]][2]
-    Zj = model.nodes_cord[model.members[memberIndex][1]][2]
-    L = Ls[memberIndex]
-    # Calculate the direction cosines for the local x-axis
-    x = [(Xj - Xi) / L, (Yj - Yi) / L, (Zj - Zi) / L]
-    # Vertical members
-    if math.isclose(Xi, Xj) and math.isclose(Zi, Zj):
-        if Yj > Yi:
-            y = [-1, 0, 0]
-            z = [0, 0, 1]
-        else:
-            y = [1, 0, 0]
-            z = [0, 0, 1]
-    # Horizontal members
-    elif math.isclose(Yi, Yj):
-        y = [0, 1, 0]
-        z = np.cross(x, y)
-        z = np.divide(z, (z[0] ** 2 + z[1] ** 2 + z[2] ** 2) ** 0.5)
-    # Members neither vertical nor horizontal
-    else:
-        proj = [Xj - Xi, 0, Zj - Zi]
-        if Yj > Yi:
-            z = np.cross(proj, x)
-        else:
-            z = np.cross(x, proj)
-        z = np.divide(z, (z[0] ** 2 + z[1] ** 2 + z[2] ** 2) ** 0.5)
-        y = np.cross(z, x)
-        y = np.divide(y, (y[0] ** 2 + y[1] ** 2 + y[2] ** 2) ** 0.5)
-    # Create the direction cosines matrix
-    dirCos = np.array([x, y, z])
-    # Build the transformation matrix
-    transMatrix = np.zeros((12, 12))
-    transMatrix[0:3, 0:3] = dirCos
-    transMatrix[3:6, 3:6] = dirCos
-    transMatrix[6:9, 6:9] = dirCos
-    transMatrix[9:12, 9:12] = dirCos
-    return transMatrix
+def get_L(model: Frame3D):
+    """
+    Builds an array of the lengths of the members.
 
-def getGlobalFixedEndReactionVector_ARRAY(model: Frame3D_T, members_T, D_unknown, D_known, ferCondensed_ARRAY):
-    numM = len(model.members)
-    numC = len(model.casses)
-    FER_array = get_FER_ARRAY(ferCondensed_ARRAY, members_T, numM, numC)
-    FER_val = [np.zeros((len(model.nodes_cord) * 6, 1))] * numC
-    for i in range(numM):
-        for j in range(numC):
-            FER = FER_array[i][j]
-            member_FER = np.asarray(FER, dtype=float).reshape(-1)
-            FER_val[j][model.members_DOF[i], 0] += member_FER
-    FER1, FER2 = partFER(FER_val, D_unknown, D_known, numC)
-    return FER1, FER2
+    :param model: Frame3D. 3D frame to get the lengths for.
+    :return:
+        L: ndarray. A ndarray of the lengths of the members.
+    """
 
-def partFER(FER_val, D1_indices, D2_indices, numC):
-    FER1 = []
-    FER2 = []
-    for j in range(numC):
-        FER_val_sub = FER_val[j]
-        FER1.append(FER_val_sub[D1_indices, :])
-        FER2.append(FER_val_sub[D2_indices, :])
-    return FER1, FER2
-
-def get_L_ARRAY(model: Frame3D_T):
     dx = model.nodes_cord[model.members[:, 1], 0] - model.nodes_cord[model.members[:, 0], 0]
     dy = model.nodes_cord[model.members[:, 1], 1] - model.nodes_cord[model.members[:, 0], 1]
     dz = model.nodes_cord[model.members[:, 1], 2] - model.nodes_cord[model.members[:, 0], 2]
     return np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
 
-def get_k_local_relesed_ARRAY(model: Frame3D_T, k_local_array, k11, k12, k21, k22):
-    k_ARRAY = []
-    for i in range(len(k_local_array)):
-        k_ARRAY.append(np.subtract(k11, np.matmul(np.matmul(k12, np.linalg.inv(k22)), k21)))
-        j = 0
-        for DOF in model.members_Releases[i]:
-            if DOF:
-                k_ARRAY[i] = np.insert(k_ARRAY[i], j, 0, axis=0)
-                k_ARRAY[i] = np.insert(k_ARRAY[i], j, 0, axis=1)
-            j += 1
-    return k_ARRAY
+def buildDOFVector(nodes: np.ndarray):
+    """
+    Returns the flattened list of global DOF indices for the supplied nodes.
 
-def get_k_local_ARRAY(model: Frame3D_T, Ls):
+    :param nodes: ndarray. A 3D ndarray of the indices of the nodes to get the DOF indices for. shape: (# Members, 2)
+    :return: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# Members, 12)
+    """
+    dofs = nodes[:, :, None] * 6 + np.arange(6)
+    return dofs.reshape(nodes.shape[0], -1)
+
+def member_PartD(releases: np.ndarray):
+    """
+    Builds lists of unreleased and released degree of freedom indices for each member.
+
+    :param releases: ndarray. 3D ndarray of booleans of wether a DOF is released. true = released, false = unreleased. shape: (# Members, 12)
+    :return:
+        unreleased: list: 3D list of unreleased DOFs for each member. shape: (# Members, varys: # unrelesed DOFs)
+        released: list: 3D list of released DOFs for each member. shape: (# Members, varys: # released DOFs)
+    """
+
+    idx = np.arange(12)
+    unreleased = [idx[~r] for r in releases]
+    released   = [idx[r]  for r in releases]
+    return unreleased, released
+
+def getMemberT(model: Frame3D, L: np.ndarray):
+    """
+    Builds an array of the transformation matrices for each member.
+
+    :param model: Frame3D. 3D frame to get the transformation matrices for.
+    :param L: ndarray. A ndarray of the lengths of the members. shape: (# Members)
+    :return: ndarray: 4D array of the transformation matrices for each member. shape: (# Members, 12, 12)
+    """
+
+    i = model.members[:, 0]
+    j = model.members[:, 1]
+    Xi, Yi, Zi = model.nodes_cord[i].T
+    Xj, Yj, Zj = model.nodes_cord[j].T
+    # Local x-axis (direction cosines)
+    x = np.stack([(Xj - Xi)/L, (Yj - Yi)/L, (Zj - Zi)/L], axis=1)
+    # Initialize y, z
+    n = len(model.members)
+    y = np.zeros((n, 3))
+    z = np.zeros((n, 3))
+    # Masks
+    vertical   = np.isclose(Xi, Xj) & np.isclose(Zi, Zj)
+    horizontal = np.isclose(Yi, Yj) & ~vertical
+    general    = ~(vertical | horizontal)
+    # Vertical members
+    up = Yj > Yi
+    y[vertical & up]  = [-1, 0, 0]
+    y[vertical & ~up] = [ 1, 0, 0]
+    z[vertical]       = [0, 0, 1]
+    # Horizontal members
+    y[horizontal] = [0, 1, 0]
+    z[horizontal] = np.cross(x[horizontal], y[horizontal])
+    z[horizontal] /= np.linalg.norm(z[horizontal], axis=1)[:, None]
+    # General members
+    proj = np.stack([Xj - Xi, np.zeros(n), Zj - Zi], axis=1)
+    z_temp1 = np.cross(proj, x)
+    z_temp2 = np.cross(x, proj)
+    cond = (Yj > Yi)[:, None]
+    z[general] = np.where(cond[general], z_temp1[general], z_temp2[general])
+    z[general] /= np.linalg.norm(z[general], axis=1)[:, None]
+    y[general] = np.cross(z[general], x[general])
+    y[general] /= np.linalg.norm(y[general], axis=1)[:, None]
+    # Direction cosine matrices
+    dirCos = np.stack([x, y, z], axis=1)  # (n, 3, 3)
+    # Build transformation matrices
+    T = np.zeros((n, 12, 12))
+    for k in range(4): T[:, k*3:(k+1)*3, k*3:(k+1)*3] = dirCos
+    return T
+
+
+def getGlobalFixedEndReactionVector(model: Frame3D, T: np.ndarray, D_unknown: np.ndarray, D_known: np.ndarray, ferCondensed_ARRAY, numM: int, numC: int):
+    """
+    Builds array of the global fixed end reaction vector for both fixed and released DOFs.
+
+    :param model: Frame3D. 3D frame to get the global fixed end reaction vectors for.
+    :param T: ndarray. 4D array of the transformation matrices for each member. shape: (# Members, 12, 12)
+    :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
+    :param D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
+    :param ferCondensed_ARRAY: ndarray. Condensed local fixed end reaction vector. shape: (# Members, # Casses, 12, 1)
+    :param numM: int. Number of members.
+    :param numC: int. Number of cases.
+    :return:
+        FER1: ndarray. A array of the released DOFs fixed end reactions.
+        FER2: ndarray. A array of the unreased DOFs fixed end reactions.
+    """
+
+    FER_array = get_FER(ferCondensed_ARRAY, T)
+    FER_stack = np.array([[np.asarray(FER_array[i][j], dtype=float).reshape(12) for j in range(numC)] for i in range(numM)])  # shape: (# Members, # Casses, 12)
+    members_DOF = np.asarray(model.members_DOF)  # (numM, 12)
+    nDOF = len(model.nodes_cord) * 6
+    FER_val = np.zeros((numC, nDOF))
+    dof_flat = members_DOF.ravel()
+    for j in range(numC):np.add.at(FER_val[j],dof_flat,FER_stack[:, j, :].ravel())
+    FER_val = FER_val[..., None]
+    FER1, FER2 = partForceVector(FER_val, D_unknown, D_known)
+    return FER1, FER2
+
+def partForceVector(FER_val: np.ndarray, D_unknown: np.ndarray, D_known: np.ndarray):
+    """
+    Partitions force vectors into 2 vectors one of releced and one unrelesed DOFs.
+
+    :param FER_val: ndarray. A ndarray of forces to be partioned.
+    :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
+    :param D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
+    :return:
+        FER1: ndarray. An array of the released DOFs forces.
+        FER2: ndarray. An array of the unreased DOFs forces.
+    """
+
+    FER_val = np.asarray(FER_val)  # shape: (numC, nDOF, 1)
+    D_unknown = np.asarray(D_unknown, dtype=int)
+    D_known = np.asarray(D_known, dtype=int)
+    FER1 = FER_val[:, D_unknown, :]
+    FER2 = FER_val[:, D_known, :]
+    return FER1, FER2
+
+def get_k_local_ARRAY(model: Frame3D, L: np.ndarray, log):
+    """
+    Builds an array of the local stiffness matrices for each member.
+
+    :param model: Frame3D. 3D frame to get the stiffnes matrices for.
+    :param L: ndarray. A ndarray of the lengths of the members. shape: (# Members)
+    :return: 4D array of the local stiffness matrices for each member. shape: (# Members, 12, 12)
+    """
+
     E = model.materials[model.members[:, 2], 0]
     G = model.materials[model.members[:, 2], 1]
     A = model.members_CrossSectionProps[:, 0]
     Iy = model.members_CrossSectionProps[:, 1]
     Iz = model.members_CrossSectionProps[:, 2]
     J = model.members_CrossSectionProps[:, 3]
-    L = Ls
-    k_local_array = []
-    for i in range(len(model.members)):
-        k_local_array.append(np.array([[A[i] * E[i] / L[i], 0, 0, 0, 0, 0, -A[i] * E[i] / L[i], 0, 0, 0, 0, 0],
-               [0, 12 * E[i] * Iz[i] / L[i] ** 3, 0, 0, 0, 6 * E[i] * Iz[i] / L[i] ** 2, 0, -12 * E[i] * Iz[i] / L[i] ** 3, 0, 0, 0,
-                6 * E[i] * Iz[i] / L[i] ** 2],
-               [0, 0, 12 * E[i] * Iy[i] / L[i] ** 3, 0, -6 * E[i] * Iy[i] / L[i] ** 2, 0, 0, 0, -12 * E[i] * Iy[i] / L[i] ** 3, 0,
-                -6 * E[i] * Iy[i] / L[i] ** 2, 0],
-               [0, 0, 0, G[i] * J[i] / L[i], 0, 0, 0, 0, 0, -G[i] * J[i] / L[i], 0, 0],
-               [0, 0, -6 * E[i] * Iy[i] / L[i] ** 2, 0, 4 * E[i] * Iy[i] / L[i], 0, 0, 0, 6 * E[i] * Iy[i] / L[i] ** 2, 0, 2 * E[i] * Iy[i] / L[i], 0],
-               [0, 6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 4 * E[i] * Iz[i] / L[i], 0, -6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 2 * E[i] * Iz[i] / L[i]],
-               [-A[i] * E[i] / L[i], 0, 0, 0, 0, 0, A[i] * E[i] / L[i], 0, 0, 0, 0, 0],
-               [0, -12 * E[i] * Iz[i] / L[i] ** 3, 0, 0, 0, -6 * E[i] * Iz[i] / L[i] ** 2, 0, 12 * E[i] * Iz[i] / L[i] ** 3, 0, 0, 0,
-                -6 * E[i] * Iz[i] / L[i] ** 2],
-               [0, 0, -12 * E[i] * Iy[i] / L[i] ** 3, 0, 6 * E[i] * Iy[i] / L[i] ** 2, 0, 0, 0, 12 * E[i] * Iy[i] / L[i] ** 3, 0,
-                6 * E[i] * Iy[i] / L[i] ** 2, 0],
-               [0, 0, 0, -G[i] * J[i] / L[i], 0, 0, 0, 0, 0, G[i] * J[i] / L[i], 0, 0],
-               [0, 0, -6 * E[i] * Iy[i] / L[i] ** 2, 0, 2 * E[i] * Iy[i] / L[i], 0, 0, 0, 6 * E[i] * Iy[i] / L[i] ** 2, 0, 4 * E[i] * Iy[i] / L[i], 0],
-               [0, 6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 2 * E[i] * Iz[i] / L[i], 0, -6 * E[i] * Iz[i] / L[i] ** 2, 0, 0, 0, 4 * E[i] * Iz[i] / L[i]]]))
-    return np.array(k_local_array)
 
-def memberPart_k_ARRAY(k_array, R_unrelesed_array, R_relesed_array, numM):
+    n = len(L)
+    # Precompute terms
+    AE_L   = A * E / L
+    EIy_L  = E * Iy / L
+    EIz_L  = E * Iz / L
+    EIy_L2 = E * Iy / L**2
+    EIz_L2 = E * Iz / L**2
+    EIy_L3 = E * Iy / L**3
+    EIz_L3 = E * Iz / L**3
+    GJ_L   = G * J / L
+    # Allocate
+    k = np.zeros((n, 12, 12))
+    # Fill matrix (vectorized indexing)
+    # Row 0 / 6
+    k[:, 0, 0] = AE_L
+    k[:, 0, 6] = -AE_L
+    k[:, 6, 0] = -AE_L
+    k[:, 6, 6] = AE_L
+    # Row 1 / 7
+    k[:, 1, 1] = 12 * EIz_L3
+    k[:, 1, 5] = 6 * EIz_L2
+    k[:, 1, 7] = -12 * EIz_L3
+    k[:, 1, 11] = 6 * EIz_L2
+    k[:, 7, 1] = -12 * EIz_L3
+    k[:, 7, 5] = -6 * EIz_L2
+    k[:, 7, 7] = 12 * EIz_L3
+    k[:, 7, 11] = -6 * EIz_L2
+    # Row 2 / 8
+    k[:, 2, 2] = 12 * EIy_L3
+    k[:, 2, 4] = -6 * EIy_L2
+    k[:, 2, 8] = -12 * EIy_L3
+    k[:, 2, 10] = -6 * EIy_L2
+    k[:, 8, 2] = -12 * EIy_L3
+    k[:, 8, 4] = 6 * EIy_L2
+    k[:, 8, 8] = 12 * EIy_L3
+    k[:, 8, 10] = 6 * EIy_L2
+    # Row 3 / 9
+    k[:, 3, 3] = GJ_L
+    k[:, 3, 9] = -GJ_L
+    k[:, 9, 3] = -GJ_L
+    k[:, 9, 9] = GJ_L
+    # Row 4 / 10
+    k[:, 4, 2] = -6 * EIy_L2
+    k[:, 4, 4] = 4 * EIy_L
+    k[:, 4, 8] = 6 * EIy_L2
+    k[:, 4, 10] = 2 * EIy_L
+    k[:, 10, 2] = -6 * EIy_L2
+    k[:, 10, 4] = 2 * EIy_L
+    k[:, 10, 8] = 6 * EIy_L2
+    k[:, 10, 10] = 4 * EIy_L
+    # Row 5 / 11
+    k[:, 5, 1] = 6 * EIz_L2
+    k[:, 5, 5] = 4 * EIz_L
+    k[:, 5, 7] = -6 * EIz_L2
+    k[:, 5, 11] = 2 * EIz_L
+    k[:, 11, 1] = 6 * EIz_L2
+    k[:, 11, 5] = 2 * EIz_L
+    k[:, 11, 7] = -6 * EIz_L2
+    k[:, 11, 11] = 4 * EIz_L
+
+    if log:
+        print("local k: ", k)
+    return k
+
+def memberPart_k_ARRAY(k_array: np.ndarray, R_unrelesed_array: list or np.ndarray, R_relesed_array: list or np.ndarray, numM: int):
+    """
+    Partitions the stiffness matrices into sub-matrices based on unreleased and released degree of freedom indices.
+
+    :param k_array: ndarray. 4D array of the stiffness matrices for each member. shape: (# Members, 12, 12)
+    :param R_unrelesed_array: list. 3D list of unreleased DOFs for each member. shape: (# Members, varys: # unrelesed DOFs)
+    :param R_relesed_array: list. 3D list of released DOFs for each member. shape: (# Members, varys: # released DOFs)
+    :param numM: int. Number of members.
+    :return:  4 lists of sub-matrices based on the degrese of freedom. general shape: (# Members, ndarray(varys, varys))
+    """
+
     k11_array = []
     k12_array = []
     k21_array = []
@@ -179,80 +284,126 @@ def memberPart_k_ARRAY(k_array, R_unrelesed_array, R_relesed_array, numM):
         k22_array.append(k[R_relesed, :][:, R_relesed])
     return k11_array, k12_array, k21_array, k22_array
 
-def get_FER_ARRAY(fer, members_T, numM, numC):
-    FER_array = []
-    for i in range(numM):
-        invT = np.linalg.inv(members_T[i])
-        sub_FER_array = []
-        for j in range(numC):
-            sub_FER_array.append(np.matmul(invT, fer[i, j]))
-        FER_array.append(sub_FER_array)
-    return FER_array
+def get_FER(fer: np.ndarray, T: np.ndarray):
+    """
+    Returns the global fixed end reaction vectors for all members and casses
 
-def get_fer_ARRAY(model, k12, k22, fer1, fer2, numM, numC):
-    ferCondensed_ARRAY = []
-    for i in range(numM):
-        k_12, k_22, fer_1, fer_2 = k12[i], k22[i], fer1[i], fer2[i]
-        ferCondensed = np.subtract(fer_1, np.matmul(np.matmul(k_12, np.linalg.inv(k_22)), fer_2))[:,0] # TODO figure out why there is extra brakets
-        j = 0
-        product = []
-        for a in range(numC):
-            sub_ferCondensed = ferCondensed[a]
-            for DOF in model.members_Releases[i]:
-                if DOF:
-                    sub_ferCondensed = np.insert(sub_ferCondensed, j, 0, axis=0)
-                j += 1
-            product.append(sub_ferCondensed)
-        ferCondensed_ARRAY.append(product)
-    return np.array(ferCondensed_ARRAY)
+    :param fer: ndarry. The array of local fer vectors to be transformed. shape: (# Members, # Casses, 12, 1)
+    :param T: ndarray. 4D array of the transformation matrices for each member. shape: (# Members, 12, 12)
+    :return: global fixed end reaction vectors for all members and casses
+    """
+    invT = T.transpose(0, 2, 1) # T⁻¹ = Tᵀ for orthogonal transformation matrices
+    FER = invT[:, None] @ fer
+    return FER
 
-def memberPart_fer_ARRAY(fer, R_unrelesed, R_relesed):
-    fer1_array = []
-    fer2_array = []
-    for i in range(len(fer)):
-        fer1_a = []
-        fer2_a = []
-        for j in range(len(fer[i])):
-            fer1_a.append(fer[i][j][R_unrelesed])
-            fer2_a.append(fer[i][j][R_relesed])
-        fer1_array.append(fer1_a)
-        fer2_array.append(fer2_a)
-    return np.array(fer1_array), np.array(fer2_array)
+def assemblePointLoads(model: Frame3D):
+    """
+    Assembles the point load vectors for all members and casses
 
-def get_fer_unc_ARRAY(model, pointLoads, distLoads):
-    fer_unc_ARRAY = np.zeros((len(model.members), 12, 1))
-    fer_unc_ARRAY = np.add(fer_unc_ARRAY, get_FixedEndReactions_Pointload_ARRAY(model, pointLoads))
-    fer_unc_ARRAY = np.add(fer_unc_ARRAY, get_FixedEndReactions_Distload_ARRAY(model, distLoads))
-    return fer_unc_ARRAY
+    :param model: Frame3D. 3D frame to get the point loads for.
+    :return: list. Point loads applied to each member. shape: (# Members, # Casses, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
+    """
 
-def get_FixedEndReactions_Pointload_ARRAY(model, pointLoads):
-    # pointLoads [memberINDEX, caseINDEX, location, data], data: [x, Px, Py, Pz, Mx, My, Mz]
+    newPointLoads = []
+    for i, loadCasses in enumerate(model.members_PointLoads):
+        newLoads  = [None] * len(model.casses)
+        for loads in loadCasses:
+            newLoad  = []
+            for j in range(len(loads[1][0])):
+                newLoad.append([loads[1][0][j]] + loads[1][1][j])
+            newLoads[loads[0]] = newLoad
+        for j in range(len(newLoads)):
+            if newLoads[j] is None:
+                # noinspection PyTypeChecker
+                newLoads[j] = []
+        newPointLoads.append(newLoads)
+    return newPointLoads
+
+def assembleDistLoads(model: Frame3D):
+    """
+    Assembles the distributed load vectors for all members and casses
+
+    :param model: Frame3D. 3D frame to get the distributed loads for.
+    :return: list. Distributed loads applied to each member. shape: (# Members, # Casses, varys, # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
+    """
+
+    newDistLoads = []
+    for i, loadCasses in enumerate(model.members_DistLoads):
+        newLoads = [None] * len(model.casses)
+        for loads in loadCasses:
+            newLoad = []
+            for j in range(len(loads[1])):
+                newLoad.append(loads[1][j][0] + loads[1][j][1])
+            newLoads[loads[0]] = newLoad
+        for j in range(len(newLoads)):
+            if newLoads[j] is None:
+                # noinspection PyTypeChecker
+                newLoads[j] = []
+        newDistLoads.append(newLoads)
+    return newDistLoads
+
+def get_member_fer_unc(model: Frame3D, pointLoads: list, distLoads: list, numM: int, numC: int):
+    """
+    Returns the local fixed end reaction vector for the members, ignoring the effects of end releases.
+
+    :param model: Frame3D. 3D frame to get the fer vectors for.
+    :param pointLoads: list. Point loads applied to each member. shape: (# Members, # Casses, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
+    :param distLoads: list. Distributed loads applied to each member. shape: (# Members, # Casses, varys, # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
+    :param numM: int. Number of members.
+    :param numC: int. Number of Casses.
+    :return: ndarray. local fixed end reaction vector for the members. shape: (# Members, # Casses, 12, 1)
+    """
+    fer_unc = np.zeros((numM, numC, 12, 1))
+    fer_unc = np.add(fer_unc, get_FixedEndReactions_Pointload_ARRAY(model, pointLoads))
+    fer_unc = np.add(fer_unc, get_FixedEndReactions_Distload_ARRAY(model, distLoads))
+    return fer_unc
+
+def get_FixedEndReactions_Pointload_ARRAY(model: Frame3D, pointLoads: list):
+    """
+    Builds an array of the fixed end reacctions for point loads.
+
+    :param model: Frame3D. 3D frame to get the reactions for.
+    :param pointLoads: list. Point loads applied to each member. shape: (# Members, # Casses, varys: # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
+    :return: ndarray. fixed end reactions for point loads. shape: (# Members, # Casses, 12, 1)
+    """
+
+    Ls = np.asarray(model.members_L)
     Reactions = []
-    for i, loadCasses in enumerate(pointLoads):
-        L = model.members_L[i]
+    for i, loadCases in enumerate(pointLoads):
+        L = Ls[i]
         reactionsMember = []
-        for j, loads in enumerate(loadCasses):
-            reactions = np.zeros((12, 1))
-            if loads is not None:
-                for k, load in enumerate(loads):
-                    if load[1] != 0:
-                        reactions = np.add(reactions, ferCalc.pointLoadX(load[1], load[0], L))
-                    if load[2] != 0:
-                        reactions = np.add(reactions, ferCalc.pointLoadY(load[2], load[0], L))
-                    if load[3] != 0:
-                        reactions = np.add(reactions, ferCalc.pointLoadZ(load[3], load[0], L))
-                    if load[4] != 0:
-                        reactions = np.add(reactions, ferCalc.momentX(load[4], load[0], L))
-                    if load[5] != 0:
-                        reactions = np.add(reactions, ferCalc.momentY(load[5], load[0], L))
-                    if load[6] != 0:
-                        reactions = np.add(reactions, ferCalc.momentZ(load[6], load[0], L))
-            reactionsMember.append(reactions)
+        for loads in loadCases:
+            if loads is None or len(loads) == 0:
+                reactionsMember.append(np.zeros((12, 1)))
+                continue
+            loads = np.asarray(loads)
+            x  = loads[:, 0]
+            Fx = loads[:, 1]
+            Fy = loads[:, 2]
+            Fz = loads[:, 3]
+            Mx = loads[:, 4]
+            My = loads[:, 5]
+            Mz = loads[:, 6]
+            R = np.zeros((12,))
+            if np.any(Fx): R += ferCalc.pointLoadX_batch(Fx, x, L).sum(axis=0)
+            if np.any(Fy): R += ferCalc.pointLoadY_batch(Fy, x, L).sum(axis=0)
+            if np.any(Fz): R += ferCalc.pointLoadZ_batch(Fz, x, L).sum(axis=0)
+            if np.any(Mx): R += ferCalc.momentX_batch(Mx, x, L).sum(axis=0)
+            if np.any(My): R += ferCalc.momentY_batch(My, x, L).sum(axis=0)
+            if np.any(Mz): R += ferCalc.momentZ_batch(Mz, x, L).sum(axis=0)
+            reactionsMember.append(R.reshape(12, 1))
         Reactions.append(reactionsMember)
     return Reactions
 
-def get_FixedEndReactions_Distload_ARRAY(model, distLoads):
-    # distLoads [memberINDEX, caseINDEX, location, data], data: [x1, x2, wx1, wx2, wy1, wy2, wz1, wz2]
+def get_FixedEndReactions_Distload_ARRAY(model: Frame3D, distLoads):
+    """
+    Builds an array of the fixed end reacctions for distributed loads.
+
+    :param model: Frame3D. 3D frame to get the reactions for.
+    :param distLoads: list. Distributed loads applied to each member. shape: (# Members, # Casses, varys, varys: # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
+    :return: ndarray. fixed end reactions for distributed loads. shape: (# Members, # Casses, 12, 1)
+    """
+
     Reactions = []
     for i, loadCasses in enumerate(distLoads):
         L = model.members_L[i]
@@ -270,42 +421,75 @@ def get_FixedEndReactions_Distload_ARRAY(model, distLoads):
         Reactions.append(reactionsMember)
     return Reactions
 
-def assembleLoads(model: Frame3D_T):
-    pointLoads = assemblePointLoads(model)
-    distLoads = assembleDistLoads(model)
-    return pointLoads, distLoads
+def memberPart_fer(fer: np.ndarray, R_unrelesed: np.ndarray, R_relesed: np.ndarray, numM: int, numC: int):
+    """
+    Partition fer into 2 sub matrices based on unreleased and released degree of freedom.
 
-def assemblePointLoads(model: Frame3D_T):
-    # pointLoads [memberINDEX, caseINDEX, data], data: [x, Px, Py, Pz, Mx, My, Mz]
-    newPointLoads = []
-    for i, loadCasses in enumerate(model.members_PointLoads):
-        newLoads  = [None] * len(model.casses)
-        for loads in loadCasses:
-            newLoad  = []
-            for j in range(len(loads[1][0])):
-                newLoad.append([loads[1][0][j]] + loads[1][1][j])
-            newLoads[loads[0]] = newLoad
-        newPointLoads.append(newLoads)
-    return newPointLoads
+    :param fer: ndarray. local fixed end reaction vector for the members. shape: (# Members, # Casses, 12, 1)
+    :param R_unrelesed: ndarray. list: 3D list of unreleased DOFs for each member. shape: (# Members, varys: # unrelesed DOFs)
+    :param R_relesed: ndarray. list: 3D list of released DOFs for each member. shape: (# Members, varys: # released DOFs)
+    :param numM: int. Number of members.
+    :param numC: int. Number of Casses.
+    :return:
+        fer1: list. fixed end reactions for each member for the unrelesed DOFs. shape: (# Members, # Casses, varys: # unrelesed DOFs, 1)
+        fer2: list. fixed end reactions for eacch member for the released FODs. shape: (# Members, # Casses, varys: # relesed DOFs, 1)
+    """
 
-def assembleDistLoads(model: Frame3D_T):
-    # distLoads [memberINDEX, caseINDEX, data], data: [x1, x2, wx1, wx2, wy1, wy2, wz1, wz2]
-    newDistLoads = []
-    for i, loadCasses in enumerate(model.members_DistLoads):
-        newLoads = [None] * len(model.casses)
-        for loads in loadCasses:
-            newLoad = []
-            for j in range(len(loads[1])):
-                newLoad.append(loads[1][j][0] + loads[1][j][1])
-            newLoads[loads[0]] = newLoad
-        for j in range(len(newLoads)):
-            if newLoads[j] is None:
-                # noinspection PyTypeChecker
-                newLoads[j] = []
-        newDistLoads.append(newLoads)
-    return newDistLoads
+    fer1_array = []
+    fer2_array = []
+    for i in range(numM):
+        fer1_sub_array = []
+        fer2_sub_array = []
+        for j in range(numC):
+            fer1 = fer[i,j,R_unrelesed[i]]
+            fer2 = fer[i,j,R_relesed[i]]
+            fer1_sub_array.append(fer1)
+            fer2_sub_array.append(fer2)
+        fer1_array.append(fer1_sub_array)
+        fer2_array.append(fer2_sub_array)
+    return fer1_array, fer2_array
 
-def partitionedGlobalNodalForceVector(model, numN):
+def get_fer(model: Frame3D, k12: list, k22: list, fer1: np.ndarray, fer2: np.ndarray, numM: int, numC: int):
+    """
+    Returns the condensed local fixed end reaction vector for all members and casses.
+
+    :param model: Frame3D. 3D frame to get the fer vector for.
+    :param k12: list. sub-matrix of the member local stiffness matrix. shape: (# Members, varys)
+    :param k22: list. sub-matrix of the member local stiffness matrix. shape: (# Members, varys)
+    :param fer1: ndarray. fixed end reactions for each member for the unrelesed DOFs. shape: (# Members, # Casses, varys: # unrelesed DOFs, 1)
+    :param fer2: ndarray. fixed end reactions for eacch member for the released FODs. shape: (# Members, # Casses, varys: # relesed DOFs, 1)
+    :param numM: int. Number of members.
+    :param numC: int. Number of casses.
+    :return: ndarray. Condensed local fixed end reaction vector. shape: (# Members, # Casses, 12, 1)
+    """
+
+    ferCondenced_array = []
+    for i in range(numM):
+        ferCondensed_sub_array = []
+        for j in range(numC):
+            fer_1 = np.array(fer1[i][j])
+            fer_2 = np.array(fer2[i][j])
+            k_12 = np.array(k12[i])
+            k_22 = np.array(k22[i])
+            ferCondensed = (fer_1 - k_12 @ k_22 @ fer_2)
+            a = 0
+            for DOF in model.members_Releases[i]:
+                if DOF:
+                    ferCondensed = np.insert(ferCondensed, a, 0, axis=0)
+                a += 1
+            ferCondensed_sub_array.append(ferCondensed)
+        ferCondenced_array.append(ferCondensed_sub_array)
+    return ferCondenced_array
+
+def getPartedGlobalNodalForceVector(model: Frame3D, numN: int):
+    """
+    Builds the pertitioned global nodal force vector.
+
+    :param model: Frame3D. 3D frame to get the force vector for.
+    :param numN: int. Number of nodes
+    :return: ndarray. Global nodal force vector partitioned into 2 vectors.
+    """
+
     p_array = []
     for loadCaseI in model.casses:
         p = np.zeros((numN * 6, 1))
@@ -314,31 +498,83 @@ def partitionedGlobalNodalForceVector(model, numN):
                 local = np.array(model.nodes_loads[loadCaseI][1])
             else:
                 local = np.zeros(6, dtype=float)
-            dofs = buildDOFVector([i])
+            dofs = np.empty(len([i]) * 6, dtype=np.int64)
+            local_ = np.arange(6, dtype=np.int64)
+            for j, node in enumerate([i]):
+                start = j * 6
+                dofs[start:start + 6] = node * 6 + local_
             p[dofs, 0] += local
         p_array.append(p)
-    return partFER(p_array, model.D_unknown, model.D_known, len(model.casses))
+    return partForceVector(np.array(p_array), model.D_unknown, model.D_known)
 
 def k_member_make_global(k_local_array, T_array):
+    """
+    Converts member stiffness matrices from the local cordinate system to the global cordinate system.
+
+    :param k_local_array: ndarray. 4D array of the local stiffness matrices for each member. shape: (# Members, 12, 12)
+    :param T_array: ndarray: 4D array of the transformation matrices for each member. shape: (# Members, 12, 12)
+    :return: ndarray: 4D array of the global stiffness matrices for each member. shape: (# Members, 12, 12)
+    """
+
     k_member_global = []
     for i in range(len(T_array)):
-        k_member_global.append(np.matmul(np.matmul(np.linalg.inv(T_array[i]), k_local_array[i]), T_array[i]))
+        k_member_global.append(np.linalg.inv(T_array[i]) @ k_local_array[i] @ T_array[i])
     return k_member_global
 
-def get_K_Global(model, k_global, numN, numM):
+def get_K_Global(model: Frame3D, k_global: np.ndarray, numN: int, numM:int):
+    """
+    Assembles the global stiffness matrix for the frame.
+
+    :param model: Frame3D. frame to assemble the global stiffness matrix for.
+    :param k_global: ndarray. 4D array of the global stiffness matrices for each member. shape: (# Members, 12, 12)
+    :param numN: int. Number of nodes.
+    :param numM: int. Number of casses.
+    :return: ndarray. Global stiffness matrix. shape: (# Nodes * 6, # Nodes * 6)
+    """
+
     K = np.zeros((numN * 6, numN * 6))
     for i in range(numM):
         K[np.ix_(model.members_DOF[i], model.members_DOF[i])] += np.asarray(k_global[i], dtype=float)
     return K
 
-def partition_K_gloabl(K_global, R_unrelesed, R_relesed):
+def partition_K_gloabl(K_global: np.ndarray, R_unrelesed: np.ndarray, R_relesed: np.ndarray):
+    """
+    Partitiones the global stiffness matrix with respect to the frames supports.
+
+    :param K_global: ndarray. Global stiffness matrix. shape: (# Nodes * 6, # Nodes * 6)
+    :param R_unrelesed: ndarray. A ndarray of the indices for the unreleased DOFs. (not supported)
+    :param R_relesed: ndarray. A ndarray of the indices for the unreleased DOFs. (supported)
+    :return: ndarray. 4 sub-matrices of the global stiffness matrix with respect to the frames supports.
+    """
+
     K11 = (K_global[R_unrelesed, :][:, R_unrelesed])
     K12 = (K_global[R_unrelesed, :][:, R_relesed])
     K21 = (K_global[R_relesed, :][:, R_unrelesed])
     K22 = (K_global[R_relesed, :][:, R_relesed])
     return K11, K12, K21, K22
 
-def get_D(K11, K12, P1_array, FER1_array, Index_Unsupported, Index_Supported, numN, numC):
+def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.ndarray, Index_Unsupported:np.ndarray, Index_Supported: np.ndarray, numN: int, numC:int, log):
+    """
+    Solves for the nodal displacement for the frame.
+
+    :param K11: ndarray. Sub-matrices of the global stiffness matrix.
+    :param K12: ndarray. Sub-matrices of the global stiffness matrix.
+    :param P1_array: ndarray. Vector of the nodel loads.
+    :param FER1_array: ndarray. An array of the released DOFs fixed end reactions.
+    :param Index_Unsupported: ndarray. Indeces of the unsupported DOFs.
+    :param Index_Supported: ndarray. Indeces of the supported DOFs.
+    :param numN: int. Number of nodes.
+    :param numC: int. Number of casses.
+    :return:
+        D: ndarray. Array of the nodal displacements.
+        DX: ndarray. Array of the nodel displacements in the X direction.
+        DY: ndarray. Array of the nodel displacements in the Y direction.
+        DZ: ndarray. Array of the nodel displacements in the Z direction.
+        RX: ndarray. Array of the nodel rotation displacements in the X direction.
+        RY: ndarray. Array of the nodel rotation displacements in the Y direction.
+        RZ: ndarray. Array of the nodel rotation displacements in the Z direction.
+    """
+
     D1_array = []
     D2 = np.zeros((len(Index_Supported),1))
     for i in range(numC):
@@ -352,10 +588,34 @@ def get_D(K11, K12, P1_array, FER1_array, Index_Unsupported, Index_Supported, nu
             except:
                 raise Exception('The stiffness matrix is singular, which implies rigid body motion. The structure is unstable. Aborting analysis.')
     D_array = assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN, numC)
+
+    if log:
+        print("D_array: ", D_array)
+
     DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array = get_node_direcction_deflections(D_array, numN, numC)
+
+    if log:
+        print("DX_array: ", DX_array)
+        print("DY_array: ", DY_array)
+        print("DZ_array: ", DZ_array)
+        print("RX_array: ", RX_array)
+        print("RY_array: ", RY_array)
+        print("RZ_array: ", RZ_array)
+
     return D_array, DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array
 
-def assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN, numC):
+def assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN: int, numC: int):
+    """
+
+    :param D1_array: ndarray. Array of displecements for all unspported DOFs.
+    :param D2: ndarray. Array of displacements for all supported DOFs.
+    :param Index_Supported: ndarray. Indeces of the supported DOFs.
+    :param Index_Unsupported: ndarray. Indeces of the unsupported DOFs.
+    :param numN: int: Number of nodes.
+    :param numC: intL Number of casses.
+    :return: ndarray. Array of the nodal displacements.
+    """
+
     D_array = []
     for a in range(numC):
         D1 = np.array(D1_array[a])
@@ -363,13 +623,28 @@ def assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN, num
         for j in range(numN):
             for i in range(6):
                 if j * 6 + i in Index_Supported:
-                    D[(j * 6 + i, 0)] = D2[Index_Supported.index(j * 6 + i), 0]
+                    D[(j * 6 + i, 0)] = D2[Index_Supported.tolist().index(j * 6 + i), 0]
                 else:
-                    D[(j * 6 + i, 0)] = D1[Index_Unsupported.index(j * 6 + i), 0]
+                    D[(j * 6 + i, 0)] = D1[Index_Unsupported.tolist().index(j * 6 + i), 0]
         D_array.append(D)
     return D_array
 
-def get_node_direcction_deflections(D_array, numN, numC):
+def get_node_direcction_deflections(D_array, numN: int, numC: int):
+    """
+    Gets the nodal deflection in each direction.
+
+    :param D_array: ndarray. Array of the nodal displacements.
+    :param numN: int: Number of nodes.
+    :param numC: int: Number of casses.
+    :return:
+        DX: ndarray. Array of the nodel displacements in the X direction.
+        DY: ndarray. Array of the nodel displacements in the Y direction.
+        DZ: ndarray. Array of the nodel displacements in the Z direction.
+        RX: ndarray. Array of the nodel rotation displacements in the X direction.
+        RY: ndarray. Array of the nodel rotation displacements in the Y direction.
+        RZ: ndarray. Array of the nodel rotation displacements in the Z direction.
+    """
+
     DX_array = []
     DY_array = []
     DZ_array = []
@@ -398,7 +673,22 @@ def get_node_direcction_deflections(D_array, numN, numC):
         RZ_array.append(RZ_case)
     return np.array(DX_array), np.array(DY_array), np.array(DZ_array), np.array(RX_array), np.array(RY_array), np.array(RZ_array)
 
-def get_member_direction_deflections(model, DX_array, DY_array, DZ_array, RX_array, RY_array, RZ_array, numM, numC):
+def get_member_direction_deflections(model: Frame3D, DX_array: np.ndarray, DY_array: np.ndarray, DZ_array: np.ndarray, RX_array: np.ndarray, RY_array: np.ndarray, RZ_array: np.ndarray, numM: int, numC: int):
+    """
+    Gets the global end deflections for each member.
+
+    :param model: Frame3D. 3D frame to get the deflections for.
+    :param DX_array: ndarray. Array of the nodel displacements in the X direction.
+    :param DY_array: ndarray. Array of the nodel displacements in the Y direction.
+    :param DZ_array: ndarray. Array of the nodel displacements in the Z direction.
+    :param RX_array: ndarray. Array of the nodel rotation displacements in the X direction.
+    :param RY_array: ndarray. Array of the nodel rotation displacements in the Y direction.
+    :param RZ_array: ndarray. Array of the nodel rotation displacements in the Z direction.
+    :param numM: int. Number of members.
+    :param numC: int. Number of casses.
+    :return: ndarray. Array of the global end deflections for each member. shape: (# casses, # members, 12)
+    """
+
     D_member_array = []
     for i in range(numC):
         D_sub = []
@@ -419,7 +709,17 @@ def get_member_direction_deflections(model, DX_array, DY_array, DZ_array, RX_arr
         D_member_array.append(D_sub)
     return np.array(D_member_array)
 
-def getd(T_array, D_array, numM, numC):
+def getd(T_array: np.ndarray, D_array: np.ndarray, numM: int, numC: int):
+    """
+    Transforms the end deflection array for each member from the global cordinate system into the local cordinate system.
+
+    :param T_array: ndarray. 4D ndarray of the transformation matrices for each member. shape: (# Members, 12, 12)
+    :param D_array: ndarray. Array of the global end deflections for each member. shape: (# casses, # members, 12)
+    :param numM: int. Number of members.
+    :param numC: int. Number of casses.
+    :return: ndarray. Array of the local end deflections for each member. shape: (# casses, # members, 12)
+    """
+
     d = []
     for i in range(numC):
         d_sub = []
@@ -428,7 +728,17 @@ def getd(T_array, D_array, numM, numC):
         d.append(d_sub)
     return np.array(d)
 
-def getF(T_array, f_array, numM, numC):
+def getF(T_array: np.ndarray, f_array: np.ndarray, numM: int, numC:int):
+    """
+    Gets the global forces acting at each end of the members.
+
+    :param T_array: ndarray. 4D ndarray of the transformation matrices for each member. shape: (# Members, 12, 12)
+    :param f_array: ndarray. Array of the local forces acting at the ends of the members. shape: (# casses, # members, 12)
+    :param numM: int. Number of members.
+    :param numC: int. Number of casses.
+    :return: ndarray. Array of the global forces acting at the ends of the members. shape: (# casses, # members, 12)
+    """
+
     F = []
     for i in range(numC):
         F_sub = []
@@ -437,7 +747,18 @@ def getF(T_array, f_array, numM, numC):
         F.append(F_sub)
     return np.array(F)
 
-def getf(k_array, d_array, fer_array, numM, numC):
+def getf(k_array: np.ndarray, d_array: np.ndarray, fer_array: np.ndarray, numM: int, numC: int):
+    """
+    Gets the local forces acting at each end of the members.
+
+    :param k_array: ndarray. 4D array of the local stiffness matrices for each member. shape: (# Members, 12, 12)
+    :param d_array: ndarray. Array of the local end deflections for each member. shape: (# casses, # members, 12)
+    :param fer_array: ndarray. Condensed local fixed end reaction vector. shape: (# Members, # Casses, 12, 1)
+    :param numM: int: Number of members.
+    :param numC: int: Number of casses.
+    :return: ndarray. Array of the local forces acting at the ends of the members. shape: (# casses, # members, 12)
+    """
+
     f = []
     for i in range(numC):
         f_sub = []
@@ -446,10 +767,28 @@ def getf(k_array, d_array, fer_array, numM, numC):
         f.append(f_sub)
     return np.array(f)
 
-def getWeight(model: Frame3D_T):
+def getWeight(model: Frame3D):
+    """
+    Gets the weight of each member of the frame.
+
+    :param model: Frame3D. 3D frame to get the weight of.
+    :return: ndarry. Array of the weights of each member of the frame.
+    """
+
     return model.materials[model.members[:,2],3] * model.members_CrossSectionProps[:,0] * model.members_L
 
-def getReactions(model: Frame3D_T, F_array, numC, numM, numN):
+def getReactions(model: Frame3D, F_array, numC:int, numM:int, numN:int):
+    """
+    Gets the reactions for the frame. If an DOF is not supported the reaction is 0.
+
+    :param model: Frame3D. 3D frame the get the reactions of.
+    :param F_array: ndarray. Array of the global forces acting at the ends of the members. shape: (# casses, # members, 12)
+    :param numC: int: Number of casses.
+    :param numM: int: Number of members.
+    :param numN: int: Number of nodes.
+    :return: ndarray. Array of the reactions at the supports of the frame. shape: (# casses, # nodes, 6)
+    """
+
     reactions = []
     for i in range(numC):
         reactions_sub = []
@@ -469,7 +808,8 @@ def getReactions(model: Frame3D_T, F_array, numC, numM, numN):
         reactions.append(reactions_sub)
     return reactions
 
-def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
+#todo
+def solveInternalForces(model: Frame3D, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
     seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta = MFSolvers.segment_Member(model, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
     abs_F = []
     abs_M = []
@@ -485,6 +825,3 @@ def solveInternalForces(model: Frame3D_T, pointLoads, distLoads, f_array, fer_ar
         abs_F.append([max(FX_max,abs(FX_min)), max(FY_max,abs(FY_min)), max(FZ_max,abs(FZ_min))])
         abs_M.append([max(MX_max, abs(MX_min)), max(MY_max, abs(MY_min)), max(MZ_max, abs(MZ_min))])
     return abs_F, abs_M
-
-
-
