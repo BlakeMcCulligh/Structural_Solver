@@ -13,13 +13,13 @@ def openTrussTopologyOptimizationExcel(filePath):
 
     Boundary = [Boundary_df["X"].tolist(), Boundary_df["Y"].tolist()]
     Nodes = [Noeds_df["X"].tolist(), Noeds_df["Y"].tolist()]
-    Supports = [Supports_df["X"].tolist(), Supports_df["Y"].tolist(), Supports_df["Support location"].tolist(), Supports_df["Support y"].tolist()]
+    Supports = [Supports_df["X"].tolist(), Supports_df["Y"].tolist(), Supports_df["Support x"].tolist(), Supports_df["Support y"].tolist()]
 
     numLoadCases = LoadCases_df["Number Load Casses"].tolist()[0]
 
     LoadCasses = []
     for i in range(int(numLoadCases)):
-        x = LoadCases_df[f"LoadCase{i+1} location"].tolist()
+        x = LoadCases_df[f"LoadCase{i+1} x"].tolist()
         y = LoadCases_df[f"LoadCase{i+1} y"].tolist()
         fx = LoadCases_df[f"LoadCase{i+1} fx"].tolist()
         fy = LoadCases_df[f"LoadCase{i+1} fy"].tolist()

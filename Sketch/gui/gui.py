@@ -470,8 +470,8 @@ class GUI(tk.Frame):
     def add_drawn_entity(self, entity):
         """
         Returns the information about a geometry so it can be added
-        :param entity: The entity to get the data about
-        :return: the data about the entity
+        :param entity: The entity to get the d about
+        :return: the d about the entity
         """
 
         return {

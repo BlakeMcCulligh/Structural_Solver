@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 
+from Frame3DGUI.window import MainWindow
+
 
 class NewStructurePopUp:
     def __init__(self, root):
@@ -62,6 +64,20 @@ class NewStructurePopUp:
 
     def endPopUp(self):
         self.top.destroy()
+
+        if self.Dimentions.get() == "3D" and self.Type.get() == "Frame":
+            self.top.destroy()
+            self.root.destroy()
+
+            print("3D Frame")
+            root_widget = tk.Tk()
+            root_widget.title('3D Frame')
+            MainWindow(root_widget)
+            root_widget.mainloop()
+
+
+
+
         print(self.Dimentions.get())
         print(self.Type.get())
         #todo
