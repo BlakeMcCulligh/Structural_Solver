@@ -1,6 +1,7 @@
 
-import helperFunctions as hf
+import StructuralAnalysis.frame3DSolver.helperFunctions as hf
 import numpy as np
+import scipy.optimize as opt
 
 class Frame3D:
     def __init__(self) -> None:
@@ -163,8 +164,8 @@ class Frame3D:
         self.members = np.array(self.members)
         self.nodes_cord = np.array(self.nodes_cord)
 
-        self.D_unknown, self.D_known = hf.partD(self)
-        self.members_DOF, self.members_L, self.members_PartD_unreleced, self.members_PartD_releced, self.members_T, self.pointLoads, self.distLoads = hf.prepMembers(self)
+        self.D_unknown, self.D_known = hf.partD(self.nodes_Support)
+        self.members_DOF, self.members_L, self.members_PartD_unreleced, self.members_PartD_releced, self.members_T, self.pointLoads, self.distLoads = hf.prepMembers(self.nodes_cord, self.members, self.members_Releases, self.members_PointLoads, self.members_DistLoads, len(self.casses))
         self.members_L = np.array(self.members_L)
 
         if log:
@@ -191,7 +192,7 @@ class Frame3D:
 
             self.members_CrossSectionProps = np.array(self.members_CrossSectionProps)
 
-            k_local = hf.get_k_local_ARRAY(self, self.members_L, log)
+            k_local = hf.get_k_local_ARRAY(self.materials, self.members, self.members_CrossSectionProps, self.members_L, log)
 
             k11, k12, k21, k22 = hf.memberPart_k_ARRAY(k_local, self.members_PartD_unreleced, self.members_PartD_releced, numM)
             if log:
@@ -200,7 +201,7 @@ class Frame3D:
                 print("k21: ", k21)
                 print("k22: ", k22)
 
-            fer_unc_ARRAY = hf.get_member_fer_unc(self, self.pointLoads, self.distLoads, numM, numC)
+            fer_unc_ARRAY = hf.get_member_fer_unc(self.members_L, self.pointLoads, self.distLoads, numM, numC)
             if log:
                 print("fer_unc_ARRAY: ", fer_unc_ARRAY)
 
@@ -210,16 +211,16 @@ class Frame3D:
                 print("fer1: ", fer1)
                 print("fer2: ", fer2)
 
-            ferCondensed = hf.get_fer(self, k12, k22, fer1, fer2, numM, numC)
+            ferCondensed = hf.get_fer(self.members_Releases, k12, k22, fer1, fer2, numM, numC)
             if log:
                 print("ferCondensed: ", ferCondensed)
 
-            FER1, FER2 = hf.getGlobalFixedEndReactionVector(self, self.members_T, self.D_unknown, self.D_known, ferCondensed, numM, numC)
+            FER1, FER2 = hf.getGlobalFixedEndReactionVector(self.nodes_cord, self.members_DOF, self.members_T, self.D_unknown, self.D_known, ferCondensed, numM, numC)
             if log:
                 print("FER1: ", FER1)
                 print("FER2: ", FER2)
 
-            P1, P2 = hf.getPartedGlobalNodalForceVector(self, numN)
+            P1, P2 = hf.getPartedGlobalNodalForceVector(self.nodes_loads, self.casses, self.D_unknown, self.D_known, numN)
             if log:
                 print("P1: ", P1)
                 print("P2: ", P2)
@@ -227,7 +228,7 @@ class Frame3D:
             k_global_members = hf.k_member_make_global(k_local, self.members_T)
             if log: print("k_global_members: ", k_global_members)
 
-            K_global = hf.get_K_Global(self, k_global_members, numN, numM)
+            K_global = hf.get_K_Global(self.members_DOF, k_global_members, numN, numM)
             if log: print("K_global: ", K_global)
 
             K11, K12, K21, K22 = hf.partition_K_gloabl(K_global, self.D_unknown, self.D_known)
@@ -244,7 +245,7 @@ class Frame3D:
             internalForces = None
 
             if getWeight:
-                weight = hf.getWeight(self)
+                weight = hf.getWeight(self.materials, self.members, self.members_L, self.members_CrossSectionProps)
 
             if getReactions or getInternalForces:
                 #TODO needs fixing
@@ -254,19 +255,51 @@ class Frame3D:
 
                 if getReactions:
                     F = hf.getF(self.members_T, f, numM, numC)
-                    reactions = hf.getReactions(self, F, numC, numM, numN)
+                    reactions = hf.getReactions(self.nodes_Support, self.nodes_loads, self.members, self.members_Releases, F, numC, numM, numN)
 
                 if getInternalForces:
-                    abs_F, abs_M = hf.solveInternalForces(self, self.pointLoads, self.distLoads, f, fer_unc_ARRAY, d, numM, numC)
+                    abs_F, abs_M = hf.solveInternalForces(self.members, self.members_L, self.members_CrossSectionProps, self.materials, self.casses, self.pointLoads, self.distLoads, f, fer_unc_ARRAY, d, numM, numC)
                     internalForces = [abs_F, abs_M]
 
             return D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces
         else:
             raise Exception('Pre analysis has not been run. Aborting analysis.')
 
-    def optimize(self, memberGroup: list, memberGroupType: list,  lowerBounds, upperBounds, getWeight = False, getReactions = False, getInternalForces = False, log=False):
-        pass
-        hf.optimize(self, memberGroup, memberGroupType,  lowerBounds, upperBounds, getWeight, getReactions,getInternalForces, log)
+    def optimize(self, memberGroup: list, memberGroupType: list,  lowerBound, upperBound, getWeight = False, getReactions = False, getInternalForces = False, log=False):
+        """
+        Finds the optimum cross-sections for members with their cross-sections not set.
+
+        :param memberGroup: list. list of indices of member groups for non set members to be assigned to. Must be length of non set members.
+        :param memberGroupType: list. List of cross-section types for each member group to be assigned. Must be length of number of member gorups.
+        :param lowerBound: list or float. Lower bound on the optimization variables. if list must be length of number of variables.
+        :param upperBound: list or float. Upper bound on the optimization variables. if list must be length of number of variables.
+        :param getWeight: bool. Weather the weighht of all the members is needed for the cost function.
+        :param getReactions: bool. Weather the reactions are needed for the cost function.
+        :param getInternalForces: bool. Weather the internal forces are needed for the cost function.
+        :return: scipi optimization_results class: results of the optimization.
+        """
+
+        if log:
+            print("--------------------------------------------------------------")
+            print("-----------------  Global Optimization  ----------------------")
+            print("--------------------------------------------------------------")
+
+        hf.chackInputs(self.members, memberGroup, memberGroupType)
+
+        numVarables = hf.getNumVarables(memberGroupType)
+        if log: print("numVarables: ", numVarables)
+
+        self.preAnalysis_linear(log=log)
+
+        constants = [self, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
+
+        bounds = hf.getBounds(lowerBound, upperBound, numVarables)
+
+        optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants])
+
+        if log: print("optimization results: ", optimization_results)
+
+        return optimization_results
 
 if __name__ == '__main__':
     simple_beam = Frame3D()
@@ -284,13 +317,13 @@ if __name__ == '__main__':
     simple_beam.defSupport(1, True, True, True, True, False, False)
     # simple_beam.defSupport(0, True, True, True, True, True, True)
     # simple_beam.defSupport(1, True, True, True, True, True, True)
-#'M1', 'Fy', -0.01, -0.01, 0, 168
-    #simple_beam.addNodeLoad(0, Pz=1, case=0)
+    # 'M1', 'Fy', -0.01, -0.01, 0, 168
+    # simple_beam.addNodeLoad(0, Pz=1, case=0)
     simple_beam.addMemberPointLoad(0, 50, Pz=50, case=0)
     # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=0)
     # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=1)
     # simple_beam.addMemberDistLoad(0,0,5,5,2,0,0)
-    #simple_beam.addMemberDistLoad(0, 0, 168, wy1 = -0.01, wy2 = -0.01, case=0)
+    # simple_beam.addMemberDistLoad(0, 0, 168, wy1 = -0.01, wy2 = -0.01, case=0)
     # simple_beam.addMemberSelfWeight()
     # simple_beam.addMemberSelfWeight(case=1)
     simple_beam.preAnalysis_linear(log=False)

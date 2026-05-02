@@ -129,8 +129,8 @@ def segment_Member(members, members_L, members_CrossSectionProps, materials, poi
         seg_delta.append(seg_sub_delta)
     return seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta
 
-def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFunction, absFunctionDirection, POIFunction, Direc, sign = None, comboINDEXS = None):
-    if comboINDEXS is None: comboINDEXS = model.casses
+def extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFunction, absFunctionDirection, POIFunction, Direc, sign = None, comboINDEXS = None):
+    if comboINDEXS is None: comboINDEXS = casses
     global_, governing_combo = None, None
     seg, seg_InternalLoads, seg_DistLoads = seg[mINDEX], seg_InternalLoads[mINDEX], seg_DistLoads[mINDEX]
     for comboINDEX in comboINDEXS:
@@ -149,7 +149,7 @@ def extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, absFuncti
 """ --------------- SHEAR --------------- """
 
 
-def shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
+def shear(members_L, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
     seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
@@ -158,7 +158,7 @@ def shear(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
             VY = seg_InternalLoads[1][i][0] + seg_DistLoads[1][i][0] * (x - seg[0][i]) + (x - seg[0][i]) ** 2 * (-seg_DistLoads[1][i][0] + seg_DistLoads[1][i][1]) / (2 * (seg[1][i]-seg[0][i]))
             VZ = seg_InternalLoads[2][i][0] + seg_DistLoads[2][i][0] * (x - seg[0][i]) + (x - seg[0][i]) ** 2 * (-seg_DistLoads[2][i][0] + seg_DistLoads[2][i][1]) / (2 * (seg[1][i] - seg[0][i]))
             return VY, VZ
-    if math.isclose(x, model.members_L[mINDEX]):
+    if math.isclose(x, members_L[mINDEX]):
         lastIndex = len(seg[0]) - 1
         VY = seg_InternalLoads[1][lastIndex][0] + seg_DistLoads[1][lastIndex][0] * (x - seg[0][lastIndex]) + (x - seg[0][lastIndex]) ** 2 * (-seg_DistLoads[1][lastIndex][0] + seg_DistLoads[1][lastIndex][1]) / (2 * (seg[1][lastIndex] - seg[0][lastIndex]))
         VZ = seg_InternalLoads[2][lastIndex][0] + seg_DistLoads[2][lastIndex][0] * (x - seg[0][lastIndex]) + (x - seg[0][lastIndex]) ** 2 * (-seg_DistLoads[2][lastIndex][0] + seg_DistLoads[2][lastIndex][1]) / (2 * (seg[1][lastIndex] - seg[0][lastIndex]))
@@ -178,14 +178,14 @@ def seg_V_POI(w1, w2, V1, M_1, L, sign):
     shear3 = V1 + w1 * L + L ** 2 * (-w1 + w2) / (2 * L)
     return [shear1, shear2, shear3]
 
-def max_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    Y, yC = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_V_POI, 1, comboINDEXS=comboINDEXS)
-    Z, zC = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max", seg_V_POI, 2, comboINDEXS=comboINDEXS)
+def max_shear(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    Y, yC = extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_V_POI, 1, comboINDEXS=comboINDEXS)
+    Z, zC = extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max", seg_V_POI, 2, comboINDEXS=comboINDEXS)
     return Y, Z, yC, zC
 
-def min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    Y, yC = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min", seg_V_POI, 1, comboINDEXS=comboINDEXS)
-    Z, zC = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min", seg_V_POI, 2, comboINDEXS=comboINDEXS)
+def min_shear(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    Y, yC = extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min", seg_V_POI, 1, comboINDEXS=comboINDEXS)
+    Z, zC = extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min", seg_V_POI, 2, comboINDEXS=comboINDEXS)
     return Y, Z, yC, zC
 
 
@@ -195,7 +195,7 @@ def min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS 
 def moment_calc(M1, V1, w1, w2, L, x, sign):
     return sign*M1 - V1*x - w1*x**2/2 - x**3*(-w1 + w2)/(6*L)
 
-def moment(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
+def moment(members_L, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
     seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
@@ -204,7 +204,7 @@ def moment(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
             MZ = moment_calc(seg_InternalLoads[2][i][1], seg_InternalLoads[2][i][0], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], (seg[1][i]-seg[0][i]), (x - seg[0][i]), 1)
             MY = moment_calc(seg_InternalLoads[1][i][1], seg_InternalLoads[1][i][0], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], (seg[1][i]-seg[0][i]), (x - seg[0][i]), -1)
             return MZ, MY
-    if math.isclose(x, model.members_L[mINDEX]):
+    if math.isclose(x, members_L[mINDEX]):
         i = len(seg[0]) - 1
         MZ = moment_calc(seg_InternalLoads[2][i][1], seg_InternalLoads[2][i][0], seg_DistLoads[2][i][0],seg_DistLoads[2][i][1], (seg[1][i] - seg[0][i]), (x - seg[0][i]), 1)
         MY = moment_calc(seg_InternalLoads[1][i][1], seg_InternalLoads[1][i][0], seg_DistLoads[1][i][0],seg_DistLoads[1][i][1], (seg[1][i] - seg[0][i]), (x - seg[0][i]), -1)
@@ -236,27 +236,27 @@ def seg_M_POI(w1, w2, V1, M_1, L, sign):
     M4 = moment_calc(M_1, V1, w1, w2, L, L, sign)
     return [M1, M2, M3, M4]
 
-def max_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    Y, yC = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_M_POI, 1, sign=-1, comboINDEXS = comboINDEXS)
-    Z, zC = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
+def max_moment(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    Y, yC = extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_M_POI, 1, sign=-1, comboINDEXS = comboINDEXS)
+    Z, zC = extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
     return Y, Z, yC, zC
 
-def min_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    Y, yC = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_M_POI, 1, sign=-1, comboINDEXS=comboINDEXS)
-    Z, zC = extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
+def min_moment(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    Y, yC = extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_M_POI, 1, sign=-1, comboINDEXS=comboINDEXS)
+    Z, zC = extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_M_POI, 2, sign=1, comboINDEXS=comboINDEXS)
     return Y, Z, yC, zC
 
 
 """ --------------- TORQUE --------------- """
 
 
-def torque(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads):
+def torque(members_L, x, mINDEX, comboINDEX, seg, seg_InternalLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
     for i in range(len(seg[0])):
         if round(seg[0][i], 10) <= round(x, 10) < round(seg[1][i], 10):
             return seg_InternalLoads[0][i][1]
-    if math.isclose(x, model.members_L[mINDEX]):
+    if math.isclose(x, members_L[mINDEX]):
         i = len(seg[0]) - 1
         return seg_InternalLoads[0][i][1]
     return 0
@@ -264,11 +264,11 @@ def torque(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads):
 def seg_T_POI(w1, w2, P1, M1, L, sign):
     return [M1]
 
-def max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_T_POI, 0, comboINDEXS=comboINDEXS)
+def max_tourque(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_T_POI, 0, comboINDEXS=comboINDEXS)
 
-def min_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_T_POI, 0, comboINDEXS=comboINDEXS)
+def min_tourque(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_T_POI, 0, comboINDEXS=comboINDEXS)
 
 
 """ --------------- AXIAL --------------- """
@@ -277,14 +277,14 @@ def min_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEX
 def axial_calc(p1, p2, P1, L, x):
     return P1 + (p2 - p1)/(2*L)*x**2 + p1*x
 
-def axial(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
+def axial(members_L, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
     seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
     for i in range(len(seg[0])):
         if round(seg[0][i], 10) <= round(x, 10) < round(seg[1][i], 10):
             return axial_calc(seg_DistLoads[0][1][0], seg_DistLoads[0][1][1], seg_InternalLoads[0][i][0], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
-    if math.isclose(x, model.members_L[mINDEX]):
+    if math.isclose(x, members_L[mINDEX]):
         i = len(seg[0]) - 1
         return axial_calc(seg_DistLoads[0][1][0], seg_DistLoads[0][1][1], seg_InternalLoads[0][i][0], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
     return 0
@@ -305,11 +305,11 @@ def seg_P_POI(w1, w2, P1, M1, L, sign):
     P_3 = axial_calc(w1, w2, P1, L, L)
     return [P_1, P_2, P_3]
 
-def max_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_P_POI, 0, comboINDEXS)
+def max_axial(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, max, "max",seg_P_POI, 0, comboINDEXS)
 
-def min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
-    return extremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_P_POI, 0, comboINDEXS)
+def min_axial(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, comboINDEXS = None):
+    return extremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, min, "min",seg_P_POI, 0, comboINDEXS)
 
 
 """ --------------- DEFLECTION --------------- """
@@ -321,7 +321,7 @@ def axial_deflection_calc(delta_x1, EA, P1, w1, w2, L, x):
 def deflection_calc(delta1, theta1, V1, EI, w1, w2, M1, L, sign, x):
     return delta1 + sign* theta1*x + V1*x**3/(6 * EI) + w1*x**4/(24 * EI) + sign*x**2*(-M1)/(2 * EI) + sign*x**5*(sign* (-w1) + sign*w2)/(120 * EI * L)
 
-def deflection(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta):
+def deflection(members_L, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta):
     seg = seg[mINDEX][comboINDEX]
     seg_InternalLoads = seg_InternalLoads[mINDEX][comboINDEX]
     seg_DistLoads = seg_DistLoads[mINDEX][comboINDEX]
@@ -333,7 +333,7 @@ def deflection(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoa
             DY = deflection_calc(seg_delta[1][i], seg_thata[0][i], seg_InternalLoads[1][i][0], seg[3][i], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], seg_InternalLoads[1][i][1], (seg[1][i] - seg[0][i]), -1, (x-seg[0][i]))
             DZ = deflection_calc(seg_delta[2][i], seg_thata[1][i], seg_InternalLoads[2][i][0], seg[2][i], seg_DistLoads[2][i][0], seg_DistLoads[2][i][1], seg_InternalLoads[2][i][1], (seg[1][i] - seg[0][i]), 1, (x-seg[0][i]))
             return [DX, DY, DZ]
-    if math.isclose(x, model.members_L[mINDEX]):
+    if math.isclose(x, members_L[mINDEX]):
         i = len(seg[0]) - 1
         DX = axial_deflection_calc(seg_delta[0][i], seg[4][i], seg_InternalLoads[0][i][0], seg_DistLoads[0][i][0], seg_DistLoads[0][i][1], (seg[1][i] - seg[0][i]), (x-seg[0][i]))
         DY = deflection_calc(seg_delta[1][i], seg_thata[0][i], seg_InternalLoads[1][i][0], seg[3][i], seg_DistLoads[1][i][0], seg_DistLoads[1][i][1], seg_InternalLoads[1][i][1], (seg[1][i] - seg[0][i]), -1, (x-seg[0][i]))
@@ -341,14 +341,14 @@ def deflection(model, x, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoa
         return [DX, DY, DZ]
     return [0,0,0]
 
-def difflectionExtremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, absFunctionDirection, comboINDEXS, members_L):
-    if comboINDEXS is None: comboINDEXS = model.casses
+def difflectionExtremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, absFunctionDirection, comboINDEXS, members_L):
+    if comboINDEXS is None: comboINDEXS = casses
     global_, governing_combo = [None, None, None], [None, None, None]
     L = members_L[mINDEX]
     for comboINDEX in comboINDEXS:
-        dmax = deflection(model, 0, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta)
+        dmax = deflection(members_L, 0, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta)
         for i in range(100):
-            d = deflection(model, L * i / 99, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta)
+            d = deflection(members_L, L * i / 99, mINDEX, comboINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta)
             for j in range(3):
                 if absFunctionDirection == "max":
                     if d[j] > dmax[j]:
@@ -373,8 +373,8 @@ def difflectionExtremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads
                         governing_combo[j] = comboINDEX
     return global_, governing_combo
 
-def max_difflection(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, comboINDEXS = None):
-    return difflectionExtremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta,"max", comboINDEXS, model.members_L)
+def max_difflection(casses, members_L, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, comboINDEXS = None):
+    return difflectionExtremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta,"max", comboINDEXS, members_L)
 
-def min_difflection(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, comboINDEXS = None):
-    return difflectionExtremFinder(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta,"min", comboINDEXS, model.members_L)
+def min_difflection(casses, members_L, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta, comboINDEXS = None):
+    return difflectionExtremFinder(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta,"min", comboINDEXS, members_L)

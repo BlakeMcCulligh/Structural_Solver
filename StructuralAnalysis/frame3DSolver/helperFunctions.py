@@ -2,31 +2,34 @@ import numpy as np
 
 import StructuralAnalysis.frame3DSolver.fixedEndReactionsCalculaters as ferCalc
 import StructuralAnalysis.frame3DSolver.memberForceSolvers as MFSolvers
-import optimizeCrossSections as OptCS
 
-from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
-
-def partD(model: Frame3D):
+def partD(nodes_Support):
     """
     Builds lists of unreleased and released degree of freedom.
 
-    :param model: Frame3D. 3D frame object to get the DOFs for.
+    :param nodes_Support: ndarray. What nodes are supported in what DOFs.
     :return:
         D_unknown: ndarray. A ndarray of the indices for the released DOFs.
         D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
     """
-    n_nodes = model.nodes_Support.shape[0]
+    n_nodes = nodes_Support.shape[0]
     dof_indices = np.arange(n_nodes * 6).reshape(n_nodes, 6)
-    D_unknown = dof_indices[~model.nodes_Support].ravel()
-    D_known = dof_indices[model.nodes_Support].ravel()
+    D_unknown = dof_indices[~nodes_Support].ravel()
+    D_known = dof_indices[nodes_Support].ravel()
     return D_unknown, D_known
 
-def prepMembers(model: Frame3D):
+def prepMembers(nodes_cord, members, members_Releases, members_PointLoads, members_DistLoads, numC):
     """
     Prepars the members for an analysis. This function can be run at the start of an optimization and
     does not need to be rerun is only cross-sections are changed.
 
-    :param model: Frame3D. 3D frame to prepare.
+
+    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
+    :param members:  list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members_Releases: list. What directions are relesed Bool. [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
+    :param members_PointLoads: list. Point loads applyed to members. [case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]]
+    :param members_DistLoads: list. Distributed loads applyed to members. [case, [[[x1, x2], [wx1, wx2, wy1, wy2, wz1, wz2]]]]
+    :param numC: int. Number of casses.
     :return:
         DOFs: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# Members, 12)
         L: ndarray. A ndarray of the lengths of the members. shape: (# Members)
@@ -35,27 +38,28 @@ def prepMembers(model: Frame3D):
         T: ndarray: 4D ndarray of the transformation matrices for each member. shape: (# Members, 12, 12)
     """
 
-    L = get_L(model)
-    members = model.members[:, :2]
+    L = get_L(nodes_cord, members)
+    members = members[:, :2]
     DOFs = buildDOFVector(members)
-    member_unrelesed_DOFs, member_relesed_DOFs = member_PartD(model.members_Releases)
-    T = getMemberT(model, L)
-    pointLoads = assemblePointLoads(model)
-    distLoads = assembleDistLoads(model)
+    member_unrelesed_DOFs, member_relesed_DOFs = member_PartD(members_Releases)
+    T = getMemberT(nodes_cord, members,L)
+    pointLoads = assemblePointLoads(members_PointLoads, numC)
+    distLoads = assembleDistLoads(members_DistLoads, numC)
     return DOFs, L, member_unrelesed_DOFs, member_relesed_DOFs, T, pointLoads, distLoads
 
-def get_L(model: Frame3D):
+def get_L(nodes_cord, members):
     """
     Builds an array of the lengths of the members.
 
-    :param model: Frame3D. 3D frame to get the lengths for.
+    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
+    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
     :return:
         L: ndarray. A ndarray of the lengths of the members.
     """
 
-    dx = model.nodes_cord[model.members[:, 1], 0] - model.nodes_cord[model.members[:, 0], 0]
-    dy = model.nodes_cord[model.members[:, 1], 1] - model.nodes_cord[model.members[:, 0], 1]
-    dz = model.nodes_cord[model.members[:, 1], 2] - model.nodes_cord[model.members[:, 0], 2]
+    dx = nodes_cord[members[:, 1], 0] - nodes_cord[members[:, 0], 0]
+    dy = nodes_cord[members[:, 1], 1] - nodes_cord[members[:, 0], 1]
+    dz = nodes_cord[members[:, 1], 2] - nodes_cord[members[:, 0], 2]
     return np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
 
 def buildDOFVector(nodes: np.ndarray):
@@ -83,23 +87,24 @@ def member_PartD(releases: np.ndarray):
     released   = [idx[r]  for r in releases]
     return unreleased, released
 
-def getMemberT(model: Frame3D, L: np.ndarray):
+def getMemberT(nodes_cord, members, L: np.ndarray):
     """
     Builds an array of the transformation matrices for each member.
 
-    :param model: Frame3D. 3D frame to get the transformation matrices for.
+    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
+    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
     :param L: ndarray. A ndarray of the lengths of the members. shape: (# Members)
     :return: ndarray: 4D array of the transformation matrices for each member. shape: (# Members, 12, 12)
     """
 
-    i = model.members[:, 0]
-    j = model.members[:, 1]
-    Xi, Yi, Zi = model.nodes_cord[i].T
-    Xj, Yj, Zj = model.nodes_cord[j].T
+    i = members[:, 0]
+    j = members[:, 1]
+    Xi, Yi, Zi = nodes_cord[i].T
+    Xj, Yj, Zj = nodes_cord[j].T
     # Local x-axis (direction cosines)
     x = np.stack([(Xj - Xi)/L, (Yj - Yi)/L, (Zj - Zi)/L], axis=1)
     # Initialize y, z
-    n = len(model.members)
+    n = len(members)
     y = np.zeros((n, 3))
     z = np.zeros((n, 3))
     # Masks
@@ -132,11 +137,12 @@ def getMemberT(model: Frame3D, L: np.ndarray):
     return T
 
 
-def getGlobalFixedEndReactionVector(model: Frame3D, T: np.ndarray, D_unknown: np.ndarray, D_known: np.ndarray, ferCondensed_ARRAY, numM: int, numC: int):
+def getGlobalFixedEndReactionVector(nodes_cord, members_DOF, T: np.ndarray, D_unknown: np.ndarray, D_known: np.ndarray, ferCondensed_ARRAY, numM: int, numC: int):
     """
     Builds array of the global fixed end reaction vector for both fixed and released DOFs.
 
-    :param model: Frame3D. 3D frame to get the global fixed end reaction vectors for.
+    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
+    :param members_DOF: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# Members, 12)
     :param T: ndarray. 4D array of the transformation matrices for each member. shape: (# Members, 12, 12)
     :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
     :param D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
@@ -150,8 +156,8 @@ def getGlobalFixedEndReactionVector(model: Frame3D, T: np.ndarray, D_unknown: np
 
     FER_array = get_FER(ferCondensed_ARRAY, T)
     FER_stack = np.array([[np.asarray(FER_array[i][j], dtype=float).reshape(12) for j in range(numC)] for i in range(numM)])  # shape: (# Members, # Casses, 12)
-    members_DOF = np.asarray(model.members_DOF)  # (numM, 12)
-    nDOF = len(model.nodes_cord) * 6
+    members_DOF = np.asarray(members_DOF)  # (numM, 12)
+    nDOF = len(nodes_cord) * 6
     FER_val = np.zeros((numC, nDOF))
     dof_flat = members_DOF.ravel()
     for j in range(numC):np.add.at(FER_val[j],dof_flat,FER_stack[:, j, :].ravel())
@@ -178,21 +184,23 @@ def partForceVector(FER_val: np.ndarray, D_unknown: np.ndarray, D_known: np.ndar
     FER2 = FER_val[:, D_known, :]
     return FER1, FER2
 
-def get_k_local_ARRAY(model: Frame3D, L: np.ndarray, log):
+def get_k_local_ARRAY(materials, members, members_CrossSectionProps, L: np.ndarray, log):
     """
     Builds an array of the local stiffness matrices for each member.
 
-    :param model: Frame3D. 3D frame to get the stiffnes matrices for.
+    :param materials: list. [E, G, nu, rho, fy]
+    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members_CrossSectionProps: ndarray. [A, Iy, Iz, J]
     :param L: ndarray. A ndarray of the lengths of the members. shape: (# Members)
     :return: 4D array of the local stiffness matrices for each member. shape: (# Members, 12, 12)
     """
 
-    E = model.materials[model.members[:, 2], 0]
-    G = model.materials[model.members[:, 2], 1]
-    A = model.members_CrossSectionProps[:, 0]
-    Iy = model.members_CrossSectionProps[:, 1]
-    Iz = model.members_CrossSectionProps[:, 2]
-    J = model.members_CrossSectionProps[:, 3]
+    E = materials[members[:, 2], 0]
+    G = materials[members[:, 2], 1]
+    A = members_CrossSectionProps[:, 0]
+    Iy = members_CrossSectionProps[:, 1]
+    Iz = members_CrossSectionProps[:, 2]
+    J = members_CrossSectionProps[:, 3]
 
     n = len(L)
     # Precompute terms
@@ -295,17 +303,18 @@ def get_FER(fer: np.ndarray, T: np.ndarray):
     FER = invT[:, None] @ fer
     return FER
 
-def assemblePointLoads(model: Frame3D):
+def assemblePointLoads(members_PointLoads, numC):
     """
     Assembles the point load vectors for all members and casses
 
-    :param model: Frame3D. 3D frame to get the point loads for.
+    :param members_PointLoads:  list. Point loads applyed to members. [case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]]
+    :param numC: int. Number of casses
     :return: list. Point loads applied to each member. shape: (# Members, # Casses, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
     """
 
     newPointLoads = []
-    for i, loadCasses in enumerate(model.members_PointLoads):
-        newLoads  = [None] * len(model.casses)
+    for i, loadCasses in enumerate(members_PointLoads):
+        newLoads  = [None] * numC
         for loads in loadCasses:
             newLoad  = []
             for j in range(len(loads[1][0])):
@@ -318,17 +327,18 @@ def assemblePointLoads(model: Frame3D):
         newPointLoads.append(newLoads)
     return newPointLoads
 
-def assembleDistLoads(model: Frame3D):
+def assembleDistLoads(members_DistLoads, numC):
     """
     Assembles the distributed load vectors for all members and casses
 
-    :param model: Frame3D. 3D frame to get the distributed loads for.
+    :param members_DistLoads: list. Distributed loads applyed to members. [case, [[[x1, x2], [wx1, wx2, wy1, wy2, wz1, wz2]]]]
+    :param numC: int. Number of casses
     :return: list. Distributed loads applied to each member. shape: (# Members, # Casses, varys, # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
     """
 
     newDistLoads = []
-    for i, loadCasses in enumerate(model.members_DistLoads):
-        newLoads = [None] * len(model.casses)
+    for i, loadCasses in enumerate(members_DistLoads):
+        newLoads = [None] * numC
         for loads in loadCasses:
             newLoad = []
             for j in range(len(loads[1])):
@@ -341,11 +351,11 @@ def assembleDistLoads(model: Frame3D):
         newDistLoads.append(newLoads)
     return newDistLoads
 
-def get_member_fer_unc(model: Frame3D, pointLoads: list, distLoads: list, numM: int, numC: int):
+def get_member_fer_unc(members_L, pointLoads: list, distLoads: list, numM: int, numC: int):
     """
     Returns the local fixed end reaction vector for the members, ignoring the effects of end releases.
 
-    :param model: Frame3D. 3D frame to get the fer vectors for.
+    :param members_L: ndarray. length of each member.
     :param pointLoads: list. Point loads applied to each member. shape: (# Members, # Casses, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
     :param distLoads: list. Distributed loads applied to each member. shape: (# Members, # Casses, varys, # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
     :param numM: int. Number of members.
@@ -353,20 +363,20 @@ def get_member_fer_unc(model: Frame3D, pointLoads: list, distLoads: list, numM: 
     :return: ndarray. local fixed end reaction vector for the members. shape: (# Members, # Casses, 12, 1)
     """
     fer_unc = np.zeros((numM, numC, 12, 1))
-    fer_unc = np.add(fer_unc, get_FixedEndReactions_Pointload_ARRAY(model, pointLoads))
-    fer_unc = np.add(fer_unc, get_FixedEndReactions_Distload_ARRAY(model, distLoads))
+    fer_unc = np.add(fer_unc, get_FixedEndReactions_Pointload_ARRAY(members_L, pointLoads))
+    fer_unc = np.add(fer_unc, get_FixedEndReactions_Distload_ARRAY(members_L, distLoads))
     return fer_unc
 
-def get_FixedEndReactions_Pointload_ARRAY(model: Frame3D, pointLoads: list):
+def get_FixedEndReactions_Pointload_ARRAY(members_L, pointLoads: list):
     """
     Builds an array of the fixed end reacctions for point loads.
 
-    :param model: Frame3D. 3D frame to get the reactions for.
+    :param members_L: ndarray. length of each member.
     :param pointLoads: list. Point loads applied to each member. shape: (# Members, # Casses, varys: # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
     :return: ndarray. fixed end reactions for point loads. shape: (# Members, # Casses, 12, 1)
     """
 
-    Ls = np.asarray(model.members_L)
+    Ls = np.asarray(members_L)
     Reactions = []
     for i, loadCases in enumerate(pointLoads):
         L = Ls[i]
@@ -394,18 +404,18 @@ def get_FixedEndReactions_Pointload_ARRAY(model: Frame3D, pointLoads: list):
         Reactions.append(reactionsMember)
     return Reactions
 
-def get_FixedEndReactions_Distload_ARRAY(model: Frame3D, distLoads):
+def get_FixedEndReactions_Distload_ARRAY(members_L, distLoads):
     """
     Builds an array of the fixed end reacctions for distributed loads.
 
-    :param model: Frame3D. 3D frame to get the reactions for.
+    :param members_L: ndarray. length of each member.
     :param distLoads: list. Distributed loads applied to each member. shape: (# Members, # Casses, varys, varys: # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
     :return: ndarray. fixed end reactions for distributed loads. shape: (# Members, # Casses, 12, 1)
     """
 
     Reactions = []
     for i, loadCasses in enumerate(distLoads):
-        L = model.members_L[i]
+        L = members_L[i]
         reactionsMember = []
         for j, loads in enumerate(loadCasses):
             reactions = np.zeros((12, 1))
@@ -448,11 +458,11 @@ def memberPart_fer(fer: np.ndarray, R_unrelesed: np.ndarray or list, R_relesed: 
         fer2_array.append(fer2_sub_array)
     return fer1_array, fer2_array
 
-def get_fer(model: Frame3D, k12: list, k22: list, fer1: np.ndarray, fer2: np.ndarray, numM: int, numC: int):
+def get_fer(members_Releases, k12: list, k22: list, fer1: np.ndarray, fer2: np.ndarray, numM: int, numC: int):
     """
     Returns the condensed local fixed end reaction vector for all members and casses.
 
-    :param model: Frame3D. 3D frame to get the fer vector for.
+    :param members_Releases: list. What directions are relesed Bool. [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
     :param k12: list. sub-matrix of the member local stiffness matrix. shape: (# Members, varys)
     :param k22: list. sub-matrix of the member local stiffness matrix. shape: (# Members, varys)
     :param fer1: ndarray. fixed end reactions for each member for the unrelesed DOFs. shape: (# Members, # Casses, varys: # unrelesed DOFs, 1)
@@ -472,7 +482,7 @@ def get_fer(model: Frame3D, k12: list, k22: list, fer1: np.ndarray, fer2: np.nda
             k_22 = np.array(k22[i])
             ferCondensed = (fer_1 - k_12 @ k_22 @ fer_2)
             a = 0
-            for DOF in model.members_Releases[i]:
+            for DOF in members_Releases[i]:
                 if DOF:
                     ferCondensed = np.insert(ferCondensed, a, 0, axis=0)
                 a += 1
@@ -480,21 +490,24 @@ def get_fer(model: Frame3D, k12: list, k22: list, fer1: np.ndarray, fer2: np.nda
         ferCondenced_array.append(ferCondensed_sub_array)
     return ferCondenced_array
 
-def getPartedGlobalNodalForceVector(model: Frame3D, numN: int):
+def getPartedGlobalNodalForceVector(nodes_loads, casses, D_unknown, D_known, numN: int):
     """
     Builds the pertitioned global nodal force vector.
 
-    :param model: Frame3D. 3D frame to get the force vector for.
+    :param nodes_loads: list. [case, [Px, Py, Pz, Mx, My, Mz]]
+    :param casses: list. Load Case Indexes.
+    :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
+    :param D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
     :param numN: int. Number of nodes
     :return: ndarray. Global nodal force vector partitioned into 2 vectors.
     """
 
     p_array = []
-    for loadCaseI in model.casses:
+    for loadCaseI in casses:
         p = np.zeros((numN * 6, 1))
         for i in range(numN):
-            if np.size(model.nodes_loads[loadCaseI]) != 0:
-                local = np.array(model.nodes_loads[loadCaseI][1])
+            if np.size(nodes_loads[loadCaseI]) != 0:
+                local = np.array(nodes_loads[loadCaseI][1])
             else:
                 local = np.zeros(6, dtype=float)
             dofs = np.empty(len([i]) * 6, dtype=np.int64)
@@ -504,7 +517,7 @@ def getPartedGlobalNodalForceVector(model: Frame3D, numN: int):
                 dofs[start:start + 6] = node * 6 + local_
             p[dofs, 0] += local
         p_array.append(p)
-    return partForceVector(np.array(p_array), model.D_unknown, model.D_known)
+    return partForceVector(np.array(p_array), D_unknown, D_known)
 
 def k_member_make_global(k_local_array, T_array):
     """
@@ -520,11 +533,11 @@ def k_member_make_global(k_local_array, T_array):
         k_member_global.append(np.linalg.inv(T_array[i]) @ k_local_array[i] @ T_array[i])
     return k_member_global
 
-def get_K_Global(model: Frame3D, k_global: np.ndarray, numN: int, numM:int):
+def get_K_Global(members_DOF, k_global: np.ndarray, numN: int, numM:int):
     """
     Assembles the global stiffness matrix for the frame.
 
-    :param model: Frame3D. frame to assemble the global stiffness matrix for.
+    :param members_DOF: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# Members, 12)
     :param k_global: ndarray. 4D array of the global stiffness matrices for each member. shape: (# Members, 12, 12)
     :param numN: int. Number of nodes.
     :param numM: int. Number of casses.
@@ -533,7 +546,7 @@ def get_K_Global(model: Frame3D, k_global: np.ndarray, numN: int, numM:int):
 
     K = np.zeros((numN * 6, numN * 6))
     for i in range(numM):
-        K[np.ix_(model.members_DOF[i], model.members_DOF[i])] += np.asarray(k_global[i], dtype=float)
+        K[np.ix_(members_DOF[i], members_DOF[i])] += np.asarray(k_global[i], dtype=float)
     return K
 
 def partition_K_gloabl(K_global: np.ndarray, R_unrelesed: np.ndarray, R_relesed: np.ndarray):
@@ -672,11 +685,11 @@ def get_node_direcction_deflections(D_array, numN: int, numC: int):
         RZ_array.append(RZ_case)
     return np.array(DX_array), np.array(DY_array), np.array(DZ_array), np.array(RX_array), np.array(RY_array), np.array(RZ_array)
 
-def get_member_direction_deflections(model: Frame3D, DX_array: np.ndarray, DY_array: np.ndarray, DZ_array: np.ndarray, RX_array: np.ndarray, RY_array: np.ndarray, RZ_array: np.ndarray, numM: int, numC: int):
+def get_member_direction_deflections(members, DX_array: np.ndarray, DY_array: np.ndarray, DZ_array: np.ndarray, RX_array: np.ndarray, RY_array: np.ndarray, RZ_array: np.ndarray, numM: int, numC: int):
     """
     Gets the global end deflections for each member.
 
-    :param model: Frame3D. 3D frame to get the deflections for.
+    :param members:  list. [i_node, j_node, material_index, setCrossSectionProps]
     :param DX_array: ndarray. Array of the nodel displacements in the X direction.
     :param DY_array: ndarray. Array of the nodel displacements in the Y direction.
     :param DZ_array: ndarray. Array of the nodel displacements in the Z direction.
@@ -692,18 +705,18 @@ def get_member_direction_deflections(model: Frame3D, DX_array: np.ndarray, DY_ar
     for i in range(numC):
         D_sub = []
         for j in range(numM):
-            Dx1 = DX_array[i, model.members[j,0]]
-            Dy1 = DY_array[i, model.members[j,0]]
-            Dz1 = DZ_array[i, model.members[j,0]]
-            Rx1 = RX_array[i, model.members[j,0]]
-            Ry1 = RY_array[i, model.members[j,0]]
-            Rz1 = RZ_array[i, model.members[j,0]]
-            Dx2 = DX_array[i, model.members[j, 1]]
-            Dy2 = DY_array[i, model.members[j, 1]]
-            Dz2 = DZ_array[i, model.members[j, 1]]
-            Rx2 = RX_array[i, model.members[j, 1]]
-            Ry2 = RY_array[i, model.members[j, 1]]
-            Rz2 = RZ_array[i, model.members[j, 1]]
+            Dx1 = DX_array[i, members[j,0]]
+            Dy1 = DY_array[i, members[j,0]]
+            Dz1 = DZ_array[i, members[j,0]]
+            Rx1 = RX_array[i, members[j,0]]
+            Ry1 = RY_array[i, members[j,0]]
+            Rz1 = RZ_array[i, members[j,0]]
+            Dx2 = DX_array[i, members[j, 1]]
+            Dy2 = DY_array[i, members[j, 1]]
+            Dz2 = DZ_array[i, members[j, 1]]
+            Rx2 = RX_array[i, members[j, 1]]
+            Ry2 = RY_array[i, members[j, 1]]
+            Rz2 = RZ_array[i, members[j, 1]]
             D_sub.append(np.array([Dx1, Dy1, Dz1, Rx1, Ry1, Rz1, Dx2, Dy2, Dz2, Rx2, Ry2, Rz2]))
         D_member_array.append(D_sub)
     return np.array(D_member_array)
@@ -766,21 +779,27 @@ def getf(k_array: np.ndarray, d_array: np.ndarray, fer_array: np.ndarray, numM: 
         f.append(f_sub)
     return np.array(f)
 
-def getWeight(model: Frame3D):
+def getWeight(materials, members, members_L, members_CrossSectionProps):
     """
     Gets the weight of each member of the frame.
 
-    :param model: Frame3D. 3D frame to get the weight of.
+    :param materials:  list. [E, G, nu, rho, fy]
+    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members_L: ndarray. length of each member.
+    :param members_CrossSectionProps: ndarray. [A, Iy, Iz, J]
     :return: ndarry. Array of the weights of each member of the frame.
     """
 
-    return model.materials[model.members[:,2],3] * model.members_CrossSectionProps[:,0] * model.members_L
+    return materials[members[:,2],3] * members_CrossSectionProps[:,0] * members_L
 
-def getReactions(model: Frame3D, F_array, numC:int, numM:int, numN:int):
+def getReactions(nodes_Support, nodes_loads, members, members_Releases, F_array, numC:int, numM:int, numN:int):
     """
     Gets the reactions for the frame. If an DOF is not supported the reaction is 0.
 
-    :param model: Frame3D. 3D frame the get the reactions of.
+    :param nodes_Support: list. [support_DX, support_DY, support_DZ, support_RX, support_RY, support_RZ]
+    :param nodes_loads:  list. [case, [Px, Py, Pz, Mx, My, Mz]]
+    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members_Releases: list. What directions are relesed Bool. [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
     :param F_array: ndarray. Array of the global forces acting at the ends of the members. shape: (# casses, # members, 12)
     :param numC: int: Number of casses.
     :param numM: int: Number of members.
@@ -794,13 +813,13 @@ def getReactions(model: Frame3D, F_array, numC:int, numM:int, numN:int):
         for j in range(numN):
             r = [0.0] * 6
             for s in range(6):
-                if model.nodes_Support[i][s]:
+                if nodes_Support[i][s]:
                     for k in range(numM):
-                        if model.members[k, 0] == j:
-                            if not model.members_Releases[k][s]: r[s] += F_array[i, k, s, 0]
-                        elif model.members[k, 1] == j:
-                            if not model.members_Releases[k][s+6]: r[s] += F_array[i, k, s+6, 0]
-                    for jointLoadCase in model.nodes_loads[j]:
+                        if members[k, 0] == j:
+                            if not members_Releases[k][s]: r[s] += F_array[i, k, s, 0]
+                        elif members[k, 1] == j:
+                            if not members_Releases[k][s+6]: r[s] += F_array[i, k, s+6, 0]
+                    for jointLoadCase in nodes_loads[j]:
                         if jointLoadCase[0] == i:
                             r[s] += jointLoadCase[1][s]
             reactions_sub.append(r)
@@ -808,25 +827,157 @@ def getReactions(model: Frame3D, F_array, numC:int, numM:int, numN:int):
     return reactions
 
 #todo
-def solveInternalForces(model: Frame3D, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
-    seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta = MFSolvers.segment_Member(model.members, model.members_L, model.members_CrossSectionProps, model.materials, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
+def solveInternalForces(members, members_L, members_CrossSectionProps, materials, casses, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
+    seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta = MFSolvers.segment_Member(members, members_L, members_CrossSectionProps, materials, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
     abs_F = []
     abs_M = []
     for mINDEX in range(numM):
-        FX_min, _ = MFSolvers.min_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
-        FX_max, _ = MFSolvers.max_axial(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
-        FY_min, FZ_min, _, _ = MFSolvers.min_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
-        FY_max, FZ_max, _, _ = MFSolvers.max_shear(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
-        MX_min, _ = MFSolvers.min_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
-        MX_max, _ = MFSolvers.max_tourque(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
-        MY_min, MZ_min, _, _ = MFSolvers.min_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
-        MY_max, MZ_max, _, _ = MFSolvers.max_moment(model, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        FX_min, _ = MFSolvers.min_axial(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        FX_max, _ = MFSolvers.max_axial(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        FY_min, FZ_min, _, _ = MFSolvers.min_shear(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        FY_max, FZ_max, _, _ = MFSolvers.max_shear(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        MX_min, _ = MFSolvers.min_tourque(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        MX_max, _ = MFSolvers.max_tourque(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        MY_min, MZ_min, _, _ = MFSolvers.min_moment(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
+        MY_max, MZ_max, _, _ = MFSolvers.max_moment(casses, mINDEX, seg, seg_InternalLoads, seg_DistLoads)
         abs_F.append([max(FX_max,abs(FX_min)), max(FY_max,abs(FY_min)), max(FZ_max,abs(FZ_min))])
         abs_M.append([max(MX_max, abs(MX_min)), max(MY_max, abs(MY_min)), max(MZ_max, abs(MZ_min))])
     return abs_F, abs_M
 
 
-def optimize(self, memberGroup: list, memberGroupType: list,  lowerBounds, upperBounds, getWeight, getReactions,getInternalForces, log):
-    oprtimizationResults = OptCS.globalOptimization(self, memberGroup, memberGroupType, lowerBounds, upperBounds, getWeight=getWeight,
-                             getReactions=getReactions, getInternalForces=getInternalForces, log=log)
-    print(oprtimizationResults)
+
+"""-----------------Optimization-----------------------------"""
+
+from StructuralAnalysis.CrossSectionCalculaters import Angle, RectHSS, SquareHSS, TubeHSS
+import scipy.optimize as opt
+
+def cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces):
+    return max(DZ[0]) + sum(weight) **5
+
+def get_cost(X, constants):
+    """
+    Gets the cost for the current optimization variables.
+
+    :param X: list. Optimization variables.
+    :param constants: list. arguments needed to calculate the cost: [frame, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
+    :return: float. cost
+    """
+
+    frame, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log = constants
+
+    crossSectionProps = getCrossSectionProps(X, memberGroup, memberGroupType)
+    if log: print("Variable cross section properties: ", crossSectionProps)
+
+    j = 0
+    for i in range(len(frame.members_CrossSectionProps)):
+        if not frame.members[i][3]:
+            frame.members_CrossSectionProps[i] = crossSectionProps[j]
+            j += 1
+    if log: print("Cross Seciton Properites: ", frame.members_CrossSectionProps)
+
+    D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = frame.analysis_linear(getWeight, getReactions, getInternalForces, log)
+
+    return cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces)
+
+def chackInputs(members, memberGroup: list, memberGroupType: list):
+    """
+    Checks if the input lists for the optimization are valid.
+
+    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param memberGroup: list. list of indices of member groups for non set members to be assigned to.
+    :param memberGroupType: list. List of cross-section types for each member group to be assigned.
+    """
+
+    numberNotSetMembers = 0
+    for member in members:
+        if not member[3]:
+            numberNotSetMembers += 1
+    if len(memberGroup) != numberNotSetMembers:
+        raise Exception('Number of not set members is not equal to number of members assigned to a group.')
+    if max(memberGroup) + 1 != len(memberGroupType):
+        raise Exception('Number of member groups does not equal number of groups members are assigned to')
+
+def getNumVarables(memberGroupType: list):
+    """
+    Gets the number of variables to be in the optimization problem.
+
+    :param memberGroupType: list. List of cross-section types for each member group to be assigned.
+    :return:
+        numVariables: int, number of variables in the optimization.
+    """
+
+    numVarables = 0
+    for t in memberGroupType:
+        if t == "Angle":
+            numVarables += 3
+        elif t == "RectHSS":
+            numVarables += 3
+        elif t == "SquareHSS":
+            numVarables += 2
+        elif t == "TubeHSS":
+            numVarables += 2
+        else:
+            raise Exception('member groupe type is not a valid cross section type. Chose one of the following: Angle, RectHSS, SquareHSS, TubeHSS')
+    return numVarables
+
+def getBounds(lowerBound: list or float, upperBound: list or float, numVarables: int):
+    """
+    Sets up the scipy optimization bounds.
+
+    :param lowerBound: list or float. Lower bound on the optimization variables. if list must be length of number of variables.
+    :param upperBound: list or float. Upper bound on the optimization variables. if list must be length of number of variables.
+    :param numVarables: int, Number of variables to be in the optimization problem.
+    :return: Scipy optimization bounds.
+    """
+
+    if isinstance(lowerBound, float):
+        lowerBound = [lowerBound] * numVarables
+    if isinstance (upperBound, float):
+        upperBound = [upperBound] * numVarables
+    return opt.Bounds(lowerBound, upperBound)
+
+def getCrossSectionProps(X, memberGroups, memberGroupType):
+    """
+    Gets the cross-section properties of the cross-section being optimized from the optimization variables.
+
+    :param X: list: Optimization variables.
+    :param memberGroups: list. list of indices of member groups for non set members to be assigned to.
+    :param memberGroupType: list. List of cross-section types for each member group to be assigned.
+    :return: list: Cross-section properties for the optimization cross-sections. shape: (# cross-sections being optimized, 4
+    """
+
+    groupProperties = []
+    j = 0
+    for t in memberGroupType:
+        if t == "Angle":
+            A = Angle.getA(X[j], X[j+1], X[j+2])
+            Iy = Angle.getIy(X[j], X[j+1], X[j+2])
+            Iz = Angle.getIx(X[j], X[j+1], X[j+2])
+            J = Angle.getJ(X[j], X[j+1], X[j+2])
+            groupProperties.append([A, Iy, Iz, J])
+            j += 3
+        elif t == "RectHSS":
+            A = RectHSS.getA(X[j], X[j+1], X[j+2])
+            Iy = RectHSS.getIy(X[j], X[j+1], X[j+2])
+            Iz = RectHSS.getIx(X[j], X[j+1], X[j+2])
+            J = RectHSS.getJ(X[j], X[j+1], X[j+2])
+            groupProperties.append([A, Iy, Iz, J])
+            j += 3
+        elif t == "SquareHSS":
+            A = SquareHSS.getA(X[j], X[j+1])
+            I = SquareHSS.getI(X[j], X[j+1])
+            J = SquareHSS.getJ(X[j], X[j+1])
+            groupProperties.append([A, I, I, J])
+            j += 2
+        elif t == "TubeHSS":
+            A = TubeHSS.getA(X[j], X[j+1])
+            I = TubeHSS.getI(X[j], X[j+1])
+            J = TubeHSS.getJ(X[j], X[j+1])
+            groupProperties.append([A, I, I, J])
+            j += 2
+
+    memberProperties = []
+    for memberG in memberGroups:
+        memberProperties.append(groupProperties[memberG])
+
+    return memberProperties
