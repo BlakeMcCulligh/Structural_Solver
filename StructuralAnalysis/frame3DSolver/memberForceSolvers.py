@@ -1,9 +1,7 @@
 import math
 import numpy as np
 
-from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
-
-def segment_Member(model: Frame3D, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
+def segment_Member(members, members_L, members_CrossSectionProps, materials, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
     seg = []
     seg_InternalLoads = []
     seg_DistLoads = []
@@ -17,19 +15,19 @@ def segment_Member(model: Frame3D, pointLoads, distLoads, f_array, fer_array, d_
         seg_sub_delta = []
         for cINDEX in range(numC):
             # Create a list of discontinuity locations
-            disconts = [0, float(model.members_L[mINDEX])]
+            disconts = [0, float(members_L[mINDEX])]
             for load in pointLoads[mINDEX][cINDEX]:
                 disconts.append(load[0])
             for load in distLoads[mINDEX][cINDEX]:
                 disconts.append(load[0])  # Distributed load start locations
                 disconts.append(load[1])  # Distributed load end locations
             disconts = sorted(set(disconts)) # Sort the list and eliminate duplicate values
-            E = model.materials[model.members[mINDEX,2],0]
-            A = model.members_CrossSectionProps[mINDEX,0]
-            Iy = model.members_CrossSectionProps[mINDEX,1]
-            Iz = model.members_CrossSectionProps[mINDEX,2]
-            J = model.members_CrossSectionProps[mINDEX,3]
-            L = model.members_L[mINDEX]
+            E = materials[members[mINDEX,2],0]
+            A = members_CrossSectionProps[mINDEX,0]
+            Iy = members_CrossSectionProps[mINDEX,1]
+            Iz = members_CrossSectionProps[mINDEX,2]
+            J = members_CrossSectionProps[mINDEX,3]
+            L = members_L[mINDEX]
             seg_x1 = []
             seg_x2 = []
             seg_EIz = []

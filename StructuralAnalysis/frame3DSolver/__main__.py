@@ -57,7 +57,7 @@ class Frame3D:
 
     def addMember(self, i_node: int, j_node: int, material_index: int, setCrossSectionProps: bool, A: float, Iy: float, Iz: float, J: float):
         self.members.append([i_node, j_node, material_index, setCrossSectionProps])
-        self.members_CrossSectionProps.append([A, Iy, Iz, J])
+        self.members_CrossSectionProps.append([float(A), float(Iy), float(Iz), float(J)])
         self.members_SegmentsZ.append([])
         self.members_SegmentsY.append([])
         self.members_SegmentsX.append([])
@@ -242,12 +242,12 @@ class Frame3D:
             weight = None
             reactions = None
             internalForces = None
-            stresses = None
 
             if getWeight:
                 weight = hf.getWeight(self)
 
             if getReactions or getInternalForces:
+                #TODO needs fixing
                 D_members = hf.get_member_direction_deflections(self, DX, DY, DZ, RX, RY, RZ, numM, numC)
                 d = hf.getd(self.members_T, D_members, numM, numC)
                 f = hf.getf(k_local, d, ferCondensed, numM, numC)
@@ -260,10 +260,13 @@ class Frame3D:
                     abs_F, abs_M = hf.solveInternalForces(self, self.pointLoads, self.distLoads, f, fer_unc_ARRAY, d, numM, numC)
                     internalForces = [abs_F, abs_M]
 
-            return D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces, stresses
+            return D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces
         else:
             raise Exception('Pre analysis has not been run. Aborting analysis.')
 
+    def optimize(self, memberGroup: list, memberGroupType: list,  lowerBounds, upperBounds, getWeight = False, getReactions = False, getInternalForces = False, log=False):
+        pass
+        hf.optimize(self, memberGroup, memberGroupType,  lowerBounds, upperBounds, getWeight, getReactions,getInternalForces, log)
 
 if __name__ == '__main__':
     simple_beam = Frame3D()
@@ -274,8 +277,8 @@ if __name__ == '__main__':
 
     simple_beam.addMaterial(29000, 11200, 0.3, 2.836e-4)
 
-    simple_beam.addMember(0, 1, 0, True, 20, 100, 150, 250)
-    simple_beam.addMember(0, 2, 0, True, 20, 100, 150, 250)
+    simple_beam.addMember(0, 1, 0, False, 20, 100, 150, 250)
+    simple_beam.addMember(0, 2, 0, False, 20, 100, 150, 250)
 
     simple_beam.defSupport(0, True, True, True, True, False, False)
     simple_beam.defSupport(1, True, True, True, True, False, False)
@@ -290,7 +293,10 @@ if __name__ == '__main__':
     #simple_beam.addMemberDistLoad(0, 0, 168, wy1 = -0.01, wy2 = -0.01, case=0)
     # simple_beam.addMemberSelfWeight()
     # simple_beam.addMemberSelfWeight(case=1)
-    simple_beam.preAnalysis_linear(log=True)
+    simple_beam.preAnalysis_linear(log=False)
     #print(simple_beam.analysis_linear(getWeight=True,getInternalForces=True))
-    simple_beam.analysis_linear(log=True)
+    simple_beam.analysis_linear(log=False)
 
+    memberGroupType = ["Angle"]
+    memberGroup = [0, 0]
+    simple_beam.optimize(memberGroup, memberGroupType, [1,1,0.1],[10,10,0.9], getWeight = True, getReactions = False, getInternalForces = False, log = False)

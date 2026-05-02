@@ -1,9 +1,8 @@
-from mimetypes import knownfiles
-
 import numpy as np
 
 import StructuralAnalysis.frame3DSolver.fixedEndReactionsCalculaters as ferCalc
 import StructuralAnalysis.frame3DSolver.memberForceSolvers as MFSolvers
+import optimizeCrossSections as OptCS
 
 from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
 
@@ -145,8 +144,8 @@ def getGlobalFixedEndReactionVector(model: Frame3D, T: np.ndarray, D_unknown: np
     :param numM: int. Number of members.
     :param numC: int. Number of cases.
     :return:
-        FER1: ndarray. A array of the released DOFs fixed end reactions.
-        FER2: ndarray. A array of the unreased DOFs fixed end reactions.
+        FER1: ndarray. An array of the released DOFs fixed end reactions.
+        FER2: ndarray. An array of the unreased DOFs fixed end reactions.
     """
 
     FER_array = get_FER(ferCondensed_ARRAY, T)
@@ -421,13 +420,13 @@ def get_FixedEndReactions_Distload_ARRAY(model: Frame3D, distLoads):
         Reactions.append(reactionsMember)
     return Reactions
 
-def memberPart_fer(fer: np.ndarray, R_unrelesed: np.ndarray, R_relesed: np.ndarray, numM: int, numC: int):
+def memberPart_fer(fer: np.ndarray, R_unrelesed: np.ndarray or list, R_relesed: np.ndarray or list, numM: int, numC: int):
     """
     Partition fer into 2 sub matrices based on unreleased and released degree of freedom.
 
     :param fer: ndarray. local fixed end reaction vector for the members. shape: (# Members, # Casses, 12, 1)
-    :param R_unrelesed: ndarray. list: 3D list of unreleased DOFs for each member. shape: (# Members, varys: # unrelesed DOFs)
-    :param R_relesed: ndarray. list: 3D list of released DOFs for each member. shape: (# Members, varys: # released DOFs)
+    :param R_unrelesed: ndarray or list. list: 3D list of unreleased DOFs for each member. shape: (# Members, varys: # unrelesed DOFs)
+    :param R_relesed: ndarray or list. list: 3D list of released DOFs for each member. shape: (# Members, varys: # released DOFs)
     :param numM: int. Number of members.
     :param numC: int. Number of Casses.
     :return:
@@ -810,7 +809,7 @@ def getReactions(model: Frame3D, F_array, numC:int, numM:int, numN:int):
 
 #todo
 def solveInternalForces(model: Frame3D, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC):
-    seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta = MFSolvers.segment_Member(model, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
+    seg, seg_InternalLoads, seg_DistLoads, seg_thata, seg_delta = MFSolvers.segment_Member(model.members, model.members_L, model.members_CrossSectionProps, model.materials, pointLoads, distLoads, f_array, fer_array, d_array, numM, numC)
     abs_F = []
     abs_M = []
     for mINDEX in range(numM):
@@ -825,3 +824,9 @@ def solveInternalForces(model: Frame3D, pointLoads, distLoads, f_array, fer_arra
         abs_F.append([max(FX_max,abs(FX_min)), max(FY_max,abs(FY_min)), max(FZ_max,abs(FZ_min))])
         abs_M.append([max(MX_max, abs(MX_min)), max(MY_max, abs(MY_min)), max(MZ_max, abs(MZ_min))])
     return abs_F, abs_M
+
+
+def optimize(self, memberGroup: list, memberGroupType: list,  lowerBounds, upperBounds, getWeight, getReactions,getInternalForces, log):
+    oprtimizationResults = OptCS.globalOptimization(self, memberGroup, memberGroupType, lowerBounds, upperBounds, getWeight=getWeight,
+                             getReactions=getReactions, getInternalForces=getInternalForces, log=log)
+    print(oprtimizationResults)
