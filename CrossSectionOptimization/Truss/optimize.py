@@ -11,7 +11,7 @@ def assignLoadsAndSupports(Nodes, loadCasses, supports):
     """
     Makes the vectors for the forces and deflections to be used in sitffness matrices
 
-    :param Nodes: Array of nodes
+    :param Nodes: Array of printNodes
     :param loadCasses: list of load casses: a list of loads: [location cordanit, y cordanit, location loade, y load]
     :param supports: list of supports: [location cordanit, y cordanit, location support, y support]
     :return: vector of forces, vector of deflections
@@ -49,7 +49,7 @@ def solveOptimumProblem(Nodes, Members, f, dof):
     """
     Solves for the optimum areas for all the acitve members
 
-    :param Nodes: Array of nodes
+    :param Nodes: Array of printNodes
     :param Members: Array of active members: [node 1 i, node 2 i, length]
     :param f: list of forces actcting on each node for each load case
     :param dof: list of degress of freedom for each node
@@ -100,7 +100,7 @@ def calcBi(Nodes, Members, dof=None):
     """
     Calculates the equilibrium matrix. In reduced form if dof information is given
 
-    :param Nodes: Array of nodes
+    :param Nodes: Array of printNodes
     :param Members: Array of members ether active or inactive [node 1 i, node 2 i, length]
     :param dof: Array Degrese of freedom for each node
     :return: the equilibrium matrix
@@ -130,7 +130,7 @@ def plotTruss(Nodes, Members, a, threshold):
     """
     Plots the truss
 
-    :param Nodes: Array of nodes
+    :param Nodes: Array of printNodes
     :param Members: Array of members: [node 1 i, node 2 i, length]
     :param a: Area assigned to the member
     :param threshold: Required area of the member to be printed
@@ -141,7 +141,7 @@ def plotTruss(Nodes, Members, a, threshold):
     plt.axis('equal')
     plt.draw()
 
-    ThinknessMult = 0.08  # line thikness multiplyer
+    ThinknessMult = 0.08  # node thikness multiplyer
 
     # ploting members
     for i in [i for i in range(len(a)) if a[i] >= threshold]:
@@ -154,10 +154,10 @@ def OptimizeTrussCrossSections(Nodes, Members, loadCasses, supports):
     """
     Optimizes the cross-sections of a truss
 
-    :param Nodes: The locations of the nodes of the truss [[x1,y1],[x2,y2],...]
-    :param Members: The nodes that the members run between [[n11,n21,L1],[n12,n22,L2],...]
+    :param Nodes: The locations of the printNodes of the truss [[x1,y1],[x2,y2],...]
+    :param Members: The printNodes that the members run between [[n11,n21,L1],[n12,n22,L2],...]
     :param loadCasses: the load casses applyed to the truss [[[x1,y1,fx1,dy1],[x2,y2,fx2,dy2],...],...]
-    :param supports: the nodes the supports are at and what directions are supported [[x1,y1,sx1,sy1],[x2,y2,sx2,sy2],...]
+    :param supports: the printNodes the supports are at and what directions are supported [[x1,y1,sx1,sy1],[x2,y2,sx2,sy2],...]
     :return: vol: Volume, a: areas, q: forces, u: deformations
     """
     print(Nodes)
@@ -179,10 +179,10 @@ def TrussMain(filePath, nodes, members, loadCasses, supports):
     """
         Optimizes the cross-sections of a truss
 
-        :param nodes: The locations of the nodes of the truss [[x1,y1],[x2,y2],...]
-        :param members: The nodes that the members run between [[n11,n21],[n12,n22],...]
+        :param nodes: The locations of the printNodes of the truss [[x1,y1],[x2,y2],...]
+        :param members: The printNodes that the members run between [[n11,n21],[n12,n22],...]
         :param loadCasses: the load casses applyed to the truss [[[x1,y1,fx1,fy1],[x2,y2,fx2,fy2],...],...]
-        :param supports: the nodes the supports are at and what directions are supported [[x1,y1,sx1,sy1],[x2,y2,sx2,sy2],...]
+        :param supports: the printNodes the supports are at and what directions are supported [[x1,y1,sx1,sy1],[x2,y2,sx2,sy2],...]
     """
 
     Nodes = np.array(nodes)

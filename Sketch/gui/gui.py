@@ -86,7 +86,7 @@ class GUI(tk.Frame):
         self.notebook = None
         self.toolbar = []
         self.toolbarFrame = []
-        self.currentTool = tk.StringVar(value="line")
+        self.currentTool = tk.StringVar(value="node")
         self.createToolBars()
 
         # exitButton = tk.Button(root, text= "Complete Sketch", command = self.endSketch)
@@ -397,7 +397,7 @@ class GUI(tk.Frame):
 
     def remove_drawn_segment(self, segment: Segment):
         """
-        Removes drawn segment of line
+        Removes drawn segment of node
         :param segment: The segment to be removed
         """
 

@@ -75,9 +75,6 @@ class NewStructurePopUp:
             MainWindow(root_widget)
             root_widget.mainloop()
 
-
-
-
         print(self.Dimentions.get())
         print(self.Type.get())
         #todo

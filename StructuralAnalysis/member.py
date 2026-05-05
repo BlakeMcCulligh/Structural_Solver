@@ -10,7 +10,7 @@ class Member:
         :param crossSections: the list of crossSection objects in the structure.
         :param is3D: is the member a part of a 3D structure.
         :param isTruss: is the member a part of a truss.
-        :param nodeIndexs: the indexes of the nodes to be the start and end of the member.
+        :param nodeIndexs: the indexes of the printNodes to be the start and end of the member.
         :param crossSectionIndex: the i of the crossSection of the memebr.
         """
         self.isTruss = isTruss

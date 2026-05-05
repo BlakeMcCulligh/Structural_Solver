@@ -1,7 +1,7 @@
 from Sketch.geometric_primitives.point import Point
 from Sketch.geometric_primitives.vector import Vector
 
-# def line(N1, N2):
+# def node(N1, N2):
 #     A = (N1[1] - N2[1])
 #     B = (N2[0] - N1[0])
 #     C = (N1[0]*N2[1] - N2[0]*N1[1])

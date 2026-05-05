@@ -9,7 +9,8 @@ class MainWindow(tk.Frame):
         self.sizeW, self.sizeH = 1000, 800
         self.root = root
         self.root.geometry(str(self.sizeW) + "x" + str(self.sizeH))
-        self.graph = tk.Canvas(root, bg="black")
+
+        self.graph = tk.Canvas(root, bg="white")
         self.graph.pack(fill="both", expand=True)
         self.camera = np.array([0.0,0.0,0.0])
         self.up = np.array([0.0,1.0,0.0])
@@ -217,7 +218,7 @@ class MainWindow(tk.Frame):
 
 def triangalizeSurface(window, surface, flipNormal):
 
-    nodes = window.nodes[surface]
+    nodes = window.printNodes[surface]
 
     cloud = pv.PolyData(nodes)
     surf = cloud.delaunay_2d()
@@ -273,12 +274,12 @@ def illumination(window, solidTriNormals, numSurfTri):
     l_lightDirection = np.linalg.norm(window.light_direction)
     window.light_direction = window.light_direction / l_lightDirection
     result = np.array([np.dot(a, window.light_direction) for a in solidTriNormals])
-    triColor = result * 255
+    triColor = result * 150 + 50
     for i in range(len(triColor)):
         if triColor[i] < 50: triColor[i] = 50
-        elif triColor[i] > 255: triColor[i] = 255
+        elif triColor[i] > 200: triColor[i] = 200
 
-    triColor = triColor.tolist() + [255] * numSurfTri
+    triColor = triColor.tolist() + [200] * numSurfTri
     return triColor
 
 def transformToLocal(window, node, line, tri):
@@ -526,4 +527,4 @@ def main():
     window.updateCanves()
     root_widget.mainloop()
 
-main()
+#main()

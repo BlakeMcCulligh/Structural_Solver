@@ -11,10 +11,15 @@ class data:
         self.memberPointLoad = [[],[],[],[],[],[],[],[],[]]
         self.memberDistLoad = [[],[],[],[],[],[],[],[],[],[]]
 
-    def addnodes(self, nodes):
+    def addnodes(self, window, nodes):
         self.nodes[0] = self.nodes[0] + nodes[0]
         self.nodes[1] = self.nodes[1] + nodes[1]
         self.nodes[2] = self.nodes[2] + nodes[2]
+
+        numRow = len(window.nodeTable.get_children())
+        for i in range(len(nodes[0])):
+            window.addTableRow(window.nodeTable, (str(numRow + i), nodes[0][i], nodes[1][i], nodes[2][i]))
+
 
     def addmaterials(self, material):
         for i in range(5):

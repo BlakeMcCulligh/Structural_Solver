@@ -12,11 +12,11 @@ from OpeningAndSaving.Saving import saveTrussTopologyOptimizationExcel
 
 def createNodeGrid(zone, nodeSpasing):
     """
-    Crates the grid of nodes to be used in the optimization
+    Crates the grid of printNodes to be used in the optimization
 
     :param zone: A shapely polygon that the truss must be within
-    :param nodeSpasing: How far apart the nodes should be in the location and y directions
-    :return: array of nodes, number of columbes of nodes, number of rows of nodes
+    :param nodeSpasing: How far apart the printNodes should be in the location and y directions
+    :return: array of printNodes, number of columbes of printNodes, number of rows of printNodes
     """
 
     minX, minY, maxX, maxY = zone.bounds
@@ -27,7 +27,7 @@ def createNodeGrid(zone, nodeSpasing):
 
     pts = [Point(xv.flat[i], yv.flat[i]) for i in range(xv.size)]
 
-    # only add nodes that are inside the zone
+    # only add printNodes that are inside the zone
     Nodes = np.array([[pt.x, pt.y] for pt in pts if zone.intersects(pt)])
 
     return Nodes, numColumbs, numRows
@@ -36,7 +36,7 @@ def createInitialStructure(Nodes, zone):
     """
     Creates the list of members and findes what ones should be initaly active
 
-    :param Nodes: Array of nodes
+    :param Nodes: Array of printNodes
     :param zone: A shapely polygon that the truss must be within
     :return: Array of members: [node 1 i, node 2 i, length]
     """
@@ -84,12 +84,12 @@ def createInitialStructure(Nodes, zone):
 
 def is_on_line_segment(points, p1, p2, tolerance=1e-6):
     """
-    Checks which points from a list lie on the line segment defined by w1 and p2.
+    Checks which points from a list lie on the node segment defined by w1 and p2.
 
     Args:
         points (np.ndarray): An array of shape (N, 2) or (N, 3) for N points.
-        p1 (np.ndarray): The start point of the line segment.
-        p2 (np.ndarray): The end point of the line segment.
+        p1 (np.ndarray): The start point of the node segment.
+        p2 (np.ndarray): The end point of the node segment.
         tolerance (float): A tolerance for floating-point comparisons.
 
     Returns:
@@ -131,19 +131,19 @@ def is_on_line_segment(points, p1, p2, tolerance=1e-6):
 
 def sort_nodes_along_line(nodes, start_point, end_point):
     """
-    Sorts a list of nodes based on their position along the line
+    Sorts a list of printNodes based on their position along the node
     defined by start_point and end_point.
 
     Args:
         nodes (list of tuples/arrays): The points to sort (e.g., [(x1, y1), ...]).
-        start_point (tuple/array): The starting point of the reference line.
-        end_point (tuple/array): The ending point of the reference line.
+        start_point (tuple/array): The starting point of the reference node.
+        end_point (tuple/array): The ending point of the reference node.
 
     Returns:
-        list of tuples/arrays: The sorted nodes.
+        list of tuples/arrays: The sorted printNodes.
     """
 
-    # 1. Calculate the line's direction vector (V)
+    # 1. Calculate the node's direction vector (V)
     # V points from start to end
     direction_vector = end_point - start_point
 
@@ -159,11 +159,11 @@ def sort_nodes_along_line(nodes, start_point, end_point):
     # This gives us a single scalar value for each node, which we can sort by
     projections = np.dot(vectors_to_nodes, unit_direction)
 
-    # 4. Sort the nodes based on these projection values
+    # 4. Sort the printNodes based on these projection values
     # np.argsort returns the indices that would sort the array
     sorted_indices = np.argsort(projections)
 
-    # Use the sorted indices to reorder the original nodes list
+    # Use the sorted indices to reorder the original printNodes list
     sorted_nodes = nodes[sorted_indices]
 
     return sorted_nodes

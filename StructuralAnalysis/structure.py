@@ -418,10 +418,10 @@ testTruss2D()
 # #S.set3D()
 # S.setTruss()
 #
-# S.addNode([0,0,0])
-# S.addNode([1,0,0])
-# S.addNode([1,1,0])
-# S.addNode([0,1,0])
+# S.addPrintNode([0,0,0])
+# S.addPrintNode([1,0,0])
+# S.addPrintNode([1,1,0])
+# S.addPrintNode([0,1,0])
 #
 # S.addCrossSection(True, E=1, G=1, memberType="SquareHSS", minBounds=[0.1, 0.01], maxBounds=[10, 0.09])
 #

@@ -74,7 +74,7 @@ def point_on_arc_strict(p, arc):
 
 
 def line_arc_intersect(line, arc):
-    # Shift line so arc.Center becomes (0,0)
+    # Shift node so arc.Center becomes (0,0)
     x1 = line.p1.x - arc.Center.x
     y1 = line.p1.y - arc.Center.y
     x2 = line.p2.x - arc.Center.x
@@ -127,7 +127,7 @@ def arc_arc_intersect(a1, a2):
     if d > r1 + r2 or d < abs(r1 - r2) or d == 0:
         return False
 
-    # Distance from Center1 to intersection line
+    # Distance from Center1 to intersection node
     a = (r1*r1 - r2*r2 + d*d) / (2*d)
     h = math.sqrt(max(r1*r1 - a*a, 0))
 

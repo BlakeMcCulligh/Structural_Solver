@@ -69,7 +69,7 @@ def convertSupportsToDF(supports):
     return Supports_df
 
 def convertLoadCassesToDF(loadCasses):
-    # TODO only works if all load cases have the same number of nodes
+    # TODO only works if all load cases have the same number of printNodes
     numLoadCases = len(loadCasses)
     LoadCases_df = {"Number Load Casses": [numLoadCases] * len(loadCasses[0])}
     print("loadCasses:", loadCasses)

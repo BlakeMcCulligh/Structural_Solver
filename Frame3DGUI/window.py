@@ -1,10 +1,16 @@
 import tkinter as tk
+from tkinter import ttk
+from copy import copy
 from tkinter import filedialog
 
 import pandas as pd
 
 from Frame3DGUI.inputData import data
 from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
+
+import numpy as np
+
+import ThreeDDrawing.ThreeDEngine as TDE
 
 class MainWindow(tk.Frame):
     def __init__(self, root):
@@ -16,14 +22,363 @@ class MainWindow(tk.Frame):
 
         self.centerWindow()
 
-        exitButton = tk.Button(root, text="Complete Sketch", command=self.closeProgram)
-
         self.data = data()
 
         self.Frame = None
         self.Results = None
+        self.Optimization_Results = None
 
-        #self.canvas.create_window(100, 100, window=exitButton)
+        self.graph = tk.Canvas(root, bg="white")
+        self.graph.pack(fill="both", expand=True)
+        self.camera = np.array([0.0, 0.0, 0.0])
+        self.up = np.array([0.0, 1.0, 0.0])
+        self.lookDir = np.array([0.0, 0.0, 1.0])
+        self.cam_Y_rot = 0
+        self.cam_X_rot = 0
+        self.target = np.array([0.0, 0.0, 1.0])
+        self.FOV = 90
+        self.Z_far, self.Z_near = 1000, 0.1
+        self.light_direction = np.array([0, 0, -1])
+
+        self.printNodes: np.ndarray = np.empty((0, 3))
+        self.printLines: np.ndarray = np.empty((0, 2, 3))
+        self.surfaceTri: np.ndarray = np.empty((0, 3, 3))
+        self.solidTri: np.ndarray = np.empty((0, 3, 3))
+
+        self.root.bind("<MouseWheel>", self.zoom)
+
+        self.scroolCordsLast = []
+        self.shiftStateLast = False
+        self.root.bind("<Button-2>", self.scroolDown)
+        self.root.bind("<B2-Motion>", self.scroolUpdate)
+        self.root.bind("<ButtonRelease-2>", self.scroolUp)
+
+        self.tableWindow = None
+        self.tableTabs = None
+        self.tables = []
+        self.Boxes = []
+        self.Buttons = []
+
+        self.nodeTab = None
+        self.nodeTable = None
+        self.nodeBoxes = []
+        self.nodeButtons = []
+
+        self.matTab = None
+        self.matTable = None
+        self.matBoxes = []
+        self.matButtons = []
+
+        self.memberTab = None
+        self.memberTable = None
+        self.memberBoxes = []
+        self.memberButtons = []
+
+        self.supportTab = None
+        self.supportTable = None
+        self.supportBoxes = []
+        self.supportButtons = []
+
+        self.releaseTab = None
+        self.releaseTable = None
+        self.releaseBoxes = []
+        self.releaseButtons = []
+
+        self.nodeLoadTab = None
+        self.nodeLoadTable = None
+        self.nodeLoadBoxes = []
+        self.nodeLoadButtons = []
+
+        self.memberPointLoadTab = None
+        self.memberPointLoadTable = None
+        self.memberPointLoadBoxes = []
+        self.memberPointLoadButtons = []
+
+        self.memberDistLoadTab = None
+        self.memberDistLoadTable = None
+        self.memberDistLoadBoxes = []
+        self.memberDistLoadButtons = []
+
+        self.createTableWindow()
+
+    def createTableWindow(self):
+        self.tableWindow = tk.Toplevel(self.root)
+        self.tableWindow.title("Sheets")
+        self.tableWindow.geometry("800x700")
+        self.tableWindow.resizable(False, True)
+
+        self.tableTabs = ttk.Notebook(self.tableWindow)
+        self.tableTabs.pack(expand=True, fill="both")
+
+        self.nodeTab = ttk.Frame(self.tableTabs)
+
+        # Nodes
+        self.tableTabs.add(self.nodeTab, text="Nodes")
+        self.tables.append(self.createTable(self.nodeTab, ("Index", "X", "Y", "Z")))
+        self.Boxes.append([])
+        self.Boxes[0].append(tk.Entry(self.nodeTab))
+        self.Boxes[0].append(tk.Entry(self.nodeTab))
+        self.Boxes[0].append(tk.Entry(self.nodeTab))
+        self.Boxes[0][0].place(x=350, y=300) # X
+        self.Boxes[0][1].place(x=350, y=350) # Y
+        self.Boxes[0][2].place(x=350, y=400) # Z
+        self.Buttons.append([])
+        self.Buttons[0].append(tk.Button(self.nodeTab, text="Edit", command=self.editValues))
+        self.Buttons[0].append(tk.Button(self.nodeTab, text="Add", command=self.addValues))
+        self.Buttons[0][0].place(x=550, y=300)
+        self.Buttons[0][1].place(x=550, y=350)
+        # todo add delete button all tabs
+
+        # Materials
+        self.matTab = ttk.Frame(self.tableTabs)
+        self.tableTabs.add(self.matTab, text="Materials")
+        self.tables.append(self.createTable(self.matTab, ("Index", "E", "G", "nu", "rho", "fy")))
+        self.Boxes.append([])
+        self.Boxes[1].append(tk.Entry(self.matTab))
+        self.Boxes[1].append(tk.Entry(self.matTab))
+        self.Boxes[1].append(tk.Entry(self.matTab))
+        self.Boxes[1].append(tk.Entry(self.matTab))
+        self.Boxes[1].append(tk.Entry(self.matTab))
+        self.Boxes[1][0].place(x=150, y=300)
+        self.Boxes[1][1].place(x=350, y=300)
+        self.Boxes[1][2].place(x=150, y=350)
+        self.Boxes[1][3].place(x=350, y=350)
+        self.Boxes[1][4].place(x=150, y=400)
+        self.Buttons.append([])
+        self.Buttons[1].append(tk.Button(self.matTab, text="Edit", command=self.editValues))
+        self.Buttons[1].append(tk.Button(self.matTab, text="Add", command=self.addValues))
+        self.Buttons[1][0].place(x=550, y=300)
+        self.Buttons[1][1].place(x=550, y=350)
+
+        # Members
+        self.memberTab = ttk.Frame(self.tableTabs)
+        self.tableTabs.add(self.memberTab, text="Members")
+        self.tables.append(self.createTable(self.memberTab, ("Index", "i Node", "j Node", "Material Id", "Set C.S.", "A", "Iy", "Iz", "J")))
+        self.Boxes.append([])
+        for i in range(8): self.Boxes[2].append(tk.Entry(self.memberTab))
+        self.Boxes[2][0].place(x=150, y=300)
+        self.Boxes[2][1].place(x=350, y=300)
+        self.Boxes[2][2].place(x=150, y=350)
+        self.Boxes[2][3].place(x=350, y=350)
+        self.Boxes[2][4].place(x=150, y=400)
+        self.Boxes[2][5].place(x=350, y=400)
+        self.Boxes[2][6].place(x=150, y=450)
+        self.Boxes[2][7].place(x=350, y=450)
+        self.Buttons.append([])
+        self.Buttons[2].append(tk.Button(self.memberTab, text="Edit", command=self.editValues))
+        self.Buttons[2].append(tk.Button(self.memberTab, text="Add", command=self.addValues))
+        self.Buttons[2][0].place(x=550, y=300)
+        self.Buttons[2][1].place(x=550, y=350)
+
+        # Supports
+        self.supportTab = ttk.Frame(self.tableTabs)
+        self.tableTabs.add(self.supportTab, text="Supports")
+        self.tables.append(self.createTable(self.supportTab,("Index", "i Node", "D X", "D Y", "D Z.", "R X", "R Y", "R Z")))
+        self.Boxes.append([])
+        for i in range(7): self.Boxes[3].append(tk.Entry(self.supportTab))
+        self.Boxes[3][0].place(x=150, y=300)
+        self.Boxes[3][1].place(x=350, y=300)
+        self.Boxes[3][2].place(x=150, y=350)
+        self.Boxes[3][3].place(x=350, y=350)
+        self.Boxes[3][4].place(x=150, y=400)
+        self.Boxes[3][5].place(x=350, y=400)
+        self.Boxes[3][6].place(x=150, y=450)
+        self.Buttons.append([])
+        self.Buttons[3].append(tk.Button(self.supportTab, text="Edit", command=self.editValues))
+        self.Buttons[3].append(tk.Button(self.supportTab, text="Add", command=self.addValues))
+        self.Buttons[3][0].place(x=550, y=300)
+        self.Buttons[3][1].place(x=550, y=350)
+
+        # Releases
+        self.releaseTab = ttk.Frame(self.tableTabs)
+        self.tableTabs.add(self.releaseTab, text="Releases")
+        self.tables.append(self.createTable(self.releaseTab,("Index", "i Member", "i DX", "i DY", "i DZ", "i RX", "i RY", "i RZ", "j DX", "j DY", "j DZ", "j RX", "j RY", "j RZ")))
+        self.Boxes.append([])
+        for i in range(13): self.Boxes[4].append(tk.Entry(self.releaseTab))
+        self.Boxes[4][0].place(x=150, y=300)
+        self.Boxes[4][1].place(x=350, y=300)
+        self.Boxes[4][2].place(x=150, y=350)
+        self.Boxes[4][3].place(x=350, y=350)
+        self.Boxes[4][4].place(x=150, y=400)
+        self.Boxes[4][5].place(x=350, y=400)
+        self.Boxes[4][6].place(x=150, y=450)
+        self.Boxes[4][7].place(x=350, y=450)
+        self.Boxes[4][8].place(x=150, y=500)
+        self.Boxes[4][9].place(x=350, y=500)
+        self.Boxes[4][10].place(x=150, y=550)
+        self.Boxes[4][11].place(x=350, y=550)
+        self.Boxes[4][12].place(x=150, y=600)
+        self.Buttons.append([])
+        self.Buttons[4].append(tk.Button(self.releaseTab, text="Edit", command=self.editValues))
+        self.Buttons[4].append(tk.Button(self.releaseTab, text="Add", command=self.addValues))
+        self.Buttons[4][0].place(x=550, y=300)
+        self.Buttons[4][1].place(x=550, y=350)
+
+        # Nodal Loads
+        self.nodeLoadTab = ttk.Frame(self.tableTabs)
+        self.tableTabs.add(self.nodeLoadTab, text="Node Loads")
+        self.tables.append(self.createTable(self.nodeLoadTab,("Index", "i Node", "P X", "P Y", "P Z.", "M X", "M Y", "M Z","Casee")))
+        self.Boxes.append([])
+        for i in range(8): self.Boxes[5].append(tk.Entry(self.nodeLoadTab))
+        self.Boxes[5][0].place(x=150, y=300)
+        self.Boxes[5][1].place(x=350, y=300)
+        self.Boxes[5][2].place(x=150, y=350)
+        self.Boxes[5][3].place(x=350, y=350)
+        self.Boxes[5][4].place(x=150, y=400)
+        self.Boxes[5][5].place(x=350, y=400)
+        self.Boxes[5][6].place(x=150, y=450)
+        self.Boxes[5][7].place(x=350, y=450)
+        self.Buttons.append([])
+        self.Buttons[5].append(tk.Button(self.nodeLoadTab, text="Edit", command=self.editValues))
+        self.Buttons[5].append(tk.Button(self.nodeLoadTab, text="Add", command=self.addValues))
+        self.Buttons[5][0].place(x=550, y=300)
+        self.Buttons[5][1].place(x=550, y=350)
+
+        # Member Point Loads
+        self.memberPointLoadTab = ttk.Frame(self.tableTabs)
+        self.tableTabs.add(self.memberPointLoadTab, text="Member Point Loads")
+        self.tables.append(self.createTable(self.memberPointLoadTab, ("Index", "i Member", "x", "P X", "P Y", "P Z.", "M X", "M Y", "M Z", "Casee")))
+        self.Boxes.append([])
+        for i in range(9): self.Boxes[6].append(tk.Entry(self.memberPointLoadTab))
+        self.Boxes[6][0].place(x=150, y=300)
+        self.Boxes[6][1].place(x=350, y=300)
+        self.Boxes[6][2].place(x=150, y=350)
+        self.Boxes[6][3].place(x=350, y=350)
+        self.Boxes[6][4].place(x=150, y=400)
+        self.Boxes[6][5].place(x=350, y=400)
+        self.Boxes[6][6].place(x=150, y=450)
+        self.Boxes[6][7].place(x=350, y=450)
+        self.Boxes[6][8].place(x=150, y=500)
+        self.Buttons.append([])
+        self.Buttons[6].append(tk.Button(self.memberPointLoadTab, text="Edit", command=self.editValues))
+        self.Buttons[6].append(tk.Button(self.memberPointLoadTab, text="Add", command=self.addValues))
+        self.Buttons[6][0].place(x=550, y=300)
+        self.Buttons[6][1].place(x=550, y=350)
+
+        # Member Distributed Loads
+        self.memberDistLoadTab = ttk.Frame(self.tableTabs)
+        self.tableTabs.add(self.memberDistLoadTab, text="Member Distributed Loads")
+        self.tables.append(self.createTable(self.memberDistLoadTab,("Index", "i Member", "x 1", "x 2", "wx 1", "wx 2", "wy 1", "wy 2", "wz 1", "wz 2", "Casee")))
+        self.Boxes.append([])
+        for i in range(10): self.Boxes[7].append(tk.Entry(self.memberDistLoadTab))
+        self.Boxes[7][0].place(x=150, y=300)
+        self.Boxes[7][1].place(x=350, y=300)
+        self.Boxes[7][2].place(x=150, y=350)
+        self.Boxes[7][3].place(x=350, y=350)
+        self.Boxes[7][4].place(x=150, y=400)
+        self.Boxes[7][5].place(x=350, y=400)
+        self.Boxes[7][6].place(x=150, y=450)
+        self.Boxes[7][7].place(x=350, y=450)
+        self.Boxes[7][8].place(x=150, y=500)
+        self.Boxes[7][9].place(x=350, y=500)
+        self.Buttons.append([])
+        self.Buttons[7].append(tk.Button(self.memberDistLoadTab, text="Edit", command=self.editValues))
+        self.Buttons[7].append(tk.Button(self.memberDistLoadTab, text="Add", command=self.addValues))
+        self.Buttons[7][0].place(x=550, y=300)
+        self.Buttons[7][1].place(x=550, y=350)
+
+    def createTable(self, tab, Headings):
+        table = ttk.Treeview(tab, columns=Headings, show='headings', height=10)
+
+        scrollbar = ttk.Scrollbar(tab, orient="vertical", command=table.yview)
+        scrollbar.pack(side="right", fill="y")
+
+        table.configure(yscrollcommand=scrollbar.set)
+
+        for i in range(len(Headings)):
+            table.heading(Headings[i], text=Headings[i])
+            table.column(Headings[i], width=50)
+
+        table.bind("<<TreeviewSelect>>", self.getSelectedRow)
+
+        table.pack()
+
+        return table
+
+    def getSelectedRow(self, event):
+        numCol = [3,5,8,7,13,8,9,10]
+        t_id = self.tableTabs.index("current")
+
+        row_id = self.tables[t_id].focus()
+        row_info = self.tables[t_id].item(row_id).get('values')
+        for i in range(numCol[t_id]):
+            self.Boxes[t_id][i].delete(0, 'end')
+            self.Boxes[t_id][i].insert(0, row_info[i+1])
+
+    def editValues(self):
+        numCol = [3, 5, 8, 7, 13, 8, 9, 10]
+        t_id = self.tableTabs.index("current")
+
+        row_id = self.tables[t_id].focus()
+        col_ids = self.tables[t_id]["columns"]
+        row_info = self.tables[t_id].item(row_id).get('values')
+        newVal = [row_info[0]]
+        for i in range(numCol[t_id]): newVal.append(self.Boxes[t_id][i].get()) # geting values from text boxes
+        for i in range(numCol[t_id]+1): self.tables[t_id].set(row_id, col_ids[i], newVal[i]) # editing table
+
+        # Updating stored data and 3D rendering
+        if t_id == 0:
+            for i in range(numCol[t_id]): self.data.nodes[i][newVal[0]] = newVal[i+1]
+            node = np.array(newVal)
+            self.printNodes[newVal[0]] = node[[1,2,3]]
+            self.updateCanves()
+        elif t_id == 1:
+            for i in range(numCol[t_id]): self.data.materials[i][newVal[0]] = newVal[i + 1]
+        elif t_id == 2:
+            for i in range(numCol[t_id]): self.data.members[i][newVal[0]] = newVal[i + 1]
+            line = np.array(newVal)
+            self.printNodes[newVal[0]] = line[[1, 2]]
+            self.updateCanves()
+        elif t_id == 3:
+            for i in range(numCol[t_id]): self.data.supports[i][newVal[0]] = newVal[i + 1]
+        elif t_id == 4:
+            for i in range(numCol[t_id]): self.data.releases[i][newVal[0]] = newVal[i + 1]
+        elif t_id == 5:
+            for i in range(numCol[t_id]): self.data.nodeLoad[i][newVal[0]] = newVal[i + 1]
+        elif t_id == 6:
+            for i in range(numCol[t_id]): self.data.memberPointLoad[i][newVal[0]] = newVal[i + 1]
+        elif t_id == 7:
+            for i in range(numCol[t_id]): self.data.memberDistLoad[i][newVal[0]] = newVal[i + 1]
+
+        self.Frame = None
+        self.Results = None
+        self.Optimization_Results = None
+
+    def addValues(self):
+        numCol = [3, 5, 8, 7, 13, 8, 9, 10]
+        t_id = self.tableTabs.index("current")
+        numRow = len(self.tables[t_id].get_children())
+        newVal = [numRow]
+        for i in range(numCol[t_id]): newVal.append(self.Boxes[t_id][i].get()) # geting values from text boxes
+        self.tables[t_id].insert('', 'end', values=newVal) # adding to table
+
+        # Updating stored data and 3D rendering
+        if t_id == 0:
+            for i in range(numCol[t_id]): self.data.nodes[i].append(newVal[i+1])
+            node = []
+            for i in range(3):node.append(float(newVal[i+1]))
+            node = np.array(node)
+            self.addPrintNode(node)
+        elif t_id == 1:
+            for i in range(numCol[t_id]): self.data.materials[i].append(newVal[i+1])
+        elif t_id == 2:
+            for i in range(numCol[t_id]): self.data.members[i].append(newVal[i+1])
+            line = np.array(newVal)
+            self.addPrintLine(line[[1,2]])
+        elif t_id == 3:
+            for i in range(numCol[t_id]): self.data.supports[i].append(newVal[i+1])
+        elif t_id == 4:
+            for i in range(numCol[t_id]): self.data.releases[i].append(newVal[i+1])
+        elif t_id == 5:
+            for i in range(numCol[t_id]): self.data.nodeLoad[i].append(newVal[i+1])
+        elif t_id == 6:
+            for i in range(numCol[t_id]): self.data.memberPointLoad[i].append(newVal[i+1])
+        elif t_id == 7:
+            for i in range(numCol[t_id]): self.data.memberDistLoad[i].append(newVal[i+1])
+
+        self.Frame = None
+        self.Results = None
+        self.Optimization_Results = None
 
     def centerWindow(self):
         width = 1000
@@ -67,10 +422,17 @@ class MainWindow(tk.Frame):
         filePath = select_file_gui(file_Types)
         Nodes_df = pd.read_excel(filePath)
         Nodes = [Nodes_df["X"].tolist(), Nodes_df["Y"].tolist(), Nodes_df["Z"].tolist()]
-        self.data.addnodes(Nodes)
+        self.data.addnodes(self, Nodes)
+
+
+        nodes = np.array(Nodes)
+        # adding to 3D display
+        for i in range(len(Nodes[0])):
+            self.addPrintNode(nodes[:,i])
 
         self.Frame = None
         self.Results = None
+        self.Optimization_Results = None
 
     def InportMaterials(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -81,6 +443,7 @@ class MainWindow(tk.Frame):
 
         self.Frame = None
         self.Results = None
+        self.Optimization_Results = None
 
     def InportMembers(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -91,8 +454,15 @@ class MainWindow(tk.Frame):
                    M_df["Iz"].tolist(), M_df["J"].tolist()]
         self.data.addmembers(Members)
 
+        members = np.array(Members)
+        # adding to 3D display
+        for i in range(len(Members[0])):
+            self.addPrintLine(members[[0,1],i])
+
+
         self.Frame = None
         self.Results = None
+        self.Optimization_Results = None
 
     def ImportSupports(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -104,6 +474,7 @@ class MainWindow(tk.Frame):
 
         self.Frame = None
         self.Results = None
+        self.Optimization_Results = None
 
     def ImportReleases(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -117,6 +488,7 @@ class MainWindow(tk.Frame):
 
         self.Frame = None
         self.Results = None
+        self.Optimization_Results = None
 
     def ImportNodeLoads(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -128,6 +500,7 @@ class MainWindow(tk.Frame):
 
         self.Frame = None
         self.Results = None
+        self.Optimization_Results = None
 
     def ImportMemberPointLoads(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -139,6 +512,7 @@ class MainWindow(tk.Frame):
 
         self.Frame = None
         self.Results = None
+        self.Optimization_Results = None
 
     def ImportMemberDistLoads(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -151,7 +525,7 @@ class MainWindow(tk.Frame):
 
         self.Frame = None
         self.Results = None
-
+        self.Optimization_Results = None
 
     def LinearAnalysis(self):
         Frame = addDataToFrame(self.data)
@@ -159,7 +533,194 @@ class MainWindow(tk.Frame):
         Frame.preAnalysis_linear()
         results = Frame.analysis_linear(getWeight = True, getReactions = True, getInternalForces = True)
         self.Frame = Frame
-        self.results = results
+        self.Results = results
+
+    def GlobalOptimization(self):
+        Frame = addDataToFrame(self.data)
+
+        Frame.preAnalysis_linear()
+        results = Frame.analysis_linear(getWeight = True, getReactions = True, getInternalForces = True)
+        self.Frame = Frame
+        self.Optimization_Results = results
+
+    def addPrintNode(self, node):
+        self.printNodes = np.vstack((self.printNodes, node))
+        self.updateCanves()
+
+    def addPrintLine(self, line):
+        self.printLines = np.vstack((self.printLines, self.printNodes[line]))
+        self.updateCanves()
+
+    def addPrintSurface(self, surface):
+        tri = TDE.triangalizeSurface(self, surface, False)
+        for i in range(len(tri)):
+            self.surfaceTri = np.vstack((self.surfaceTri, tri[i]))
+        self.updateCanves()
+
+    def addPrintSolid(self, solid, flipNormal: list | None = None):
+        numSurfaces = len(solid)
+        for i in range(numSurfaces):
+            if isinstance(flipNormal, list): # needs triangalized
+                tri = TDE.triangalizeSurface(self, solid[i], flipNormal[i])
+                for j in range(len(tri)):
+                    self.solidTri = np.vstack((self.solidTri, [tri[j]]))
+            else: # already triangalized
+                self.solidTri = np.vstack((self.solidTri, [solid[i]]))
+
+    def scroolDown(self, event):
+        if bool(event.state & 0x0001):
+            self.shiftStateLast = True
+            self.rotStart(event)
+        else:
+            self.shiftStateLast = False
+            self.panStart(event)
+
+    def scroolUpdate(self, event):
+        if bool(event.state & 0x0001):
+            if not self.shiftStateLast:
+                self.shiftStateLast = True
+                self.panEnd(event)
+                self.rotStart(event)
+            else: self.rotUpdate(event)
+        else:
+            if self.shiftStateLast:
+                self.shiftStateLast = False
+                self.rotEnd(event)
+                self.panStart(event)
+            else: self.panUpdate(event)
+
+    def scroolUp(self, event):
+        if bool(event.state & 0x0001):
+            if not self.shiftStateLast: self.panEnd(event)
+            else: self.rotEnd(event)
+        else:
+            if self.shiftStateLast: self.rotEnd(event)
+            else: self.panEnd(event)
+
+    def zoom(self, event):
+        if event.delta > 0:
+            self.camera = self.camera + self.lookDir * 0.1
+        else:
+            self.camera = self.camera - self.lookDir * 0.1
+        self.updateCanves()
+
+    def panStart(self, event):
+        self.scroolCordsLast = [event.x, event.y]
+
+    def panUpdate(self, event):
+        cords = [event.x, event.y]
+        self.panMove(cords)
+
+    def panEnd(self, event):
+        cords = [event.x, event.y]
+        self.panMove(cords)
+
+    def panMove(self, cords):
+        changeCords = [cords[0] - self.scroolCordsLast[0], cords[1] - self.scroolCordsLast[1]]
+        self.camera = self.camera - self.up * changeCords[1] * 0.01
+        self.camera = self.camera + np.cross(self.lookDir, self.up) * changeCords[0] * 0.01
+        self.updateCanves()
+        self.scroolCordsLast = cords
+
+    def rotStart(self, event):
+        self.scroolCordsLast = [event.x, event.y]
+
+    def rotUpdate(self, event):
+        cords = [event.x, event.y]
+        self.rotMove(cords)
+
+    def rotEnd(self, event):
+        cords = [event.x, event.y]
+        self.rotMove(cords)
+
+    def rotMove(self, cords):
+        changeCords = [cords[0] - self.scroolCordsLast[0], cords[1] - self.scroolCordsLast[1]]
+        self.cam_Y_rot = self.cam_Y_rot + changeCords[0] * 0.005
+        self.cam_X_rot = self.cam_X_rot + changeCords[1] * 0.005
+        self.updateCanves()
+        self.scroolCordsLast = cords
+
+    def updateCanves(self):
+        node = copy(self.printNodes)
+        line = copy(self.printLines)
+        surfTri = copy(self.surfaceTri)
+        solidTri = copy(self.solidTri)
+
+        self.updateCamData()
+        solidTriNormals = TDE.getNormals(solidTri)
+        solidTri, solidTriNormals = TDE.removeTriFaceingAway(self, solidTri, solidTriNormals)
+        triColor = TDE.illumination(self, solidTriNormals, len(surfTri))
+
+        for i in range(len(surfTri)):
+            solidTri = np.append(solidTri, surfTri[i], axis=0)
+        tri = solidTri
+
+        node, line, tri = TDE.transformToLocal(self, node, line, tri)
+
+        node, line, tri, triColor = TDE.clipClose(node, line, tri, triColor)
+
+        self.graph.delete("all")
+        if len(node) > 0 or len(line) > 0 or len(tri) > 0:
+            w = self.graph.winfo_width()
+            h = self.graph.winfo_height()
+            node, line, tri = TDE.project(self, node, line, tri)
+
+            if len(tri) > 0: tri = tri[:, :, :-1]
+            node, line, tri, triColor = TDE.clipEadges(node, line, tri, triColor, h, w)
+
+            if len(tri) > 0:
+                self.printTri(np.array(tri), np.array(triColor))
+            if len(line) > 0:
+                self.printLine(np.array(line))
+            if len(node) > 0:
+                self.printNode(np.array(node))
+
+        self.update()
+
+    def updateCamData(self):
+        matCameraRotY = TDE.getRotationYMatrix(self.cam_Y_rot)
+        matCameraRotX = TDE.getRotationXMatrix(self.cam_X_rot)
+        self.lookDir = (np.append(np.array([0, 0, 1]), 1) @ matCameraRotY @ matCameraRotX)[:-1]
+        self.lookDir = self.lookDir / np.linalg.norm(self.lookDir)
+        self.target = self.camera + self.lookDir
+        self.up = (np.append(np.array([0, 1, 0]), 1) @ matCameraRotY @ matCameraRotX)[:-1]
+        self.up = self.up / np.linalg.norm(self.up)
+
+    def printTri(self, tri, triColor):
+        avgDistance = np.sum(tri[:, :, 2], axis=-1)
+        idx = np.argsort(avgDistance)
+        tri = tri[idx[::-1]]
+        triColor = triColor[idx[::-1]]
+
+        triPrint = []
+        for i in range(len(tri)):
+            triPrint.append([tri[i][0][0], tri[i][0][1],
+                             tri[i][1][0], tri[i][1][1],
+                             tri[i][2][0], tri[i][2][1]])
+        for i in range(len(triPrint)):
+            color = int(triColor[i])
+            self.graph.create_polygon(triPrint[i], outline='', fill="#%02x%02x%02x" % (color, color, color))
+
+    def printLine(self, line):
+        avgDistance = np.sum(line[:, :, 2], axis=-1)
+        idx = np.argsort(avgDistance)
+        line = line[idx[::-1]]
+
+        linePrint = []
+        for i in range(len(line)):
+            linePrint.append([line[i][0][0], line[i][0][1],
+                             line[i][1][0], line[i][1][1]])
+        for i in range(len(linePrint)):
+            self.graph.create_line(linePrint[i], width = 5, fill="red")
+
+    def printNode(self, node):
+        idx = np.argsort(node[:,2])
+        node = node[idx[::-1]]
+
+        for i in range(len(node)):
+            nodeP = [node[i][0], node[i][1]]
+            self.graph.create_oval(nodeP[0] - 4, nodeP[1] - 4, nodeP[0] + 4, nodeP[1] + 4, fill="green")
+
 
 def select_file_gui(file_Types):
     """

@@ -63,8 +63,8 @@ class MainWindow(tk.Frame):
         #TODO
         # lock polygon in grayed out background
         # draw Functions:
-            # nodes
-            # have it so lines can be drawn with nodes auto generated in a specified spasing along it
+            # printNodes
+            # have it so printLines can be drawn with printNodes auto generated in a specified spasing along it
             # fill polgon with specified spacing
         # when sketch complete run truss iptimization
         # display results
