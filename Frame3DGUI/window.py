@@ -6,10 +6,13 @@ from tkinter import filedialog
 import pandas as pd
 
 from Frame3DGUI.inputData import data
+from Frame3DGUI.optimizePopUp import OptimizationPopUp
+from Frame3DGUI.results import Results
 from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
 
 import numpy as np
 
+# noinspection PyPep8Naming
 import ThreeDDrawing.ThreeDEngine as TDE
 
 class MainWindow(tk.Frame):
@@ -60,44 +63,13 @@ class MainWindow(tk.Frame):
         self.Buttons = []
 
         self.nodeTab = None
-        self.nodeTable = None
-        self.nodeBoxes = []
-        self.nodeButtons = []
-
         self.matTab = None
-        self.matTable = None
-        self.matBoxes = []
-        self.matButtons = []
-
         self.memberTab = None
-        self.memberTable = None
-        self.memberBoxes = []
-        self.memberButtons = []
-
         self.supportTab = None
-        self.supportTable = None
-        self.supportBoxes = []
-        self.supportButtons = []
-
         self.releaseTab = None
-        self.releaseTable = None
-        self.releaseBoxes = []
-        self.releaseButtons = []
-
         self.nodeLoadTab = None
-        self.nodeLoadTable = None
-        self.nodeLoadBoxes = []
-        self.nodeLoadButtons = []
-
         self.memberPointLoadTab = None
-        self.memberPointLoadTable = None
-        self.memberPointLoadBoxes = []
-        self.memberPointLoadButtons = []
-
         self.memberDistLoadTab = None
-        self.memberDistLoadTable = None
-        self.memberDistLoadBoxes = []
-        self.memberDistLoadButtons = []
 
         self.createTableWindow()
 
@@ -295,6 +267,7 @@ class MainWindow(tk.Frame):
 
         return table
 
+    # noinspection PyUnusedLocal
     def getSelectedRow(self, event):
         numCol = [3,5,8,7,13,8,9,10]
         t_id = self.tableTabs.index("current")
@@ -350,6 +323,7 @@ class MainWindow(tk.Frame):
         numRow = len(self.tables[t_id].get_children())
         newVal = [numRow]
         for i in range(numCol[t_id]): newVal.append(self.Boxes[t_id][i].get()) # geting values from text boxes
+        # noinspection PyArgumentList
         self.tables[t_id].insert('', 'end', values=newVal) # adding to table
 
         # Updating stored data and 3D rendering
@@ -399,7 +373,7 @@ class MainWindow(tk.Frame):
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
 
-        import_menu = tk.Menu(menubar, tearoff="off")
+        import_menu = tk.Menu(menubar, tearoff=False)
         import_menu.add_command(label='Nodes', command= self.InportNodes)
         import_menu.add_command(label='Members', command=self.InportMembers)
         import_menu.add_command(label='Materials', command=self.InportMaterials)
@@ -410,9 +384,13 @@ class MainWindow(tk.Frame):
         import_menu.add_command(label='Members Distributed Loads', command=self.ImportMemberDistLoads)
         menubar.add_cascade(label="Import", menu=import_menu)
 
-        Analysis_menu = tk.Menu(menubar, tearoff="off")
+        Analysis_menu = tk.Menu(menubar, tearoff=False)
         Analysis_menu.add_command(label='Linear Analysis', command=self.LinearAnalysis)
+        Analysis_menu.add_command(label='Global Optimization', command=self.otimizationWindow)
         menubar.add_cascade(label="Analysis", menu=Analysis_menu)
+
+    def otimizationWindow(self):
+        OptimizationPopUp(self, self.root, self.data)
 
     def closeProgram(self):
         self.root.destroy()
@@ -531,17 +509,30 @@ class MainWindow(tk.Frame):
         Frame = addDataToFrame(self.data)
 
         Frame.preAnalysis_linear()
-        results = Frame.analysis_linear(getWeight = True, getReactions = True, getInternalForces = True)
+        D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = Frame.analysis_linear(getWeight = True, getReactions = True, getInternalForces = True)
         self.Frame = Frame
-        self.Results = results
+        self.Results = Results()
+        self.Results.addNodalDeflections(D, DX, DY, DZ, RX, RY, RZ)
+        self.Results.addWeight(weight)
+        self.Results.addReactions(reactions)
+        self.Results.addInternalForces(internalForces)
+        # todo: save frame object
+        # todo: save analysis results
 
-    def GlobalOptimization(self):
+    def GlobalOptimization(self, GroupAssignments, GroupTypes, lowerBound, upperBound, costFunction, weightRun, reactionRun, internalForcesRun):
+        # todo: save pre optimization frame
+
         Frame = addDataToFrame(self.data)
 
         Frame.preAnalysis_linear()
-        results = Frame.analysis_linear(getWeight = True, getReactions = True, getInternalForces = True)
+        results = Frame.optimize(GroupAssignments, GroupTypes, lowerBound, upperBound, costFunction, weightRun, reactionRun, internalForcesRun)
         self.Frame = Frame
         self.Optimization_Results = results
+
+        # todo: update frame object to save results
+        # todo: save frame object
+        # todo: save analysis results
+        # todo: save optimization results
 
     def addPrintNode(self, node):
         self.printNodes = np.vstack((self.printNodes, node))

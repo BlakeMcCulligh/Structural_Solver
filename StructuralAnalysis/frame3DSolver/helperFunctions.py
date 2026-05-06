@@ -803,8 +803,8 @@ def getReactions(nodes_Support, nodes_loads, members, members_Releases, F_array,
     :param F_array: ndarray. Array of the global forces acting at the ends of the members. shape: (# casses, # members, 12)
     :param numC: int: Number of casses.
     :param numM: int: Number of members.
-    :param numN: int: Number of printNodes.
-    :return: ndarray. Array of the reactions at the supports of the frame. shape: (# casses, # printNodes, 6)
+    :param numN: int: Number of nodes.
+    :return: ndarray. Array of the reactions at the supports of the frame. shape: (# casses, # nodes, 6)
     """
 
     reactions = []
@@ -851,8 +851,9 @@ def solveInternalForces(members, members_L, members_CrossSectionProps, materials
 from StructuralAnalysis.CrossSectionCalculaters import Angle, RectHSS, SquareHSS, TubeHSS
 import scipy.optimize as opt
 
-def cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces):
-    return max(DZ[0]) + sum(weight) **5
+# noinspection PyUnusedLocal
+def cost(D, DX, DY, DZ, RX, RY, RZ, Weight, Reactions, InternalForces, costFunction):
+    return eval(costFunction)
 
 def get_cost(X, constants):
     """
@@ -863,7 +864,7 @@ def get_cost(X, constants):
     :return: float. cost
     """
 
-    frame, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log = constants
+    costFunction, frame, memberGroup, memberGroupType, eeightNeeded, reactionsNeeded, InternalForcesNeeded, log = constants
 
     crossSectionProps = getCrossSectionProps(X, memberGroup, memberGroupType)
     if log: print("Variable cross section properties: ", crossSectionProps)
@@ -875,9 +876,9 @@ def get_cost(X, constants):
             j += 1
     if log: print("Cross Seciton Properites: ", frame.members_CrossSectionProps)
 
-    D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = frame.analysis_linear(getWeight, getReactions, getInternalForces, log)
+    D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = frame.analysis_linear(eeightNeeded, reactionsNeeded, InternalForcesNeeded, log)
 
-    return cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces)
+    return cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces, costFunction)
 
 def chackInputs(members, memberGroup: list, memberGroupType: list):
     """

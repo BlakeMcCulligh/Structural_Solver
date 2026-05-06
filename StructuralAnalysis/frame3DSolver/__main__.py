@@ -265,7 +265,7 @@ class Frame3D:
         else:
             raise Exception('Pre analysis has not been run. Aborting analysis.')
 
-    def optimize(self, memberGroup: list, memberGroupType: list,  lowerBound, upperBound, getWeight = False, getReactions = False, getInternalForces = False, log=False):
+    def optimize(self, memberGroup: list, memberGroupType: list,  lowerBound, upperBound, costFunction, getWeight = False, getReactions = False, getInternalForces = False, log=False):
         """
         Finds the optimum cross-sections for members with their cross-sections not set.
 
@@ -273,6 +273,7 @@ class Frame3D:
         :param memberGroupType: list. List of cross-section types for each member group to be assigned. Must be length of number of member gorups.
         :param lowerBound: list or float. Lower bound on the optimization variables. if list must be length of number of variables.
         :param upperBound: list or float. Upper bound on the optimization variables. if list must be length of number of variables.
+        :param costFunction:
         :param getWeight: bool. Weather the weighht of all the members is needed for the cost function.
         :param getReactions: bool. Weather the reactions are needed for the cost function.
         :param getInternalForces: bool. Weather the internal forces are needed for the cost function.
@@ -291,7 +292,7 @@ class Frame3D:
 
         self.preAnalysis_linear(log=log)
 
-        constants = [self, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
+        constants = [self, costFunction, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
 
         bounds = hf.getBounds(lowerBound, upperBound, numVarables)
 
@@ -301,35 +302,35 @@ class Frame3D:
 
         return optimization_results
 
-if __name__ == '__main__':
-    simple_beam = Frame3D()
-
-    simple_beam.addNode(0, 0, 0)
-    simple_beam.addNode(168, 0, 0)
-    simple_beam.addNode(168, 5, 0)
-
-    simple_beam.addMaterial(29000, 11200, 0.3, 2.836e-4)
-
-    simple_beam.addMember(0, 1, 0, False, 20, 100, 150, 250)
-    simple_beam.addMember(0, 2, 0, False, 20, 100, 150, 250)
-
-    simple_beam.defSupport(0, True, True, True, True, False, False)
-    simple_beam.defSupport(1, True, True, True, True, False, False)
-    # simple_beam.defSupport(0, True, True, True, True, True, True)
-    # simple_beam.defSupport(1, True, True, True, True, True, True)
-    # 'M1', 'Fy', -0.01, -0.01, 0, 168
-    # simple_beam.addNodeLoad(0, Pz=1, case=0)
-    simple_beam.addMemberPointLoad(0, 50, Pz=50, case=0)
-    # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=0)
-    # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=1)
-    # simple_beam.addMemberDistLoad(0,0,5,5,2,0,0)
-    # simple_beam.addMemberDistLoad(0, 0, 168, wy1 = -0.01, wy2 = -0.01, case=0)
-    # simple_beam.addMemberSelfWeight()
-    # simple_beam.addMemberSelfWeight(case=1)
-    simple_beam.preAnalysis_linear(log=False)
-    #print(simple_beam.analysis_linear(getWeight=True,getInternalForces=True))
-    simple_beam.analysis_linear(log=False)
-
-    memberGroupType = ["Angle"]
-    memberGroup = [0, 0]
-    simple_beam.optimize(memberGroup, memberGroupType, [1,1,0.1],[10,10,0.9], getWeight = True, getReactions = False, getInternalForces = False, log = False)
+# if __name__ == '__main__':
+#     simple_beam = Frame3D()
+#
+#     simple_beam.addNode(0, 0, 0)
+#     simple_beam.addNode(168, 0, 0)
+#     simple_beam.addNode(168, 5, 0)
+#
+#     simple_beam.addMaterial(29000, 11200, 0.3, 2.836e-4)
+#
+#     simple_beam.addMember(0, 1, 0, False, 20, 100, 150, 250)
+#     simple_beam.addMember(0, 2, 0, False, 20, 100, 150, 250)
+#
+#     simple_beam.defSupport(0, True, True, True, True, False, False)
+#     simple_beam.defSupport(1, True, True, True, True, False, False)
+#     # simple_beam.defSupport(0, True, True, True, True, True, True)
+#     # simple_beam.defSupport(1, True, True, True, True, True, True)
+#     # 'M1', 'Fy', -0.01, -0.01, 0, 168
+#     # simple_beam.addNodeLoad(0, Pz=1, case=0)
+#     simple_beam.addMemberPointLoad(0, 50, Pz=50, case=0)
+#     # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=0)
+#     # simple_beam.addMemberPointLoad(0, 2, Pz=1, case=1)
+#     # simple_beam.addMemberDistLoad(0,0,5,5,2,0,0)
+#     # simple_beam.addMemberDistLoad(0, 0, 168, wy1 = -0.01, wy2 = -0.01, case=0)
+#     # simple_beam.addMemberSelfWeight()
+#     # simple_beam.addMemberSelfWeight(case=1)
+#     simple_beam.preAnalysis_linear(log=False)
+#     #print(simple_beam.analysis_linear(getWeight=True,getInternalForces=True))
+#     simple_beam.analysis_linear(log=False)
+#
+#     memberGroupType = ["Angle"]
+#     memberGroup = [0, 0]
+#     simple_beam.optimize(memberGroup, memberGroupType, [1,1,0.1],[10,10,0.9], getWeight = True, getReactions = False, getInternalForces = False, log = False)
