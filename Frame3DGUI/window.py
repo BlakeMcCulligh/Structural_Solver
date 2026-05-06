@@ -1,17 +1,14 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk,  filedialog
 from copy import copy
-from tkinter import filedialog
-
 import pandas as pd
+import numpy as np
 
 from Frame3DGUI.inputData import data
 from Frame3DGUI.optimizePopUp import OptimizationPopUp
 from Frame3DGUI.results import Results
+from Frame3DGUI.save import saveFrame, saveResults
 from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
-
-import numpy as np
-
 # noinspection PyPep8Naming
 import ThreeDDrawing.ThreeDEngine as TDE
 
@@ -28,7 +25,7 @@ class MainWindow(tk.Frame):
         self.data = data()
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
         self.graph = tk.Canvas(root, bg="white")
@@ -314,7 +311,7 @@ class MainWindow(tk.Frame):
             for i in range(numCol[t_id]): self.data.memberDistLoad[i][newVal[0]] = newVal[i + 1]
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def addValues(self):
@@ -351,7 +348,7 @@ class MainWindow(tk.Frame):
             for i in range(numCol[t_id]): self.data.memberDistLoad[i].append(newVal[i+1])
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def centerWindow(self):
@@ -373,6 +370,10 @@ class MainWindow(tk.Frame):
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
 
+        File_menu = tk.Menu(menubar, tearoff=False)
+        File_menu.add_command(label='Save As', command=self.saveAs)
+        menubar.add_cascade(label="File", menu=File_menu)
+
         import_menu = tk.Menu(menubar, tearoff=False)
         import_menu.add_command(label='Nodes', command= self.InportNodes)
         import_menu.add_command(label='Members', command=self.InportMembers)
@@ -388,6 +389,9 @@ class MainWindow(tk.Frame):
         Analysis_menu.add_command(label='Linear Analysis', command=self.LinearAnalysis)
         Analysis_menu.add_command(label='Global Optimization', command=self.otimizationWindow)
         menubar.add_cascade(label="Analysis", menu=Analysis_menu)
+
+    def saveAs(self):
+        saveFrame(self.data)
 
     def otimizationWindow(self):
         OptimizationPopUp(self, self.root, self.data)
@@ -409,7 +413,7 @@ class MainWindow(tk.Frame):
             self.addPrintNode(nodes[:,i])
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def InportMaterials(self):
@@ -420,7 +424,7 @@ class MainWindow(tk.Frame):
         self.data.addmaterials(Materials)
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def InportMembers(self):
@@ -439,7 +443,7 @@ class MainWindow(tk.Frame):
 
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def ImportSupports(self):
@@ -451,7 +455,7 @@ class MainWindow(tk.Frame):
         self.data.addsupports(Supports)
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def ImportReleases(self):
@@ -465,7 +469,7 @@ class MainWindow(tk.Frame):
         self.data.addreleases(Releases)
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def ImportNodeLoads(self):
@@ -477,7 +481,7 @@ class MainWindow(tk.Frame):
         self.data.addnodeLoads(NodeLoads)
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def ImportMemberPointLoads(self):
@@ -489,7 +493,7 @@ class MainWindow(tk.Frame):
         self.data.addmemberPointLoads(MemberPointLoads)
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def ImportMemberDistLoads(self):
@@ -502,7 +506,7 @@ class MainWindow(tk.Frame):
         self.data.addmemberDistLoads(MemberDistLoads)
 
         self.Frame = None
-        self.Results = None
+        self.results = None
         self.Optimization_Results = None
 
     def LinearAnalysis(self):
@@ -511,16 +515,16 @@ class MainWindow(tk.Frame):
         Frame.preAnalysis_linear()
         D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = Frame.analysis_linear(getWeight = True, getReactions = True, getInternalForces = True)
         self.Frame = Frame
-        self.Results = Results()
-        self.Results.addNodalDeflections(D, DX, DY, DZ, RX, RY, RZ)
-        self.Results.addWeight(weight)
-        self.Results.addReactions(reactions)
-        self.Results.addInternalForces(internalForces)
-        # todo: save frame object
-        # todo: save analysis results
+        self.results = Results()
+        self.results.addNodalDeflections(D, DX, DY, DZ, RX, RY, RZ)
+        self.results.addWeight(weight)
+        self.results.addReactions(reactions)
+        self.results.addInternalForces(internalForces)
+        saveFrame(self.data)
+        saveResults(self.results)
 
     def GlobalOptimization(self, GroupAssignments, GroupTypes, lowerBound, upperBound, costFunction, weightRun, reactionRun, internalForcesRun):
-        # todo: save pre optimization frame
+        saveFrame(self.data)
 
         Frame = addDataToFrame(self.data)
 
@@ -530,8 +534,7 @@ class MainWindow(tk.Frame):
         self.Optimization_Results = results
 
         # todo: update frame object to save results
-        # todo: save frame object
-        # todo: save analysis results
+        self.LinearAnalysis()
         # todo: save optimization results
 
     def addPrintNode(self, node):
@@ -539,7 +542,11 @@ class MainWindow(tk.Frame):
         self.updateCanves()
 
     def addPrintLine(self, line):
-        self.printLines = np.vstack((self.printLines, self.printNodes[line]))
+        l = []
+        for i in range(len(line)):
+            l.append(int(line[i]))
+        l = np.array(l)
+        self.printLines = np.vstack((self.printLines, [self.printNodes[l]]))
         self.updateCanves()
 
     def addPrintSurface(self, surface):
@@ -657,6 +664,7 @@ class MainWindow(tk.Frame):
             node, line, tri = TDE.project(self, node, line, tri)
 
             if len(tri) > 0: tri = tri[:, :, :-1]
+            if len(line) > 0: line = line[:, :, :-1]
             node, line, tri, triColor = TDE.clipEadges(node, line, tri, triColor, h, w)
 
             if len(tri) > 0:

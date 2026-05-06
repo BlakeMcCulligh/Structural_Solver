@@ -1,7 +1,6 @@
 
 class NodeDeflections:
-    def __init__(self, D, DX, DY, DZ, RX, RY, RZ):
-        self.D = D
+    def __init__(self, DX, DY, DZ, RX, RY, RZ):
         self.DX = DX
         self.DY = DY
         self.DZ = DZ
@@ -11,7 +10,6 @@ class NodeDeflections:
 
 class Reactions:
     def __init__(self, reactions):
-        self.R = reactions
         self.RX = reactions[:,0]
         self.RY = reactions[:,1]
         self.RZ = reactions[:,2]
@@ -50,7 +48,8 @@ class Results:
 
     def addNodalDeflections(self, D, DX, DY, DZ, RX, RY, RZ):
         for case_id in range(len(D)):
-            self.nodalDeflections.append(NodeDeflections(D[case_id], DX[case_id], DY[case_id], DZ[case_id], RX[case_id], RY[case_id], RZ[case_id]))
+            self.nodalDeflections.append(NodeDeflections(DX[case_id], DY[case_id], DZ[case_id],
+                                                         RX[case_id], RY[case_id], RZ[case_id]))
 
     def addWeight(self, weight):
         self.weight = weight

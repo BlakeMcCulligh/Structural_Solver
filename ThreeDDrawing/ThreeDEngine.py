@@ -453,13 +453,13 @@ def Line_ClipAgainstPlane(planePoint, planeNormal, line):
     inside_points, insidePointsCounter = [], 0
     outside_points, outsidePointsCounter = [], 0
     d = []
-    for i in range(2): d.append(dist(line))
+    for i in range(2): d.append(dist(line[i]))
     for i in range(2):
         if d[i] >= 0:
-            inside_points.append(line)
+            inside_points.append(line[i])
             insidePointsCounter += 1
         else:
-            outside_points.append(line)
+            outside_points.append(line[i])
             outsidePointsCounter += 1
     if insidePointsCounter == 2:
         return line

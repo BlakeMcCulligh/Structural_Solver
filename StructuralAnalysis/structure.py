@@ -366,9 +366,9 @@ class Structure:
                     print("A: ", self.optimizationResults)
             else:
                 if self.is3D:
-                    print("Results: ", self.optimizationResults)
+                    print("results: ", self.optimizationResults)
                 else:
-                    print("Results: ", self.optimizationResults)
+                    print("results: ", self.optimizationResults)
         else:
             print("The structure has not been optimized yet.")
 
