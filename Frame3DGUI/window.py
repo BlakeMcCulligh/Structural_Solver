@@ -1,3 +1,4 @@
+import sys
 import tkinter as tk
 from tkinter import ttk,  filedialog
 from copy import copy
@@ -5,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 from Frame3DGUI.inputData import data
-from Frame3DGUI.opening import openFrame
+from Frame3DGUI.opening import openFrame, openResults
 from Frame3DGUI.optimizePopUp import OptimizationPopUp
 from Frame3DGUI.results import Results
 from Frame3DGUI.save import saveFrame, saveResults
@@ -16,6 +17,8 @@ import ThreeDDrawing.ThreeDEngine as TDE
 class MainWindow(tk.Frame):
     def __init__(self, root):
         tk.Frame.__init__(self, root)
+
+        self.filePath = None
 
         self.root = root
 
@@ -70,6 +73,13 @@ class MainWindow(tk.Frame):
         self.memberDistLoadTab = None
 
         self.createTableWindow()
+
+        self.root.protocol("WM_DELETE_WINDOW",self.exit)
+
+    def exit(self):
+        self.root.quit()
+        self.root.destroy()
+
 
     def createTableWindow(self):
         self.tableWindow = tk.Toplevel(self.root)
@@ -340,6 +350,7 @@ class MainWindow(tk.Frame):
         self.root.config(menu=menubar)
 
         File_menu = tk.Menu(menubar, tearoff=False)
+        File_menu.add_command(label='Save', command=self.save)
         File_menu.add_command(label='Save As', command=self.saveAs)
         File_menu.add_command(label='Open Frame', command=self.openFrame)
         menubar.add_cascade(label="File", menu=File_menu)
@@ -361,10 +372,17 @@ class MainWindow(tk.Frame):
         menubar.add_cascade(label="Analysis", menu=Analysis_menu)
 
     def saveAs(self):
-        saveFrame(self.data)
+        self.filePath = saveFrame(self.data)
+
+    def save(self):
+        if self.filePath is None:
+            self.saveAs()
+        else:
+            saveFrame(self.data, self.filePath)
 
     def openFrame(self):
         openFrame(self)
+        openResults(self, self.filePath)
 
     def otimizationWindow(self):
         OptimizationPopUp(self, self.root, self.data)
@@ -445,12 +463,13 @@ class MainWindow(tk.Frame):
         D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = Frame.analysis_linear(getWeight = True, getReactions = True, getInternalForces = True)
         self.Frame = Frame
         self.results = Results()
-        self.results.addNodalDeflections(D, DX, DY, DZ, RX, RY, RZ)
+        self.results.addNodalDeflections(DX, DY, DZ, RX, RY, RZ)
         self.results.addWeight(weight)
         self.results.addReactions(reactions)
         self.results.addInternalForces(internalForces)
-        saveFrame(self.data)
-        saveResults(self.results)
+
+        self.save()
+        saveResults(self.results, self.filePath)
 
     def GlobalOptimization(self, GroupAssignments, GroupTypes, lowerBound, upperBound, costFunction, weightRun, reactionRun, internalForcesRun):
         saveFrame(self.data)

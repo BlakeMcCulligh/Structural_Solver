@@ -1,9 +1,12 @@
 from tkinter import filedialog
 import tkinter as tk
 
-def saveFrame(data):
+def saveFrame(data, filePath = None):
 
-    filePath = getFileSavePathFrame() # todo add save not just save as
+    if filePath is None:
+        filePath = getFileSavePathFrame()
+    else:
+        filePath = filePath + ".structframe"
 
     if filePath is not None:
         with open(filePath, "w") as f:
@@ -62,17 +65,17 @@ def saveFrame(data):
                 f.write(string)
                 f.write(f"\n")
 
+    return filePath.replace(".structframe","")
+
 def getFileSavePathFrame():
-    root = tk.Tk()
-    root.withdraw()
     file_path = filedialog.asksaveasfilename(defaultextension=".structframe",
                                              filetypes=[("Struct Frame files", "*.structframe")])
     if file_path:return file_path
     return None
 
-def saveResults(results):
+def saveResults(results, filepath):
 
-    filePath = getFileSavePathResults() # todo use same name as frame but diffrent extention. needed for opening
+    filePath = filepath + ".structresult"
 
     if filePath is not None:
         with open(filePath, "w") as f:
@@ -104,11 +107,3 @@ def saveResults(results):
             f.write(f"{results.maxInternalForces[1][0][0]},{results.maxInternalForces[1][0][1]},\n")
             f.write(f"{results.maxInternalForces[1][1][0]},{results.maxInternalForces[1][1][1]},\n")
             f.write(f"{results.maxInternalForces[1][2][0]},{results.maxInternalForces[1][2][1]},\n")
-
-def getFileSavePathResults():
-    root = tk.Tk()
-    root.withdraw()
-    file_path = filedialog.asksaveasfilename(defaultextension=".structresult",
-                                             filetypes=[("Struct Results files", "*.structresult")])
-    if file_path:return file_path
-    return None

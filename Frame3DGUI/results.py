@@ -46,8 +46,8 @@ class Results:
         self.reactions = []
         self.maxInternalForces = None
 
-    def addNodalDeflections(self, D, DX, DY, DZ, RX, RY, RZ):
-        for case_id in range(len(D)):
+    def addNodalDeflections(self, DX, DY, DZ, RX, RY, RZ):
+        for case_id in range(len(DX)):
             self.nodalDeflections.append(NodeDeflections(DX[case_id], DY[case_id], DZ[case_id],
                                                          RX[case_id], RY[case_id], RZ[case_id]))
 
@@ -61,6 +61,3 @@ class Results:
 
     def addInternalForces(self, internalForces):
         self.maxInternalForces = MaximumInternalForces(internalForces)
-
-
-

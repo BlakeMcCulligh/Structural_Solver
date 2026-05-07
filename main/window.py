@@ -1,11 +1,15 @@
 
 import tkinter as tk
 from tkinter import filedialog
+from pathlib import Path
 
 from CrossSectionAnalysis.main_CrossSectionAnalysis import getSectionProperties
+from Frame3DGUI.opening import openFrame
 from OpeningAndSaving.Opening import openTrussTopologyOptimizationExcel, openTrussCrossSectionOptimizationExcel
 from Sketch.main import startSketch
 from main.newStructurePopUp import NewStructurePopUp
+
+import Frame3DGUI.window
 
 
 class MainWindow(tk.Frame):
@@ -41,18 +45,36 @@ class MainWindow(tk.Frame):
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
 
-        new_menu = tk.Menu(menubar, tearoff="off")
+        file_menu = tk.Menu(menubar, tearoff=False)
+        file_menu.add_command(label='Open', command= self.open)
+        menubar.add_cascade(label='File', menu=file_menu)
+
+        new_menu = tk.Menu(menubar, tearoff=False)
         new_menu.add_command(label='Structure', command= self.newStructure)
         menubar.add_cascade(label="New", menu=new_menu)
 
 
-        open_menu = tk.Menu(menubar, tearoff="off")
+        open_menu = tk.Menu(menubar, tearoff=False)
         open_menu.add_command(label='Truss Topology Optimization', command=self.openTrussTopologyOptimization)
         open_menu.add_command(label='Truss Cross-Section Optimization', command=self.openTrussCrossSectionOptimization)
         menubar.add_cascade(label="Analysis Excel File", menu=open_menu)
 
     def closeProgram(self):
         self.root.destroy()
+
+    def open(self):
+        fileTypes = [("Struct Frame files", "*.structframe")]
+        file_path = select_file_gui(fileTypes)
+
+        if Path(file_path).suffix == ".structframe":
+            self.root.destroy()
+
+            root_widget = tk.Tk()
+            root_widget.title('3D Frame')
+            window = Frame3DGUI.window.MainWindow(root_widget)
+            openFrame(window, file_path)
+            window.root.mainloop()
+
 
     def newTrussTopologyOptimization(self):
         startSketch(self.root, self, "Closed Shape", self.setNodesTrussTopologyOptimization)
@@ -92,12 +114,6 @@ class MainWindow(tk.Frame):
 
 
 def select_file_gui(file_Types):
-    """
-    Opens a file explorer dialog using Tkinter and returns the selected file path.
-    """
-    # Create a Tk root window (but hide it)
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
 
     # Open the file dialog
     file_path = filedialog.askopenfilename(
