@@ -3,7 +3,7 @@ import tkinter as tk
 
 def saveFrame(data):
 
-    filePath = getFileSavePathFrame()
+    filePath = getFileSavePathFrame() # todo add save not just save as
 
     if filePath is not None:
         with open(filePath, "w") as f:
@@ -15,56 +15,64 @@ def saveFrame(data):
             f.write(f"{len(data.materials[0])}\n")
             for i in range(len(data.materials[0])):
                 string = ""
-                for j in range(len(data.materials)): string = string + f"{data.materials[j][i]},\n"
+                for j in range(len(data.materials)): string = string + f"{data.materials[j][i]},"
                 f.write(string)
+                f.write(f"\n")
+
 
             f.write(f"{len(data.members[0])}\n")
             for i in range(len(data.members[0])):
                 string = ""
-                for j in range(len(data.members)): string = string + f"{data.members[j][i]},\n"
+                for j in range(len(data.members)): string = string + f"{data.members[j][i]},"
                 f.write(string)
+                f.write(f"\n")
 
             f.write(f"{len(data.supports[0])}\n")
             for i in range(len(data.supports[0])):
                 string = ""
-                for j in range(len(data.supports)): string = string + f"{data.supports[j][i]},\n"
+                for j in range(len(data.supports)): string = string + f"{data.supports[j][i]},"
                 f.write(string)
+                f.write(f"\n")
 
             f.write(f"{len(data.releases[0])}\n")
             for i in range(len(data.releases[0])):
                 string = ""
-                for j in range(len(data.releases)): string = string + f"{data.releases[j][i]},\n"
+                for j in range(len(data.releases)): string = string + f"{data.releases[j][i]},"
                 f.write(string)
+                f.write(f"\n")
 
             f.write(f"{len(data.nodeLoad[0])}\n")
             for i in range(len(data.nodeLoad[0])):
                 string = ""
-                for j in range(len(data.nodeLoad)): string = string + f"{data.nodeLoad[j][i]},\n"
+                for j in range(len(data.nodeLoad)): string = string + f"{data.nodeLoad[j][i]},"
                 f.write(string)
+                f.write(f"\n")
 
             f.write(f"{len(data.memberPointLoad[0])}\n")
             for i in range(len(data.memberPointLoad[0])):
                 string = ""
-                for j in range(len(data.memberPointLoad)): string = string + f"{data.memberPointLoad[j][i]},\n"
+                for j in range(len(data.memberPointLoad)): string = string + f"{data.memberPointLoad[j][i]},"
                 f.write(string)
+                f.write(f"\n")
 
             f.write(f"{len(data.memberDistLoad[0])}\n")
             for i in range(len(data.memberDistLoad[0])):
                 string = ""
-                for j in range(len(data.memberDistLoad)): string = string + f"{data.memberDistLoad[j][i]},\n"
+                for j in range(len(data.memberDistLoad)): string = string + f"{data.memberDistLoad[j][i]},"
                 f.write(string)
+                f.write(f"\n")
 
 def getFileSavePathFrame():
     root = tk.Tk()
     root.withdraw()
     file_path = filedialog.asksaveasfilename(defaultextension=".structframe",
-                                             filetypes=[("Struct Frame files", "*.structframe"), ("All files", "*.*")])
+                                             filetypes=[("Struct Frame files", "*.structframe")])
     if file_path:return file_path
     return None
 
 def saveResults(results):
 
-    filePath = getFileSavePathResults()
+    filePath = getFileSavePathResults() # todo use same name as frame but diffrent extention. needed for opening
 
     if filePath is not None:
         with open(filePath, "w") as f:
@@ -101,7 +109,6 @@ def getFileSavePathResults():
     root = tk.Tk()
     root.withdraw()
     file_path = filedialog.asksaveasfilename(defaultextension=".structresult",
-                                             filetypes=[("Struct Results files", "*.structresult"),
-                                                        ("All files", "*.*")])
+                                             filetypes=[("Struct Results files", "*.structresult")])
     if file_path:return file_path
     return None

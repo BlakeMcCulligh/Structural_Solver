@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 
 from Frame3DGUI.inputData import data
+from Frame3DGUI.opening import openFrame
 from Frame3DGUI.optimizePopUp import OptimizationPopUp
 from Frame3DGUI.results import Results
 from Frame3DGUI.save import saveFrame, saveResults
@@ -280,39 +281,20 @@ class MainWindow(tk.Frame):
         t_id = self.tableTabs.index("current")
 
         row_id = self.tables[t_id].focus()
-        col_ids = self.tables[t_id]["columns"]
         row_info = self.tables[t_id].item(row_id).get('values')
         newVal = [row_info[0]]
         for i in range(numCol[t_id]): newVal.append(self.Boxes[t_id][i].get()) # geting values from text boxes
-        for i in range(numCol[t_id]+1): self.tables[t_id].set(row_id, col_ids[i], newVal[i]) # editing table
+        newVal = np.array(newVal)
 
-        # Updating stored data and 3D rendering
-        if t_id == 0:
-            for i in range(numCol[t_id]): self.data.nodes[i][newVal[0]] = newVal[i+1]
-            node = np.array(newVal)
-            self.printNodes[newVal[0]] = node[[1,2,3]]
-            self.updateCanves()
-        elif t_id == 1:
-            for i in range(numCol[t_id]): self.data.materials[i][newVal[0]] = newVal[i + 1]
-        elif t_id == 2:
-            for i in range(numCol[t_id]): self.data.members[i][newVal[0]] = newVal[i + 1]
-            line = np.array(newVal)
-            self.printNodes[newVal[0]] = line[[1, 2]]
-            self.updateCanves()
-        elif t_id == 3:
-            for i in range(numCol[t_id]): self.data.supports[i][newVal[0]] = newVal[i + 1]
-        elif t_id == 4:
-            for i in range(numCol[t_id]): self.data.releases[i][newVal[0]] = newVal[i + 1]
-        elif t_id == 5:
-            for i in range(numCol[t_id]): self.data.nodeLoad[i][newVal[0]] = newVal[i + 1]
-        elif t_id == 6:
-            for i in range(numCol[t_id]): self.data.memberPointLoad[i][newVal[0]] = newVal[i + 1]
-        elif t_id == 7:
-            for i in range(numCol[t_id]): self.data.memberDistLoad[i][newVal[0]] = newVal[i + 1]
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        # Updating data
+        if t_id == 0:   self.data.editnode(self, newVal[1:], newVal[[0]], True, True, row_id)
+        elif t_id == 1: self.data.editmaterials(self, newVal[1:], newVal[[0]], True, True, row_id)
+        elif t_id == 2: self.data.editmembers(self, newVal[1:], newVal[[0]], True, True, row_id)
+        elif t_id == 3: self.data.editsupports(self, newVal[1:], newVal[[0]], True, True, row_id)
+        elif t_id == 4: self.data.editreleases(self, newVal[1:], newVal[[0]], True, True, row_id)
+        elif t_id == 5: self.data.editnodeLoads(self, newVal[1:], newVal[[0]], True, True, row_id)
+        elif t_id == 6: self.data.editmemberPointLoad(self, newVal[1:], newVal[[0]], True, True, row_id)
+        elif t_id == 7: self.data.editmemberDistLoad(self, newVal[1:], newVal[[0]], True, True, row_id)
 
     def addValues(self):
         numCol = [3, 5, 8, 7, 13, 8, 9, 10]
@@ -320,36 +302,23 @@ class MainWindow(tk.Frame):
         numRow = len(self.tables[t_id].get_children())
         newVal = [numRow]
         for i in range(numCol[t_id]): newVal.append(self.Boxes[t_id][i].get()) # geting values from text boxes
-        # noinspection PyArgumentList
-        self.tables[t_id].insert('', 'end', values=newVal) # adding to table
 
-        # Updating stored data and 3D rendering
-        if t_id == 0:
-            for i in range(numCol[t_id]): self.data.nodes[i].append(newVal[i+1])
-            node = []
-            for i in range(3):node.append(float(newVal[i+1]))
-            node = np.array(node)
-            self.addPrintNode(node)
-        elif t_id == 1:
-            for i in range(numCol[t_id]): self.data.materials[i].append(newVal[i+1])
-        elif t_id == 2:
-            for i in range(numCol[t_id]): self.data.members[i].append(newVal[i+1])
-            line = np.array(newVal)
-            self.addPrintLine(line[[1,2]])
-        elif t_id == 3:
-            for i in range(numCol[t_id]): self.data.supports[i].append(newVal[i+1])
-        elif t_id == 4:
-            for i in range(numCol[t_id]): self.data.releases[i].append(newVal[i+1])
-        elif t_id == 5:
-            for i in range(numCol[t_id]): self.data.nodeLoad[i].append(newVal[i+1])
-        elif t_id == 6:
-            for i in range(numCol[t_id]): self.data.memberPointLoad[i].append(newVal[i+1])
-        elif t_id == 7:
-            for i in range(numCol[t_id]): self.data.memberDistLoad[i].append(newVal[i+1])
+        data_new = []
+        for i in range(numCol[t_id]):
+            if newVal[i + 1] == "True" or newVal[i + 1] == "False":
+                data_new.append(bool(newVal[i + 1]))
+            else:
+                data_new.append(float(newVal[i + 1]))
 
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        # Updating data
+        if t_id == 0: self.data.addnodes(self, data_new, True, True)
+        elif t_id == 1: self.data.addmaterials(self, data_new, True, True)
+        elif t_id == 2: self.data.addmembers(self, data_new, True, True)
+        elif t_id == 3: self.data.addsupports(self, data_new, True, True)
+        elif t_id == 4: self.data.addreleases(self, data_new, True, True)
+        elif t_id == 5: self.data.addnodeLoads(self, data_new, True, True)
+        elif t_id == 6: self.data.addmemberPointLoads(self, data_new, True, True)
+        elif t_id == 7: self.data.addmemberDistLoads(self, data_new, True, True)
 
     def centerWindow(self):
         width = 1000
@@ -372,6 +341,7 @@ class MainWindow(tk.Frame):
 
         File_menu = tk.Menu(menubar, tearoff=False)
         File_menu.add_command(label='Save As', command=self.saveAs)
+        File_menu.add_command(label='Open Frame', command=self.openFrame)
         menubar.add_cascade(label="File", menu=File_menu)
 
         import_menu = tk.Menu(menubar, tearoff=False)
@@ -393,6 +363,9 @@ class MainWindow(tk.Frame):
     def saveAs(self):
         saveFrame(self.data)
 
+    def openFrame(self):
+        openFrame(self)
+
     def otimizationWindow(self):
         OptimizationPopUp(self, self.root, self.data)
 
@@ -404,28 +377,14 @@ class MainWindow(tk.Frame):
         filePath = select_file_gui(file_Types)
         Nodes_df = pd.read_excel(filePath)
         Nodes = [Nodes_df["X"].tolist(), Nodes_df["Y"].tolist(), Nodes_df["Z"].tolist()]
-        self.data.addnodes(self, Nodes)
-
-
-        nodes = np.array(Nodes)
-        # adding to 3D display
-        for i in range(len(Nodes[0])):
-            self.addPrintNode(nodes[:,i])
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        self.data.addnodes(self, Nodes, True, True)
 
     def InportMaterials(self):
         file_Types = [("Excel Files", "*.xlsx")]
         filePath = select_file_gui(file_Types)
         M_df = pd.read_excel(filePath)
         Materials = [M_df["E"].tolist(),M_df["G"].tolist(),M_df["nu"].tolist(),M_df["rho"].tolist(),M_df["fy"].tolist()]
-        self.data.addmaterials(Materials)
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        self.data.addmaterials(self, Materials, True, True)
 
     def InportMembers(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -434,17 +393,7 @@ class MainWindow(tk.Frame):
         Members = [M_df["i Node"].tolist(), M_df["j Node"].tolist(), M_df["Material"].tolist(),
                    M_df["Set Cross-Section Properties"].tolist(), M_df["A"].tolist(), M_df["Iy"].tolist(),
                    M_df["Iz"].tolist(), M_df["J"].tolist()]
-        self.data.addmembers(Members)
-
-        members = np.array(Members)
-        # adding to 3D display
-        for i in range(len(Members[0])):
-            self.addPrintLine(members[[0,1],i])
-
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        self.data.addmembers(self, Members, True, True)
 
     def ImportSupports(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -452,11 +401,7 @@ class MainWindow(tk.Frame):
         S_df = pd.read_excel(filePath)
         Supports = [S_df["Node"].tolist(),S_df["DX"].tolist(),S_df["DY"].tolist(),S_df["DZ"].tolist(),
                     S_df["RX"].tolist(),S_df["RY"].tolist(),S_df["RZ"].tolist()]
-        self.data.addsupports(Supports)
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        self.data.addsupports(self, Supports, True, True)
 
     def ImportReleases(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -466,11 +411,7 @@ class MainWindow(tk.Frame):
                     R_df["i RX"].tolist(), R_df["i RY"].tolist(), R_df["i RZ"].tolist(),R_df["j DX"].tolist(),
                     R_df["j DY"].tolist(), R_df["j DZ"].tolist(), R_df["j RX"].tolist(), R_df["j RY"].tolist(),
                     R_df["j RZ"].tolist()]
-        self.data.addreleases(Releases)
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        self.data.addreleases(self, Releases, True, True)
 
     def ImportNodeLoads(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -478,11 +419,7 @@ class MainWindow(tk.Frame):
         N_df = pd.read_excel(filePath)
         NodeLoads = [N_df["Node"].tolist(),N_df["PX"].tolist(),N_df["PY"].tolist(),N_df["PZ"].tolist(),
                      N_df["MX"].tolist(),N_df["MY"].tolist(),N_df["MZ"].tolist()]
-        self.data.addnodeLoads(NodeLoads)
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        self.data.addnodeLoads(self, NodeLoads, True, True)
 
     def ImportMemberPointLoads(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -490,11 +427,7 @@ class MainWindow(tk.Frame):
         M_df = pd.read_excel(filePath)
         MemberPointLoads = [M_df["Member"].tolist(),M_df["X"].tolist(),M_df["PX"].tolist(),M_df["PY"].tolist(),
                             M_df["PZ"].tolist(),M_df["MX"].tolist(),M_df["MY"].tolist(),M_df["MZ"].tolist()]
-        self.data.addmemberPointLoads(MemberPointLoads)
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        self.data.addmemberPointLoads(self, MemberPointLoads, True, True)
 
     def ImportMemberDistLoads(self):
         file_Types = [("Excel Files", "*.xlsx")]
@@ -503,11 +436,7 @@ class MainWindow(tk.Frame):
         MemberDistLoads = [M_df["Member"].tolist(),M_df["X1"].tolist(),M_df["X2"].tolist(),M_df["WX1"].tolist(),
                            M_df["WX2"].tolist(),M_df["WY1"].tolist(),M_df["WY2"].tolist(),M_df["WZ1"].tolist(),
                            M_df["WZ2"].tolist()]
-        self.data.addmemberDistLoads(MemberDistLoads)
-
-        self.Frame = None
-        self.results = None
-        self.Optimization_Results = None
+        self.data.addmemberDistLoads(self, MemberDistLoads, True, True)
 
     def LinearAnalysis(self):
         Frame = addDataToFrame(self.data)
@@ -533,7 +462,7 @@ class MainWindow(tk.Frame):
         self.Frame = Frame
         self.Optimization_Results = results
 
-        # todo: update frame object to save results
+        # todo: update frame object to optimization results
         self.LinearAnalysis()
         # todo: save optimization results
 
@@ -551,8 +480,7 @@ class MainWindow(tk.Frame):
 
     def addPrintSurface(self, surface):
         tri = TDE.triangalizeSurface(self, surface, False)
-        for i in range(len(tri)):
-            self.surfaceTri = np.vstack((self.surfaceTri, tri[i]))
+        for i in range(len(tri)): self.surfaceTri = np.vstack((self.surfaceTri, tri[i]))
         self.updateCanves()
 
     def addPrintSolid(self, solid, flipNormal: list | None = None):
@@ -560,8 +488,7 @@ class MainWindow(tk.Frame):
         for i in range(numSurfaces):
             if isinstance(flipNormal, list): # needs triangalized
                 tri = TDE.triangalizeSurface(self, solid[i], flipNormal[i])
-                for j in range(len(tri)):
-                    self.solidTri = np.vstack((self.solidTri, [tri[j]]))
+                for j in range(len(tri)): self.solidTri = np.vstack((self.solidTri, [tri[j]]))
             else: # already triangalized
                 self.solidTri = np.vstack((self.solidTri, [solid[i]]))
 
@@ -649,8 +576,7 @@ class MainWindow(tk.Frame):
         solidTri, solidTriNormals = TDE.removeTriFaceingAway(self, solidTri, solidTriNormals)
         triColor = TDE.illumination(self, solidTriNormals, len(surfTri))
 
-        for i in range(len(surfTri)):
-            solidTri = np.append(solidTri, surfTri[i], axis=0)
+        for i in range(len(surfTri)): solidTri = np.append(solidTri, surfTri[i], axis=0)
         tri = solidTri
 
         node, line, tri = TDE.transformToLocal(self, node, line, tri)
@@ -667,12 +593,9 @@ class MainWindow(tk.Frame):
             if len(line) > 0: line = line[:, :, :-1]
             node, line, tri, triColor = TDE.clipEadges(node, line, tri, triColor, h, w)
 
-            if len(tri) > 0:
-                self.printTri(np.array(tri), np.array(triColor))
-            if len(line) > 0:
-                self.printLine(np.array(line))
-            if len(node) > 0:
-                self.printNode(np.array(node))
+            if len(tri) > 0: self.printTri(np.array(tri), np.array(triColor))
+            if len(line) > 0: self.printLine(np.array(line))
+            if len(node) > 0: self.printNode(np.array(node))
 
         self.update()
 
@@ -709,8 +632,7 @@ class MainWindow(tk.Frame):
         for i in range(len(line)):
             linePrint.append([line[i][0][0], line[i][0][1],
                              line[i][1][0], line[i][1][1]])
-        for i in range(len(linePrint)):
-            self.graph.create_line(linePrint[i], width = 5, fill="red")
+        for i in range(len(linePrint)): self.graph.create_line(linePrint[i], width = 5, fill="red")
 
     def printNode(self, node):
         idx = np.argsort(node[:,2])
@@ -749,42 +671,33 @@ def addDataToFrame(d):
         Frame.addNode(d.nodes[0][i], d.nodes[1][i], d.nodes[2][i])
 
     for i in range(len(d.materials[0])):
-        Frame.addMaterial(d.materials[0][i], d.materials[1][i], d.materials[2][i],
-                          d.materials[3][i], d.materials[4][i])
+        Frame.addMaterial(d.materials[0][i], d.materials[1][i], d.materials[2][i], d.materials[3][i], d.materials[4][i])
 
     for i in range(len(d.members[0])):
-        Frame.addMember(d.members[0][i], d.members[1][i], d.members[2][i],
-                        d.members[3][i], d.members[4][i], d.members[5][i],
-                        d.members[6][i], d.members[7][i])
+        Frame.addMember(d.members[0][i], d.members[1][i], d.members[2][i], d.members[3][i], d.members[4][i],
+                        d.members[5][i], d.members[6][i], d.members[7][i])
 
     for i in range(len(d.supports[0])):
-        Frame.defSupport(d.supports[0][i], d.supports[1][i], d.supports[2][i],
-                         d.supports[3][i], d.supports[4][i], d.supports[5][i],
-                         d.supports[6][i])
+        Frame.defSupport(d.supports[0][i], d.supports[1][i], d.supports[2][i], d.supports[3][i], d.supports[4][i],
+                         d.supports[5][i], d.supports[6][i])
 
     for i in range(len(d.releases[0])):
-        Frame.defReleases(d.releases[0][i], d.releases[1][i], d.releases[2][i],
-                          d.releases[3][i], d.releases[4][i], d.releases[5][i],
-                          d.releases[6][i], d.releases[7][i], d.releases[8][i],
-                          d.releases[9][i], d.releases[10][i], d.releases[11][i],
-                          d.releases[12][i])
+        Frame.defReleases(d.releases[0][i], d.releases[1][i], d.releases[2][i], d.releases[3][i], d.releases[4][i],
+                          d.releases[5][i], d.releases[6][i], d.releases[7][i], d.releases[8][i],d.releases[9][i],
+                          d.releases[10][i], d.releases[11][i], d.releases[12][i])
 
     for i in range(len(d.nodeLoad[0])):
-        Frame.addNodeLoad(d.nodeLoad[0][i], d.nodeLoad[1][i], d.nodeLoad[2][i],
-                          d.nodeLoad[3][i], d.nodeLoad[4][i], d.nodeLoad[5][i],
-                          d.nodeLoad[6][i], d.nodeLoad[7][i])
+        Frame.addNodeLoad(d.nodeLoad[0][i], d.nodeLoad[1][i], d.nodeLoad[2][i], d.nodeLoad[3][i], d.nodeLoad[4][i],
+                          d.nodeLoad[5][i], d.nodeLoad[6][i], d.nodeLoad[7][i])
 
     for i in range(len(d.memberPointLoad[0])):
-        Frame.addMemberPointLoad(d.memberPointLoad[0][i], d.memberPointLoad[1][i],
-                                 d.memberPointLoad[2][i], d.memberPointLoad[3][i],
-                                 d.memberPointLoad[4][i], d.memberPointLoad[5][i],
-                                 d.memberPointLoad[6][i], d.memberPointLoad[7][i],
-                                 d.memberPointLoad[8][i])
+        Frame.addMemberPointLoad(d.memberPointLoad[0][i], d.memberPointLoad[1][i], d.memberPointLoad[2][i],
+                                 d.memberPointLoad[3][i], d.memberPointLoad[4][i], d.memberPointLoad[5][i],
+                                 d.memberPointLoad[6][i], d.memberPointLoad[7][i], d.memberPointLoad[8][i])
 
     for i in range(len(d.memberDistLoad[0])):
-        Frame.addMemberDistLoad(d.memberDistLoad[0][i], d.memberDistLoad[1][i],
-                                d.memberDistLoad[2][i], d.memberDistLoad[3][i],
-                                d.memberDistLoad[4][i], d.memberDistLoad[5][i],
-                                d.memberDistLoad[6][i], d.memberDistLoad[7][i],
-                                d.memberDistLoad[8][i], d.memberDistLoad[9][i])
+        Frame.addMemberDistLoad(d.memberDistLoad[0][i], d.memberDistLoad[1][i], d.memberDistLoad[2][i],
+                                d.memberDistLoad[3][i], d.memberDistLoad[4][i], d.memberDistLoad[5][i],
+                                d.memberDistLoad[6][i], d.memberDistLoad[7][i], d.memberDistLoad[8][i],
+                                d.memberDistLoad[9][i])
     return Frame
