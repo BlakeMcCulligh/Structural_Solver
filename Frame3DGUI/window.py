@@ -1,4 +1,3 @@
-import sys
 import tkinter as tk
 from tkinter import ttk,  filedialog
 from copy import copy
@@ -18,22 +17,26 @@ class MainWindow(tk.Frame):
     def __init__(self, root):
         tk.Frame.__init__(self, root)
 
-        self.filePath = None
+        self.filePath = None # File path for saving.
 
-        self.root = root
-
-        self.create_top_menu()
+        self.root = root # Window root.
 
         self.centerWindow()
 
+        self.create_top_menu()
+
         self.data = data()
 
+        # setting anlysis objects to none.
         self.Frame = None
         self.results = None
         self.Optimization_Results = None
 
+        # 3D rendering canvas
         self.graph = tk.Canvas(root, bg="white")
         self.graph.pack(fill="both", expand=True)
+
+        # 3D camera Data
         self.camera = np.array([0.0, 0.0, 0.0])
         self.up = np.array([0.0, 1.0, 0.0])
         self.lookDir = np.array([0.0, 0.0, 1.0])
@@ -42,27 +45,31 @@ class MainWindow(tk.Frame):
         self.target = np.array([0.0, 0.0, 1.0])
         self.FOV = 90
         self.Z_far, self.Z_near = 1000, 0.1
-        self.light_direction = np.array([0, 0, -1])
 
+        self.light_direction = np.array([0, 0, -1]) # 3D rendering ligingting direction unit vector
+
+        # arrays of geomitry being displayed in the 3D rendering
         self.printNodes: np.ndarray = np.empty((0, 3))
         self.printLines: np.ndarray = np.empty((0, 2, 3))
         self.surfaceTri: np.ndarray = np.empty((0, 3, 3))
         self.solidTri: np.ndarray = np.empty((0, 3, 3))
 
+        # binding 3D rendering movement inputs
         self.root.bind("<MouseWheel>", self.zoom)
-
         self.scroolCordsLast = []
         self.shiftStateLast = False
         self.root.bind("<Button-2>", self.scroolDown)
         self.root.bind("<B2-Motion>", self.scroolUpdate)
         self.root.bind("<ButtonRelease-2>", self.scroolUp)
 
-        self.tableWindow = None
-        self.tableTabs = None
+        # Variables for the input table window
+        self.tableWindow = None # root of the input tables window
+        self.tableTabs = None # ttk notebook of the tabs
         self.tables = []
-        self.Boxes = []
+        self.Boxes = [] # input boxes
         self.Buttons = []
 
+        # roots for the frame on each tab
         self.nodeTab = None
         self.matTab = None
         self.memberTab = None
@@ -76,12 +83,269 @@ class MainWindow(tk.Frame):
 
         self.root.protocol("WM_DELETE_WINDOW",self.exit)
 
+    def centerWindow(self):
+        """
+        Centers the main window on the screen and sets its dimensions.
+        """
+
+        width = 1000
+        height = 800
+
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        if width > screen_width or height > screen_height:
+            width = screen_width * 0.8
+            height = screen_height * 0.8
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2) - 50
+
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
+
+    def create_top_menu(self):
+        """
+        Creates the top menu of the window.
+        """
+
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+
+        File_menu = tk.Menu(menubar, tearoff=False)
+        File_menu.add_command(label='Save', command=self.save)
+        File_menu.add_command(label='Save As', command=self.saveAs)
+        File_menu.add_command(label='Open Frame', command=self.open)
+        menubar.add_cascade(label="File", menu=File_menu)
+
+        import_menu = tk.Menu(menubar, tearoff=False)
+        import_menu.add_command(label='Nodes', command=self.ImportNodes)
+        import_menu.add_command(label='Members', command=self.ImportMembers)
+        import_menu.add_command(label='Materials', command=self.ImportMaterials)
+        import_menu.add_command(label='Supports', command=self.ImportSupports)
+        import_menu.add_command(label='Releases', command=self.ImportReleases)
+        import_menu.add_command(label='Node Loads', command=self.ImportNodeLoads)
+        import_menu.add_command(label='Members Point Loads', command=self.ImportMemberPointLoads)
+        import_menu.add_command(label='Members Distributed Loads', command=self.ImportMemberDistLoads)
+        menubar.add_cascade(label="Import", menu=import_menu)
+
+        Analysis_menu = tk.Menu(menubar, tearoff=False)
+        Analysis_menu.add_command(label='Linear Analysis', command=self.LinearAnalysis)
+        Analysis_menu.add_command(label='Global Optimization', command=self.otimizationWindow)
+        menubar.add_cascade(label="Analysis", menu=Analysis_menu)
+
     def exit(self):
+        """
+        CLoses Program
+        """
         self.root.quit()
         self.root.destroy()
 
+    def saveAs(self):
+        """
+        Saves files under specified name and location.
+        """
+
+        self.filePath = saveFrame(self.data)
+
+    def save(self):
+        """
+        Saves files in current directory. If no current directory is specified, save under specified name and location.
+        """
+
+        if self.filePath is None:
+            self.saveAs()
+        else:
+            saveFrame(self.data, self.filePath)
+
+    def open(self):
+        """
+        Opens files under specified name and location.
+        """
+
+        openFrame(self)
+        openResults(self, self.filePath)
+
+    def ImportNodes(self):
+        """
+        Imports coordanits for nodes from the specified Excel file.
+        Headers must be "X, Y, Z" and there must only be one sheet.
+        """
+
+        fileTypes = [("Excel Files", "*.xlsx")]
+        filePath = select_file_gui(fileTypes) # geting file path from user
+        Nodes_df = pd.read_excel(filePath)
+        Nodes = [Nodes_df["X"].tolist(), Nodes_df["Y"].tolist(), Nodes_df["Z"].tolist()]
+        self.data.addnodes(self, Nodes, True, True)
+
+    def ImportMaterials(self):
+        """
+        Imports material properties from the specified Excel file.
+        Headers must be "E, G, nu, rho, fy" and there must only be one sheet.
+        """
+
+        fileTypes = [("Excel Files", "*.xlsx")]
+        filePath = select_file_gui(fileTypes) # geting file path from user
+        M_df = pd.read_excel(filePath)
+        Materials = [M_df["E"].tolist(),M_df["G"].tolist(),M_df["nu"].tolist(),M_df["rho"].tolist(),M_df["fy"].tolist()]
+        self.data.addmaterials(self, Materials, True, True)
+
+    def ImportMembers(self):
+        """
+        Imports member end node indecies, material index, if cross-sections properties are to be set,
+        and the cross-section properties for the specified Excel file.
+        Headers must be "i Node, j Node, Material, Set Cross-Section Properties, A, Iy, Iz, J"
+        and there must only be one sheet.
+        """
+
+        fileTypes = [("Excel Files", "*.xlsx")]
+        filePath = select_file_gui(fileTypes) # geting file path from user
+        M_df = pd.read_excel(filePath)
+        Members = [M_df["i Node"].tolist(), M_df["j Node"].tolist(), M_df["Material"].tolist(),
+                   M_df["Set Cross-Section Properties"].tolist(), M_df["A"].tolist(), M_df["Iy"].tolist(),
+                   M_df["Iz"].tolist(), M_df["J"].tolist()]
+        self.data.addmembers(self, Members, True, True)
+
+    def ImportSupports(self):
+        """
+        Imports supports node indeces, and what degrees of freedom are to be supported for the specififed Excel file.
+        Headers must be "Node, DX, DY, DZ, RX, RY, RZ" and there must only be one sheet.
+        """
+
+        fileTypes = [("Excel Files", "*.xlsx")]
+        filePath = select_file_gui(fileTypes) # geting file path from user
+        S_df = pd.read_excel(filePath)
+        Supports = [S_df["Node"].tolist(),S_df["DX"].tolist(),S_df["DY"].tolist(),S_df["DZ"].tolist(),
+                    S_df["RX"].tolist(),S_df["RY"].tolist(),S_df["RZ"].tolist()]
+        self.data.addsupports(self, Supports, True, True)
+
+    def ImportReleases(self):
+        """
+        Inporst releced member indeces, and what ends and degrees of freedom are to be releced for the specified
+        Excel file.
+        Headers must be "Member, i DX, i DY, i DZ, i RX, i RY, i RZ, j DX, j DY, j DZ, j RX, j RY, j RZ" and there
+        must only be one sheet.
+        """
+
+        fileTypes = [("Excel Files", "*.xlsx")]
+        filePath = select_file_gui(fileTypes) # geting file path from user
+        R_df = pd.read_excel(filePath)
+        Releases = [R_df["Member"].tolist(), R_df["i DX"].tolist(), R_df["i DY"].tolist(), R_df["i DZ"].tolist(),
+                    R_df["i RX"].tolist(), R_df["i RY"].tolist(), R_df["i RZ"].tolist(),R_df["j DX"].tolist(),
+                    R_df["j DY"].tolist(), R_df["j DZ"].tolist(), R_df["j RX"].tolist(), R_df["j RY"].tolist(),
+                    R_df["j RZ"].tolist()]
+        self.data.addreleases(self, Releases, True, True)
+
+    def ImportNodeLoads(self):
+        """
+        Imports node load, node indeces, what directions and magnitueds the load is to be in,
+         and the index of the load case.
+        Headers must be "Node, PX, PY, PZ, MX, MY, MZ, Case" and there must only be one sheet.
+        """
+
+        fileTypes = [("Excel Files", "*.xlsx")]
+        filePath = select_file_gui(fileTypes) # geting file path from user
+        N_df = pd.read_excel(filePath)
+        NodeLoads = [N_df["Node"].tolist(),N_df["PX"].tolist(),N_df["PY"].tolist(),N_df["PZ"].tolist(),
+                     N_df["MX"].tolist(),N_df["MY"].tolist(),N_df["MZ"].tolist(),N_df["Case"].tolist()]
+        self.data.addnodeLoads(self, NodeLoads, True, True)
+
+    def ImportMemberPointLoads(self):
+        """
+        Imports member point loads, member indeces, location, what directions and magnitueds the load is to be in
+        and the index of the load case.
+        Headers must be "Member, X, PX, PY, PZ, MX, MY, MZ, Case" and there must only be one sheet.
+        """
+
+        file_Types = [("Excel Files", "*.xlsx")]
+        filePath = select_file_gui(file_Types) # geting file path from user
+        M_df = pd.read_excel(filePath)
+        MemberPointLoads = [M_df["Member"].tolist(),M_df["X"].tolist(),M_df["PX"].tolist(),M_df["PY"].tolist(),
+                            M_df["PZ"].tolist(),M_df["MX"].tolist(),M_df["MY"].tolist(),M_df["MZ"].tolist(),
+                            M_df["Case"].tolist()]
+        self.data.addmemberPointLoads(self, MemberPointLoads, True, True)
+
+    def ImportMemberDistLoads(self):
+        """
+        Imports member distributed loads: member indeces, start and end locations, start and end force magnitued and
+        directions, and the index of the load case
+        Headers must be "Member, X1, X2, WX1, WX2, WY1, WY2, WZ1, WZ2, Case" and there must only be one sheet.
+        """
+
+        fileTypes = [("Excel Files", "*.xlsx")]
+        filePath = select_file_gui(fileTypes) # geting file path from user
+        M_df = pd.read_excel(filePath)
+        MemberDistLoads = [M_df["Member"].tolist(),M_df["X1"].tolist(),M_df["X2"].tolist(),M_df["WX1"].tolist(),
+                           M_df["WX2"].tolist(),M_df["WY1"].tolist(),M_df["WY2"].tolist(),M_df["WZ1"].tolist(),
+                           M_df["WZ2"].tolist(),M_df["Case"].tolist()]
+        self.data.addmemberDistLoads(self, MemberDistLoads, True, True)
+
+    def LinearAnalysis(self):
+        """
+         Runs linear analysis on the defined frame, and saves the results.
+        """
+
+        Frame = addDataToFrame(self.data)
+
+        Frame.preAnalysis_linear()
+        D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = Frame.analysis_linear(getWeight = True,
+                                                                                             getReactions = True,
+                                                                                             getInternalForces = True)
+        self.Frame = Frame
+        self.results = Results()
+        self.results.addNodalDeflections(DX, DY, DZ, RX, RY, RZ)
+        self.results.addWeight(weight)
+        self.results.addReactions(reactions)
+        self.results.addInternalForces(internalForces)
+
+        self.save()
+        saveResults(self.results, self.filePath)
+
+    def otimizationWindow(self):
+        """
+        Opens the window to get input data for an optimization and the start the optimization.
+        """
+
+        OptimizationPopUp(self, self.root, self.data)
+
+    def GlobalOptimization(self, GroupAssignments, GroupTypes, lowerBound, upperBound, costFunction, weightRun,
+                           reactionRun, internalForcesRun):
+        """
+        Runs global cross-section optimization on the frames members that do not have specified cross-sections. Saves
+        the optimized frame under a specified file name and path, and its linear analysis results.
+
+        :param GroupAssignments: Member groups assignments for members withou specified cross-sections.
+        :param GroupTypes: What kind of cross-section each member group is.
+        :param lowerBound: Lower bounds on optimization variables (dimentions on the cross-sections).
+        :param upperBound: Upper bounds on optimization variables (dimentions on the cross-sections).
+        :param costFunction: String that carrys the equation to get the cost of the frame.
+                             The optimizer minimizes the value this equation returns.
+        :param weightRun: If the weight of the members are needed for the cost equation.
+        :param reactionRun: If the reactions of the frame are needed for the cost equation.
+        :param internalForcesRun: If the internal forces of the frame are needed for the cost equation.
+        """
+
+        saveFrame(self.data)
+
+        Frame = addDataToFrame(self.data)
+
+        Frame.preAnalysis_linear()
+        results = Frame.optimize(GroupAssignments, GroupTypes, lowerBound, upperBound, costFunction, weightRun,
+                                 reactionRun, internalForcesRun)
+        self.Frame = Frame
+        self.Optimization_Results = results
+
+        # todo: update frame object to optimization results
+        self.LinearAnalysis()
+        # todo: save optimization results
+
+    """ ----------------------------------------------------------------------------------------------"""
+    """ ---------------------------------------- INPUT TABLES ----------------------------------------"""
+    """ ----------------------------------------------------------------------------------------------"""
 
     def createTableWindow(self):
+        """
+        Creates window with all the input tables.
+        """
+
         self.tableWindow = tk.Toplevel(self.root)
         self.tableWindow.title("Sheets")
         self.tableWindow.geometry("800x700")
@@ -133,7 +397,8 @@ class MainWindow(tk.Frame):
         # Members
         self.memberTab = ttk.Frame(self.tableTabs)
         self.tableTabs.add(self.memberTab, text="Members")
-        self.tables.append(self.createTable(self.memberTab, ("Index", "i Node", "j Node", "Material Id", "Set C.S.", "A", "Iy", "Iz", "J")))
+        self.tables.append(self.createTable(self.memberTab, ("Index", "i Node", "j Node", "Material Id",
+                                                             "Set C.S.", "A", "Iy", "Iz", "J")))
         self.Boxes.append([])
         for i in range(8): self.Boxes[2].append(tk.Entry(self.memberTab))
         self.Boxes[2][0].place(x=150, y=300)
@@ -153,7 +418,8 @@ class MainWindow(tk.Frame):
         # Supports
         self.supportTab = ttk.Frame(self.tableTabs)
         self.tableTabs.add(self.supportTab, text="Supports")
-        self.tables.append(self.createTable(self.supportTab,("Index", "i Node", "D X", "D Y", "D Z.", "R X", "R Y", "R Z")))
+        self.tables.append(self.createTable(self.supportTab,("Index", "i Node", "D X", "D Y", "D Z.", "R X",
+                                                             "R Y", "R Z")))
         self.Boxes.append([])
         for i in range(7): self.Boxes[3].append(tk.Entry(self.supportTab))
         self.Boxes[3][0].place(x=150, y=300)
@@ -172,7 +438,9 @@ class MainWindow(tk.Frame):
         # Releases
         self.releaseTab = ttk.Frame(self.tableTabs)
         self.tableTabs.add(self.releaseTab, text="Releases")
-        self.tables.append(self.createTable(self.releaseTab,("Index", "i Member", "i DX", "i DY", "i DZ", "i RX", "i RY", "i RZ", "j DX", "j DY", "j DZ", "j RX", "j RY", "j RZ")))
+        self.tables.append(self.createTable(self.releaseTab,("Index", "i Member", "i DX", "i DY", "i DZ",
+                                                             "i RX", "i RY", "i RZ", "j DX", "j DY", "j DZ", "j RX",
+                                                             "j RY", "j RZ")))
         self.Boxes.append([])
         for i in range(13): self.Boxes[4].append(tk.Entry(self.releaseTab))
         self.Boxes[4][0].place(x=150, y=300)
@@ -197,7 +465,8 @@ class MainWindow(tk.Frame):
         # Nodal Loads
         self.nodeLoadTab = ttk.Frame(self.tableTabs)
         self.tableTabs.add(self.nodeLoadTab, text="Node Loads")
-        self.tables.append(self.createTable(self.nodeLoadTab,("Index", "i Node", "P X", "P Y", "P Z.", "M X", "M Y", "M Z","Casee")))
+        self.tables.append(self.createTable(self.nodeLoadTab,("Index", "i Node", "P X", "P Y", "P Z.", "M X",
+                                                              "M Y", "M Z","Casee")))
         self.Boxes.append([])
         for i in range(8): self.Boxes[5].append(tk.Entry(self.nodeLoadTab))
         self.Boxes[5][0].place(x=150, y=300)
@@ -217,7 +486,8 @@ class MainWindow(tk.Frame):
         # Member Point Loads
         self.memberPointLoadTab = ttk.Frame(self.tableTabs)
         self.tableTabs.add(self.memberPointLoadTab, text="Member Point Loads")
-        self.tables.append(self.createTable(self.memberPointLoadTab, ("Index", "i Member", "x", "P X", "P Y", "P Z.", "M X", "M Y", "M Z", "Casee")))
+        self.tables.append(self.createTable(self.memberPointLoadTab, ("Index", "i Member", "x", "P X", "P Y",
+                                                                      "P Z.", "M X", "M Y", "M Z", "Casee")))
         self.Boxes.append([])
         for i in range(9): self.Boxes[6].append(tk.Entry(self.memberPointLoadTab))
         self.Boxes[6][0].place(x=150, y=300)
@@ -238,7 +508,8 @@ class MainWindow(tk.Frame):
         # Member Distributed Loads
         self.memberDistLoadTab = ttk.Frame(self.tableTabs)
         self.tableTabs.add(self.memberDistLoadTab, text="Member Distributed Loads")
-        self.tables.append(self.createTable(self.memberDistLoadTab,("Index", "i Member", "x 1", "x 2", "wx 1", "wx 2", "wy 1", "wy 2", "wz 1", "wz 2", "Casee")))
+        self.tables.append(self.createTable(self.memberDistLoadTab,("Index", "i Member", "x 1", "x 2", "wx 1",
+                                                                    "wx 2", "wy 1", "wy 2", "wz 1", "wz 2", "Casee")))
         self.Boxes.append([])
         for i in range(10): self.Boxes[7].append(tk.Entry(self.memberDistLoadTab))
         self.Boxes[7][0].place(x=150, y=300)
@@ -258,17 +529,27 @@ class MainWindow(tk.Frame):
         self.Buttons[7][1].place(x=550, y=350)
 
     def createTable(self, tab, Headings):
+        """
+        Creates an input table.
+
+        :param tab: Root of tab to put the table on.
+        :param Headings: Headings to put on the table.
+        :return: Table
+        """
+
         table = ttk.Treeview(tab, columns=Headings, show='headings', height=10)
 
+        # adding scroll bar to table
         scrollbar = ttk.Scrollbar(tab, orient="vertical", command=table.yview)
         scrollbar.pack(side="right", fill="y")
-
         table.configure(yscrollcommand=scrollbar.set)
 
+        # adding headings to table
         for i in range(len(Headings)):
             table.heading(Headings[i], text=Headings[i])
             table.column(Headings[i], width=50)
 
+        # Updates the input boxes to be the current values in the selected table row
         table.bind("<<TreeviewSelect>>", self.getSelectedRow)
 
         table.pack()
@@ -277,6 +558,10 @@ class MainWindow(tk.Frame):
 
     # noinspection PyUnusedLocal
     def getSelectedRow(self, event):
+        """
+        Updates the input boxes to be the current values in the selected table row.
+        """
+
         numCol = [3,5,8,7,13,8,9,10]
         t_id = self.tableTabs.index("current")
 
@@ -287,6 +572,10 @@ class MainWindow(tk.Frame):
             self.Boxes[t_id][i].insert(0, row_info[i+1])
 
     def editValues(self):
+        """
+        Changes the values in the selected row of the table to be the values in the input boxes.
+        """
+
         numCol = [3, 5, 8, 7, 13, 8, 9, 10]
         t_id = self.tableTabs.index("current")
 
@@ -294,25 +583,37 @@ class MainWindow(tk.Frame):
         row_info = self.tables[t_id].item(row_id).get('values')
         newVal = [row_info[0]]
         for i in range(numCol[t_id]): newVal.append(self.Boxes[t_id][i].get()) # geting values from text boxes
-        newVal = np.array(newVal)
+
+        # Converting strings to floats and bools
+        data_new = []
+        for i in range(numCol[t_id]):
+            if newVal[i + 1] == "True" or newVal[i + 1] == "False":
+                data_new.append(bool(newVal[i + 1]))
+            else:
+                data_new.append(float(newVal[i + 1]))
 
         # Updating data
-        if t_id == 0:   self.data.editnode(self, newVal[1:], newVal[[0]], True, True, row_id)
-        elif t_id == 1: self.data.editmaterials(self, newVal[1:], newVal[[0]], True, True, row_id)
-        elif t_id == 2: self.data.editmembers(self, newVal[1:], newVal[[0]], True, True, row_id)
-        elif t_id == 3: self.data.editsupports(self, newVal[1:], newVal[[0]], True, True, row_id)
-        elif t_id == 4: self.data.editreleases(self, newVal[1:], newVal[[0]], True, True, row_id)
-        elif t_id == 5: self.data.editnodeLoads(self, newVal[1:], newVal[[0]], True, True, row_id)
-        elif t_id == 6: self.data.editmemberPointLoad(self, newVal[1:], newVal[[0]], True, True, row_id)
-        elif t_id == 7: self.data.editmemberDistLoad(self, newVal[1:], newVal[[0]], True, True, row_id)
+        if t_id == 0:   self.data.editnode(self, data_new, newVal[0], True, True, row_id)
+        elif t_id == 1: self.data.editmaterials(self, data_new, newVal[0], True, True, row_id)
+        elif t_id == 2: self.data.editmembers(self, data_new, newVal[0], True, True, row_id)
+        elif t_id == 3: self.data.editsupports(self, data_new, newVal[0], True, True, row_id)
+        elif t_id == 4: self.data.editreleases(self, data_new, newVal[0], True, True, row_id)
+        elif t_id == 5: self.data.editnodeLoads(self, data_new, newVal[0], True, True, row_id)
+        elif t_id == 6: self.data.editmemberPointLoad(self, data_new, newVal[0], True, True, row_id)
+        elif t_id == 7: self.data.editmemberDistLoad(self, data_new, newVal[0], True, True, row_id)
 
     def addValues(self):
+        """
+        Adds a new row to the table with the values in the input boxes.
+        """
+
         numCol = [3, 5, 8, 7, 13, 8, 9, 10]
         t_id = self.tableTabs.index("current")
         numRow = len(self.tables[t_id].get_children())
         newVal = [numRow]
         for i in range(numCol[t_id]): newVal.append(self.Boxes[t_id][i].get()) # geting values from text boxes
 
+        # Converting strings to floats and bools
         data_new = []
         for i in range(numCol[t_id]):
             if newVal[i + 1] == "True" or newVal[i + 1] == "False":
@@ -330,166 +631,27 @@ class MainWindow(tk.Frame):
         elif t_id == 6: self.data.addmemberPointLoads(self, data_new, True, True)
         elif t_id == 7: self.data.addmemberDistLoads(self, data_new, True, True)
 
-    def centerWindow(self):
-        width = 1000
-        height = 800
-
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
-
-        if width > screen_width or height > screen_height:
-            width = screen_width * 0.8
-            height = screen_height * 0.8
-        x = (screen_width // 2) - (width // 2)
-        y = (screen_height // 2) - (height // 2) - 50
-
-        self.root.geometry(f"{width}x{height}+{x}+{y}")
-
-    def create_top_menu(self):
-        menubar = tk.Menu(self.root)
-        self.root.config(menu=menubar)
-
-        File_menu = tk.Menu(menubar, tearoff=False)
-        File_menu.add_command(label='Save', command=self.save)
-        File_menu.add_command(label='Save As', command=self.saveAs)
-        File_menu.add_command(label='Open Frame', command=self.openFrame)
-        menubar.add_cascade(label="File", menu=File_menu)
-
-        import_menu = tk.Menu(menubar, tearoff=False)
-        import_menu.add_command(label='Nodes', command= self.InportNodes)
-        import_menu.add_command(label='Members', command=self.InportMembers)
-        import_menu.add_command(label='Materials', command=self.InportMaterials)
-        import_menu.add_command(label='Supports', command=self.ImportSupports)
-        import_menu.add_command(label='Releases', command=self.ImportReleases)
-        import_menu.add_command(label='Node Loads', command=self.ImportNodeLoads)
-        import_menu.add_command(label='Members Point Loads', command=self.ImportMemberPointLoads)
-        import_menu.add_command(label='Members Distributed Loads', command=self.ImportMemberDistLoads)
-        menubar.add_cascade(label="Import", menu=import_menu)
-
-        Analysis_menu = tk.Menu(menubar, tearoff=False)
-        Analysis_menu.add_command(label='Linear Analysis', command=self.LinearAnalysis)
-        Analysis_menu.add_command(label='Global Optimization', command=self.otimizationWindow)
-        menubar.add_cascade(label="Analysis", menu=Analysis_menu)
-
-    def saveAs(self):
-        self.filePath = saveFrame(self.data)
-
-    def save(self):
-        if self.filePath is None:
-            self.saveAs()
-        else:
-            saveFrame(self.data, self.filePath)
-
-    def openFrame(self):
-        openFrame(self)
-        openResults(self, self.filePath)
-
-    def otimizationWindow(self):
-        OptimizationPopUp(self, self.root, self.data)
-
-    def closeProgram(self):
-        self.root.destroy()
-
-    def InportNodes(self):
-        file_Types = [("Excel Files", "*.xlsx")]
-        filePath = select_file_gui(file_Types)
-        Nodes_df = pd.read_excel(filePath)
-        Nodes = [Nodes_df["X"].tolist(), Nodes_df["Y"].tolist(), Nodes_df["Z"].tolist()]
-        self.data.addnodes(self, Nodes, True, True)
-
-    def InportMaterials(self):
-        file_Types = [("Excel Files", "*.xlsx")]
-        filePath = select_file_gui(file_Types)
-        M_df = pd.read_excel(filePath)
-        Materials = [M_df["E"].tolist(),M_df["G"].tolist(),M_df["nu"].tolist(),M_df["rho"].tolist(),M_df["fy"].tolist()]
-        self.data.addmaterials(self, Materials, True, True)
-
-    def InportMembers(self):
-        file_Types = [("Excel Files", "*.xlsx")]
-        filePath = select_file_gui(file_Types)
-        M_df = pd.read_excel(filePath)
-        Members = [M_df["i Node"].tolist(), M_df["j Node"].tolist(), M_df["Material"].tolist(),
-                   M_df["Set Cross-Section Properties"].tolist(), M_df["A"].tolist(), M_df["Iy"].tolist(),
-                   M_df["Iz"].tolist(), M_df["J"].tolist()]
-        self.data.addmembers(self, Members, True, True)
-
-    def ImportSupports(self):
-        file_Types = [("Excel Files", "*.xlsx")]
-        filePath = select_file_gui(file_Types)
-        S_df = pd.read_excel(filePath)
-        Supports = [S_df["Node"].tolist(),S_df["DX"].tolist(),S_df["DY"].tolist(),S_df["DZ"].tolist(),
-                    S_df["RX"].tolist(),S_df["RY"].tolist(),S_df["RZ"].tolist()]
-        self.data.addsupports(self, Supports, True, True)
-
-    def ImportReleases(self):
-        file_Types = [("Excel Files", "*.xlsx")]
-        filePath = select_file_gui(file_Types)
-        R_df = pd.read_excel(filePath)
-        Releases = [R_df["Member"].tolist(), R_df["i DX"].tolist(), R_df["i DY"].tolist(), R_df["i DZ"].tolist(),
-                    R_df["i RX"].tolist(), R_df["i RY"].tolist(), R_df["i RZ"].tolist(),R_df["j DX"].tolist(),
-                    R_df["j DY"].tolist(), R_df["j DZ"].tolist(), R_df["j RX"].tolist(), R_df["j RY"].tolist(),
-                    R_df["j RZ"].tolist()]
-        self.data.addreleases(self, Releases, True, True)
-
-    def ImportNodeLoads(self):
-        file_Types = [("Excel Files", "*.xlsx")]
-        filePath = select_file_gui(file_Types)
-        N_df = pd.read_excel(filePath)
-        NodeLoads = [N_df["Node"].tolist(),N_df["PX"].tolist(),N_df["PY"].tolist(),N_df["PZ"].tolist(),
-                     N_df["MX"].tolist(),N_df["MY"].tolist(),N_df["MZ"].tolist()]
-        self.data.addnodeLoads(self, NodeLoads, True, True)
-
-    def ImportMemberPointLoads(self):
-        file_Types = [("Excel Files", "*.xlsx")]
-        filePath = select_file_gui(file_Types)
-        M_df = pd.read_excel(filePath)
-        MemberPointLoads = [M_df["Member"].tolist(),M_df["X"].tolist(),M_df["PX"].tolist(),M_df["PY"].tolist(),
-                            M_df["PZ"].tolist(),M_df["MX"].tolist(),M_df["MY"].tolist(),M_df["MZ"].tolist()]
-        self.data.addmemberPointLoads(self, MemberPointLoads, True, True)
-
-    def ImportMemberDistLoads(self):
-        file_Types = [("Excel Files", "*.xlsx")]
-        filePath = select_file_gui(file_Types)
-        M_df = pd.read_excel(filePath)
-        MemberDistLoads = [M_df["Member"].tolist(),M_df["X1"].tolist(),M_df["X2"].tolist(),M_df["WX1"].tolist(),
-                           M_df["WX2"].tolist(),M_df["WY1"].tolist(),M_df["WY2"].tolist(),M_df["WZ1"].tolist(),
-                           M_df["WZ2"].tolist()]
-        self.data.addmemberDistLoads(self, MemberDistLoads, True, True)
-
-    def LinearAnalysis(self):
-        Frame = addDataToFrame(self.data)
-
-        Frame.preAnalysis_linear()
-        D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = Frame.analysis_linear(getWeight = True, getReactions = True, getInternalForces = True)
-        self.Frame = Frame
-        self.results = Results()
-        self.results.addNodalDeflections(DX, DY, DZ, RX, RY, RZ)
-        self.results.addWeight(weight)
-        self.results.addReactions(reactions)
-        self.results.addInternalForces(internalForces)
-
-        self.save()
-        saveResults(self.results, self.filePath)
-
-    def GlobalOptimization(self, GroupAssignments, GroupTypes, lowerBound, upperBound, costFunction, weightRun, reactionRun, internalForcesRun):
-        saveFrame(self.data)
-
-        Frame = addDataToFrame(self.data)
-
-        Frame.preAnalysis_linear()
-        results = Frame.optimize(GroupAssignments, GroupTypes, lowerBound, upperBound, costFunction, weightRun, reactionRun, internalForcesRun)
-        self.Frame = Frame
-        self.Optimization_Results = results
-
-        # todo: update frame object to optimization results
-        self.LinearAnalysis()
-        # todo: save optimization results
+    """ ----------------------------------------------------------------------------------------------"""
+    """ ---------------------------------------- 3D Rendering ----------------------------------------"""
+    """ ----------------------------------------------------------------------------------------------"""
 
     def addPrintNode(self, node):
+        """
+        Adds a node to be printed in the 3D rendering.
+
+        :param node: Node cordinates. [X,Y,Z].
+        """
+
         self.printNodes = np.vstack((self.printNodes, node))
         self.updateCanves()
 
     def addPrintLine(self, line):
+        """
+        Adds a line to be printed in the 3D rendering.
+
+        :param line: Line end node indeces in the print node array [i Node, j Node].
+        """
+
         l = []
         for i in range(len(line)):
             l.append(int(line[i]))
@@ -498,11 +660,25 @@ class MainWindow(tk.Frame):
         self.updateCanves()
 
     def addPrintSurface(self, surface):
+        """
+        Adds a surface to be printed in the 3D rendering.
+
+        :param surface: Serface's corner cordinates. [X,Y,Z].
+        """
+
         tri = TDE.triangalizeSurface(self, surface, False)
         for i in range(len(tri)): self.surfaceTri = np.vstack((self.surfaceTri, tri[i]))
         self.updateCanves()
 
     def addPrintSolid(self, solid, flipNormal: list | None = None):
+        """
+        Adds a solid to be printed in the 3D rendering.
+
+        :param solid: Solid's corner cordinates. [X,Y,Z].
+        :param flipNormal: List of weather each of the solid's face's normals are to be flipped or not.
+                           Is not needed if the solid is already triangalized.
+        """
+
         numSurfaces = len(solid)
         for i in range(numSurfaces):
             if isinstance(flipNormal, list): # needs triangalized
@@ -512,6 +688,14 @@ class MainWindow(tk.Frame):
                 self.solidTri = np.vstack((self.solidTri, [solid[i]]))
 
     def scroolDown(self, event):
+        """
+        Ran when the scroll wheel is pressed down.
+        Checks if the shift buttion is held down and if it is start a rotation movement,
+        and if not start a pan movement.
+
+        :param event: Event of the scrool wheel being down.
+        """
+
         if bool(event.state & 0x0001):
             self.shiftStateLast = True
             self.rotStart(event)
@@ -520,6 +704,14 @@ class MainWindow(tk.Frame):
             self.panStart(event)
 
     def scroolUpdate(self, event):
+        """
+        Ran if the currser moves while the scrool wheel is held down.
+        Updates the rotation or panning movement if the shift button is still in the same state, if not end the
+        current movement and start the other one.
+
+        :param event: Event of the scrool wheel being down.
+        """
+
         if bool(event.state & 0x0001):
             if not self.shiftStateLast:
                 self.shiftStateLast = True
@@ -534,6 +726,13 @@ class MainWindow(tk.Frame):
             else: self.panUpdate(event)
 
     def scroolUp(self, event):
+        """
+        Ran when the scrool wheel is released.
+        Ends Roation or paning movement.
+
+        :param event: Event of the scrool wheel being releced.
+        """
+
         if bool(event.state & 0x0001):
             if not self.shiftStateLast: self.panEnd(event)
             else: self.rotEnd(event)
@@ -542,6 +741,13 @@ class MainWindow(tk.Frame):
             else: self.panEnd(event)
 
     def zoom(self, event):
+        """
+        Ran when the scrool wheel is turned.
+        Runs the zooming movement.
+
+        :param event: Event of the scrool wheel being turned.
+        """
+
         if event.delta > 0:
             self.camera = self.camera + self.lookDir * 0.1
         else:
@@ -549,17 +755,41 @@ class MainWindow(tk.Frame):
         self.updateCanves()
 
     def panStart(self, event):
+        """
+        Saves the codinats of the currser when a panning movement is started.
+
+        :param event: Event of the scrool wheel being down.
+        """
+
         self.scroolCordsLast = [event.x, event.y]
 
     def panUpdate(self, event):
+        """
+        Updates the coordinates of the currser when a pan movement is in progress and updates the rendering.
+
+        :param event: Event of the scrool wheel being down.
+        """
+
         cords = [event.x, event.y]
         self.panMove(cords)
 
     def panEnd(self, event):
+        """
+        Updates the coordinates of the currser when a pan movement is endded and updates the rendering.
+
+        :param event: Event of the scrool wheel being releced.
+        """
+
         cords = [event.x, event.y]
         self.panMove(cords)
 
     def panMove(self, cords):
+        """
+        Updates the render when a panning movement is taking place.
+
+        :param cords: Current cordinates of the currser.
+        """
+
         changeCords = [cords[0] - self.scroolCordsLast[0], cords[1] - self.scroolCordsLast[1]]
         self.camera = self.camera - self.up * changeCords[1] * 0.01
         self.camera = self.camera + np.cross(self.lookDir, self.up) * changeCords[0] * 0.01
@@ -567,17 +797,41 @@ class MainWindow(tk.Frame):
         self.scroolCordsLast = cords
 
     def rotStart(self, event):
+        """
+        Saves the codinats of the currser when a rotation movement is started.
+
+        :param event: Event of the scrool wheel being down.
+        """
+
         self.scroolCordsLast = [event.x, event.y]
 
     def rotUpdate(self, event):
+        """
+        Updates the coordinates of the currser when a rotation movement is in progress and updates the rendering.
+
+        :param event: Event of the scrool wheel being down.
+        """
+
         cords = [event.x, event.y]
         self.rotMove(cords)
 
     def rotEnd(self, event):
+        """
+        Updates the coordinates of the currser when a rotation movement is ended and updates the rendering.
+
+        :param event: Event of the scrool wheel being releced.
+        """
+
         cords = [event.x, event.y]
         self.rotMove(cords)
 
     def rotMove(self, cords):
+        """
+        Updates the render when a rotation movement is taking place.
+
+        :param cords: Current cordinates of the currser.
+        """
+
         changeCords = [cords[0] - self.scroolCordsLast[0], cords[1] - self.scroolCordsLast[1]]
         self.cam_Y_rot = self.cam_Y_rot + changeCords[0] * 0.005
         self.cam_X_rot = self.cam_X_rot + changeCords[1] * 0.005
@@ -585,33 +839,53 @@ class MainWindow(tk.Frame):
         self.scroolCordsLast = cords
 
     def updateCanves(self):
+        """
+        Updates the 3D rendering.
+        """
+
+        # creates a copy of all the geomitry to be shown
         node = copy(self.printNodes)
         line = copy(self.printLines)
         surfTri = copy(self.surfaceTri)
         solidTri = copy(self.solidTri)
 
+        # updating all the data about the location and direction of the camera.
         self.updateCamData()
+
+        # gets all the normals of the tris used for solids being displeyed
         solidTriNormals = TDE.getNormals(solidTri)
+
+        # removes solid tris that are facing away from the camera.
         solidTri, solidTriNormals = TDE.removeTriFaceingAway(self, solidTri, solidTriNormals)
+
+        # handels shadding and ilumination of solids
         triColor = TDE.illumination(self, solidTriNormals, len(surfTri))
 
+        # combing the surfice tri and the solid tri into one list
         for i in range(len(surfTri)): solidTri = np.append(solidTri, surfTri[i], axis=0)
         tri = solidTri
 
+        # transforming all the cordinates to the local cordinate system based on the camera.
         node, line, tri = TDE.transformToLocal(self, node, line, tri)
 
+        # trims all nodes, lines, and tris that are eather to close to the camera or are behinde it.
         node, line, tri, triColor = TDE.clipClose(node, line, tri, triColor)
 
-        self.graph.delete("all")
-        if len(node) > 0 or len(line) > 0 or len(tri) > 0:
+        self.graph.delete("all") # clearing canvise of old rendering
+
+        if len(node) > 0 or len(line) > 0 or len(tri) > 0: # skip if nothing is in the display space.
+
+            # projecting the nodes, lines, and tris and scales to window size.
             w = self.graph.winfo_width()
             h = self.graph.winfo_height()
             node, line, tri = TDE.project(self, node, line, tri)
 
+            # trimming all nodes, lines, and tris that are outside the frame of the camera.
             if len(tri) > 0: tri = tri[:, :, :-1]
             if len(line) > 0: line = line[:, :, :-1]
             node, line, tri, triColor = TDE.clipEadges(node, line, tri, triColor, h, w)
 
+            # printing tris, lines, and nodes
             if len(tri) > 0: self.printTri(np.array(tri), np.array(triColor))
             if len(line) > 0: self.printLine(np.array(line))
             if len(node) > 0: self.printNode(np.array(node))
@@ -619,6 +893,10 @@ class MainWindow(tk.Frame):
         self.update()
 
     def updateCamData(self):
+        """
+        Updating all the data about the location and direction of the camera.
+        """
+
         matCameraRotY = TDE.getRotationYMatrix(self.cam_Y_rot)
         matCameraRotX = TDE.getRotationXMatrix(self.cam_X_rot)
         self.lookDir = (np.append(np.array([0, 0, 1]), 1) @ matCameraRotY @ matCameraRotX)[:-1]
@@ -628,6 +906,14 @@ class MainWindow(tk.Frame):
         self.up = self.up / np.linalg.norm(self.up)
 
     def printTri(self, tri, triColor):
+        """
+        Prints tris to the canves.
+
+        :param tri: Tris to be printed.
+        :param triColor: Single int value representing the shading of the tri. Only one value needed as gray scale
+                         is used.
+        """
+
         avgDistance = np.sum(tri[:, :, 2], axis=-1)
         idx = np.argsort(avgDistance)
         tri = tri[idx[::-1]]
@@ -643,6 +929,12 @@ class MainWindow(tk.Frame):
             self.graph.create_polygon(triPrint[i], outline='', fill="#%02x%02x%02x" % (color, color, color))
 
     def printLine(self, line):
+        """
+        Prints lines to the canves.
+
+        :param line: Lines to be printed.
+        """
+
         avgDistance = np.sum(line[:, :, 2], axis=-1)
         idx = np.argsort(avgDistance)
         line = line[idx[::-1]]
@@ -654,6 +946,12 @@ class MainWindow(tk.Frame):
         for i in range(len(linePrint)): self.graph.create_line(linePrint[i], width = 5, fill="red")
 
     def printNode(self, node):
+        """
+        Prints nodes to the canves.
+
+        :param node: Nodes to be printed.
+        """
+
         idx = np.argsort(node[:,2])
         node = node[idx[::-1]]
 
@@ -665,25 +963,23 @@ class MainWindow(tk.Frame):
 def select_file_gui(file_Types):
     """
     Opens a file explorer dialog using Tkinter and returns the selected file path.
+
+    :param file_Types: List of file types that can be selected.
+    :return: File path or None.
     """
-    # Create a Tk root window (but hide it)
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
 
-    # Open the file dialog
-    file_path = filedialog.askopenfilename(
-        title="Select a file",
-        filetypes= file_Types
-    )
-
-    if file_path:
-        print(f"Selected file: {file_path}")
-        return file_path
-    else:
-        print("No file selected.")
-        return None
+    file_path = filedialog.askopenfilename(title="Select a file",filetypes= file_Types)
+    if file_path: return file_path
+    else: return None
 
 def addDataToFrame(d):
+    """
+    Creates a 3D Frame using the provided data.
+
+    :param d: Data to be used to create the 3D frame
+    :return: 3D Frame object.
+    """
+
     Frame = Frame3D()
 
     for i in range(len(d.nodes[0])):
