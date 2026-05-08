@@ -4,6 +4,7 @@ from copy import copy
 import pandas as pd
 import numpy as np
 
+from Frame3DGUI import export
 from Frame3DGUI.inputData import data
 from Frame3DGUI.opening import openFrame, openResults
 from Frame3DGUI.optimizePopUp import OptimizationPopUp
@@ -12,6 +13,7 @@ from Frame3DGUI.save import saveFrame, saveResults
 from StructuralAnalysis.frame3DSolver.__main__ import Frame3D
 # noinspection PyPep8Naming
 import ThreeDDrawing.ThreeDEngine as TDE
+import StructuralAnalysis.frame3DSolver.helperFunctions as hf
 
 class MainWindow(tk.Frame):
     def __init__(self, root):
@@ -333,9 +335,83 @@ class MainWindow(tk.Frame):
         self.Frame = Frame
         self.Optimization_Results = results
 
-        # todo: update frame object to optimization results
-        self.LinearAnalysis()
-        # todo: save optimization results
+        self.filePath = None
+        memberIndices =  self.updateFrameToOptimizationResults(GroupAssignments, GroupTypes)
+        self.LinearAnalysis() # runs an analysis of the optimized frame to get the full analysis results
+        self.saveOptimizationResults(memberIndices, GroupAssignments, GroupTypes)
+
+    def updateFrameToOptimizationResults(self,GroupAssignments, GroupTypes):
+        """
+        Updates the frame's cross-sections to the results found the optimizer.
+
+        :param GroupAssignments: Member groups assignments for members withou specified cross-sections.
+        :param GroupTypes: What kind of cross-section each member group is.
+        :return: memberIndices: Indeces of the optimized member cross-sections.
+        """
+
+        X = self.Optimization_Results.x
+        optCrossSectionProps = hf.getCrossSectionProps(X, GroupAssignments, GroupTypes)
+        memberIndices = []
+        j = 0
+        for i in range(len(self.data.members[0])):
+            if not self.data.members[3][i]:
+                memberIndices.append(i)
+                CS = optCrossSectionProps[j]
+                self.data.members[3][i] = True
+                self.data.members[4][i] = CS[0]
+                self.data.members[5][i] = CS[1]
+                self.data.members[6][i] = CS[2]
+                self.data.members[7][i] = CS[3]
+                j += 1
+
+        return memberIndices
+
+    def saveOptimizationResults(self, memberIndices, GroupAssignments, GroupTypes):
+        """
+        Exports the optimization results to an Excel file.
+
+        :param memberIndices: Indeces of the optimized member cross-sections.
+        :param GroupAssignments: Member groups assignments for members withou specified cross-sections.
+        :param GroupTypes: What kind of cross-section each member group is.
+        """
+
+        X = self.Optimization_Results.x
+        cost = [self.Optimization_Results.fun]
+        optCrossSectionProps = hf.getCrossSectionProps(X, GroupAssignments, GroupTypes)
+
+        results = []
+        curentXIndex = 0
+        for i in range(len(optCrossSectionProps)):
+            mI = [memberIndices[i]]
+            t = [GroupTypes[i]]
+
+            dim = []
+            if t == ["Angle"]:
+                dim.append(X[curentXIndex])
+                dim.append(X[curentXIndex + 1])
+                dim.append(X[curentXIndex + 2])
+                curentXIndex += 3
+            elif t == ["RectHSS"]:
+                dim.append(X[curentXIndex])
+                dim.append(X[curentXIndex + 1])
+                dim.append(X[curentXIndex + 2])
+                curentXIndex += 3
+            elif t == ["SquareHSS"]:
+                dim.append(X[curentXIndex])
+                dim.append("N/A")
+                dim.append(X[curentXIndex + 1])
+                curentXIndex += 2
+            elif t == ["TubeHSS"]:
+                dim.append(X[curentXIndex])
+                dim.append("N/A")
+                dim.append(X[curentXIndex + 1])
+                curentXIndex += 2
+
+            CS = optCrossSectionProps[i]
+
+            results.append(mI + t + dim + CS)
+
+        export.exportOptimizationResults(results, cost)
 
     """ ----------------------------------------------------------------------------------------------"""
     """ ---------------------------------------- INPUT TABLES ----------------------------------------"""
@@ -345,6 +421,9 @@ class MainWindow(tk.Frame):
         """
         Creates window with all the input tables.
         """
+
+        # TODO add lables to input boxes
+        # TODO add delete buttons
 
         self.tableWindow = tk.Toplevel(self.root)
         self.tableWindow.title("Sheets")
@@ -371,7 +450,6 @@ class MainWindow(tk.Frame):
         self.Buttons[0].append(tk.Button(self.nodeTab, text="Add", command=self.addValues))
         self.Buttons[0][0].place(x=550, y=300)
         self.Buttons[0][1].place(x=550, y=350)
-        # todo add delete button all tabs
 
         # Materials
         self.matTab = ttk.Frame(self.tableTabs)
