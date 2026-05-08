@@ -13,7 +13,8 @@ def exportOptimizationResults(ressults, cost):
 
     if filePath is not None:
 
-        df1 = pd.DataFrame(ressults, columns=["Member Index", "Cross-Section Type", "d", "b", "t", "A", "Iy", "Iz", "J"])
+        df1 = pd.DataFrame(ressults, columns=["Member Index", "Cross-Section Type", "d", "b", "t", "A", "Iy", "Iz",
+                                              "J"])
         df2 = pd.DataFrame({'Cost': cost})
 
         df1.to_excel(filePath, index=False, sheet_name="Results")

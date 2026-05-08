@@ -265,4 +265,3 @@ def openResults(window, filePath):
 
         except FileNotFoundError:
             pass
-

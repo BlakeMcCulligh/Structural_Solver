@@ -1,6 +1,21 @@
 
 class NodeDeflections:
+    """
+    Node deflections object.
+    """
+
     def __init__(self, DX, DY, DZ, RX, RY, RZ):
+        """
+        Node deflection object constructer.
+
+        :param DX: X direction deflections. Shape: (# nodes)
+        :param DY: Y direction deflections. Shape: (# nodes)
+        :param DZ: Z direction deflections. Shape: (# nodes)
+        :param RX: X direction rotation deflections. Shape: (# nodes)
+        :param RY: Y direction rotation deflections. Shape: (# nodes)
+        :param RZ: Z direction rotation deflections. Shape: (# nodes)
+        """
+
         self.DX = DX
         self.DY = DY
         self.DZ = DZ
@@ -9,7 +24,17 @@ class NodeDeflections:
         self.RZ = RZ
 
 class Reactions:
+    """
+    Reactions object.
+    """
+
     def __init__(self, reactions):
+        """
+        Reactions object constructer.
+
+        :param reactions: Node ractions. Shape: (# nodes, 6)
+        """
+
         self.RX = reactions[:,0]
         self.RY = reactions[:,1]
         self.RZ = reactions[:,2]
@@ -18,7 +43,17 @@ class Reactions:
         self.MZ = reactions[:,5]
 
 class MaximumInternalForces:
+    """
+    Maximum internal forces for each member object.
+    """
+
     def __init__(self, internalForces):
+        """
+        Maximum internal forces for each member object constructor.
+
+        :param internalForces: Maximum forces in each member. Shape: (2,3,2)
+        """
+
         self.internalForces = internalForces
         F, M = internalForces
         FX, FY, FZ = F
@@ -39,7 +74,15 @@ class MaximumInternalForces:
         self.MZ_case = MZ[1]
 
 class Results:
+    """
+    Frame structural analysis results object.
+    """
+
     def __init__(self):
+        """
+        Results object constructor.
+        """
+
         self.nodalDeflections = []
         self.weight = None
         self.overallWeight = None
@@ -47,17 +90,46 @@ class Results:
         self.maxInternalForces = None
 
     def addNodalDeflections(self, DX, DY, DZ, RX, RY, RZ):
+        """
+        Adds node deflections to the results object.
+
+        :param DX: X direction deflections. Shape: (# casses, # nodes)
+        :param DY: Y direction deflections. Shape: (# casses, # nodes)
+        :param DZ: Z direction deflections. Shape: (# casses, # nodes)
+        :param RX: X direction rotation deflections. Shape: (# casses, # nodes)
+        :param RY: Y direction rotation deflections. Shape: (# casses, # nodes)
+        :param RZ: Z direction rotation deflections. Shape: (# casses, # nodes)
+        """
+
         for case_id in range(len(DX)):
             self.nodalDeflections.append(NodeDeflections(DX[case_id], DY[case_id], DZ[case_id],
                                                          RX[case_id], RY[case_id], RZ[case_id]))
 
     def addWeight(self, weight):
+        """
+        Adds weigits to the results object.
+
+        :param weight: List of wights of each member.
+        """
+
         self.weight = weight
         self.overallWeight = sum(weight)
 
     def addReactions(self, reactions):
+        """
+        Adds reactions to the results object.
+
+        :param reactions: Node ractions. Shape: (# cases, # Nodes, 6)
+        """
+
         for case_id in range(len(reactions)):
             self.reactions.append(Reactions(reactions[case_id]))
 
     def addInternalForces(self, internalForces):
+        """
+        Adds the maximum forces in each momber to the results object.
+
+        :param internalForces: Maximum forces in each member. Shape: (2,3,2)
+        """
+
         self.maxInternalForces = MaximumInternalForces(internalForces)

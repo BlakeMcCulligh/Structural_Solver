@@ -1,6 +1,13 @@
 from tkinter import filedialog
 
 def saveFrame(data, filePath = None):
+    """
+    Saves frames to .structframe file using the provided file path or props the user to chose one.
+
+    :param data: Info that defines the frame.
+    :param filePath: File path to save the file to.
+    :return: file path.
+    """
 
     if filePath is None:
         filePath = getFileSavePathFrame()
@@ -67,12 +74,24 @@ def saveFrame(data, filePath = None):
     return filePath.replace(".structframe","")
 
 def getFileSavePathFrame():
+    """
+    Gets the file path to save the frame to.
+
+    :return: File path or None.
+    """
+
     file_path = filedialog.asksaveasfilename(defaultextension=".structframe",
                                              filetypes=[("Struct Frame files", "*.structframe")])
     if file_path:return file_path
     return None
 
 def saveResults(results, filepath):
+    """
+    Saves results to .structresult file using the provided filepath.
+
+    :param results: Results to be saved.
+    :param filepath: File path to save the file to.
+    """
 
     filePath = filepath + ".structresult"
 

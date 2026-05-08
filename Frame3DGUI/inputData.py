@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class data:
     def __init__(self):
 
@@ -59,7 +58,8 @@ class data:
         if addToTables:
             numRow = len(window.tables[1].get_children())
             for i in range(len(material[0])):
-                window.tables[1].insert('', 'end', values=[str(numRow + i), material[0][i], material[1][i], material[2][i], material[3][i], material[4][i]])
+                window.tables[1].insert('', 'end', values=[str(numRow + i), material[0][i], material[1][i],
+                                                           material[2][i], material[3][i], material[4][i]])
 
         if addToDisplay:
             pass #TODO

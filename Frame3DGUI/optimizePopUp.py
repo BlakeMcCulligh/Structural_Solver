@@ -2,7 +2,19 @@ import tkinter as tk
 from tkinter import ttk
 
 class OptimizationPopUp:
+    """
+    Object containing everything to do with the pop-up when a cross-section optimization is selected.
+    """
+
     def __init__(self, mainwindow, root, data):
+        """
+        Initalizes the optimization pop-up object.
+
+        :param mainwindow: Object storing the main window.
+        :param root: Root of the main window.
+        :param data: Data needed to define the frame.
+        """
+
         self.mainwindow = mainwindow
         self.root = root
         self.data = data
@@ -18,7 +30,6 @@ class OptimizationPopUp:
         hTitle = title.winfo_reqheight()
         title.place(x=width/2-wTitle/2, y=0)
 
-        # (memberGroup, memberGroupType, lowerBound, upperBound, costFunction (create new or load one), if weight or reactions, or internalForces are needed)
         self.MemberGroupInputFrame = None
         self.MemberGroupInputTable = None
         self.setMemberGroupInput(hTitle)
@@ -38,6 +49,12 @@ class OptimizationPopUp:
         ttk.Button(self.top, text="Cancel", command=self.cancelPopUp).place(x=500, y=470)
 
     def centerWindow(self, width, height):
+        """
+        Centers the pop-up window on the screen and sets its size.
+
+        :param width: Width to set the pop-up window to.
+        :param height: Height to set the pop-up window to.
+        """
 
         mainwindow_x = self.root.winfo_x()
         mainwindow_y = self.root.winfo_y()
@@ -50,6 +67,13 @@ class OptimizationPopUp:
         self.top.geometry(f"{width}x{height}+{x}+{y}")
 
     def setMemberGroupInput(self, hTitle):
+        """
+        Initalizes the tables that alows the input of values used to define what member group is applied to each
+        non-cross-section set member.
+
+        :param hTitle:  Highet of the title of the window.
+        """
+
         numNotSetMembers, indicesNotSetMembers = getNonSetMembersData(self.data)
 
         DLabel = tk.Label(self.top, text="Member Groups: ", font=('Helvetica', 14))
@@ -59,9 +83,11 @@ class OptimizationPopUp:
         self.MemberGroupInputFrame = ttk.Frame(self.top, width=50, height=300)
         self.MemberGroupInputFrame.place(x=10, y = hTitle + hDLabel + 10)
 
-        self.MemberGroupInputTable = ttk.Treeview(self.MemberGroupInputFrame, columns=("Member Index","Group Index"), show='headings', height=10)
+        self.MemberGroupInputTable = ttk.Treeview(self.MemberGroupInputFrame, columns=("Member Index","Group Index"),
+                                                  show='headings', height=10)
 
-        scrollbar = ttk.Scrollbar(self.MemberGroupInputFrame, orient="vertical", command=self.MemberGroupInputTable.yview)
+        scrollbar = ttk.Scrollbar(self.MemberGroupInputFrame, orient="vertical",
+                                  command=self.MemberGroupInputTable.yview)
         scrollbar.pack(side="right", fill="y")
 
         self.MemberGroupInputTable.configure(yscrollcommand=scrollbar.set)
@@ -74,15 +100,17 @@ class OptimizationPopUp:
         for i in range(len(indicesNotSetMembers)):
             self.MemberGroupInputTable.insert("", "end", values=(indicesNotSetMembers[i], i))
 
-        # Used for teasting
-        # for i in range(20):
-        #     self.MemberGroupInputTable.insert("", "end", values=(i, 1))
-
         self.MemberGroupInputTable.bind('<Double-1>', self.edit_cell_MemberGroupInputTable)
 
         self.MemberGroupInputTable.pack()
 
     def edit_cell_MemberGroupInputTable(self, event):
+        """
+        Handels the cell editing of the member assignment to groups table.
+
+        :param event: Event object from the double click of a cell.
+        """
+
         # Identify which row and column were clicked
         region = self.MemberGroupInputTable.identify_region(event.x, event.y)
         if region != "cell": return
@@ -103,6 +131,11 @@ class OptimizationPopUp:
 
         # noinspection PyShadowingNames
         def save_edit(event):
+            """
+            Updates Table value, group setting table, and remove Entry
+
+            :param event: Event object from the double click of a cell.
+            """
 
             groups = list(sorted(set(self.getDataFromMemberGroupInput())))
 
@@ -127,6 +160,11 @@ class OptimizationPopUp:
         entry.bind('<FocusOut>', lambda e: entry.destroy())
 
     def GroupSettingsInput(self, hTitle):
+        """
+        Initalizes the tables that alows the input of values used to define the cross-section groups.
+
+        :param hTitle: Highet of the title of the window.
+        """
 
         groups = sorted(set(self.getDataFromMemberGroupInput()))
 
@@ -137,7 +175,9 @@ class OptimizationPopUp:
         self.GroupSettingsFrame = ttk.Frame(self.top, width=50, height=300)
         self.GroupSettingsFrame.place(x=200, y=hTitle + hDLabel + 10)
 
-        self.GroupSettingsTable = ttk.Treeview(self.GroupSettingsFrame, columns=("Group Index", "Group Type", "Min d", "Max d", "Min b", "Max b", "Min t", "Max t"),
+        self.GroupSettingsTable = ttk.Treeview(self.GroupSettingsFrame, columns=("Group Index", "Group Type", "Min d",
+                                                                                 "Max d", "Min b", "Max b", "Min t",
+                                                                                 "Max t"),
                                                   show='headings', height=10)
 
         scrollbar = ttk.Scrollbar(self.GroupSettingsFrame, orient="vertical",
@@ -175,6 +215,12 @@ class OptimizationPopUp:
         self.GroupSettingsTable.pack()
 
     def edit_cell_GroupSettingsTable(self, event):
+        """
+        Handels the cell editing of the member group settings table.
+
+        :param event: Event object from the duble click of a cell.
+        """
+
         # Identify which row and column were clicked
         region = self.GroupSettingsTable.identify_region(event.x, event.y)
         if region != "cell": return
@@ -191,13 +237,19 @@ class OptimizationPopUp:
 
         if column_index == 1:
             # Create the dropdown widget overlay
-            dropdown = ttk.Combobox(self.GroupSettingsFrame, values=("Angle", "RectHSS", "SquareHSS", "TubeHSS"), state="readonly")
+            dropdown = ttk.Combobox(self.GroupSettingsFrame, values=("Angle", "RectHSS", "SquareHSS", "TubeHSS"),
+                                    state="readonly")
             dropdown.set(self.GroupSettingsTable.item(iid)['values'][column_index])
             dropdown.place(x=x, y=y, width=width, height=height)
 
             # noinspection PyShadowingNames
             def save_edit(event):
-                # Update Treeview value and remove Entry
+                """
+                Updates Table value and remove Entry
+
+                :param event: Event object from the double click of a cell.
+                """
+
                 new_values = list(self.GroupSettingsTable.item(iid)['values'])
                 new_values[column_index] = dropdown.get()
                 self.GroupSettingsTable.item(iid, values=new_values)
@@ -205,6 +257,7 @@ class OptimizationPopUp:
 
             dropdown.bind('<<ComboboxSelected>>', save_edit)
             dropdown.bind('<FocusOut>', lambda e: dropdown.destroy())
+
         else:
             # Create the Entry widget overlay
             entry = ttk.Entry(self.GroupSettingsFrame)
@@ -214,7 +267,12 @@ class OptimizationPopUp:
 
             # noinspection PyShadowingNames
             def save_edit(event):
-                # Update Treeview value and remove Entry
+                """
+                Updates Table value and remove Entry
+
+                :param event: Event object from the double click of a cell.
+                """
+
                 new_values = list(self.GroupSettingsTable.item(iid)['values'])
                 new_values[column_index] = entry.get()
                 self.GroupSettingsTable.item(iid, values=new_values)
@@ -224,14 +282,32 @@ class OptimizationPopUp:
             entry.bind('<FocusOut>', lambda e: entry.destroy())
 
     def getDataFromMemberGroupInput(self):
-        return [self.MemberGroupInputTable.item(item)['values'][1] for item in self.MemberGroupInputTable.get_children()]
+        """
+        Gets data from the member group definition table.
+
+        :return: Data from the member group definition table.
+        """
+
+        return [self.MemberGroupInputTable.item(item)['values'][1]
+                for item in self.MemberGroupInputTable.get_children()]
 
     def costFunctionInput(self, hTitle):
+        """
+        Initalizes and runs everything related to the input of the cost function.
+
+        :param hTitle: Highet of the title of the window.
+        """
 
         DLabel = tk.Label(self.top, text="Cost Function: ", font=('Helvetica', 11))
         DLabel.place(x=10, y=hTitle + 300)
 
         def validate_inputBox(p):
+            """
+            Restricts what can be input into the cost function text box. Ran every time a character is changed.
+
+            :param p: Updated string of what is typed in the cross-section text box.
+            :return: Whether the new string is alowed or not (True or False).
+            """
 
             if p == "":
                 return True
@@ -289,6 +365,10 @@ class OptimizationPopUp:
         self.dropdownInternalForces.place(x=580, y=hTitle + 350, width=75, height=hDLabel)
 
     def infoPopUp(self):
+        """
+        Creates a pop-up that displays info about the cost function and how to enter use it.
+        """
+
         infoPopUp = tk.Toplevel(self.top)
         infoPopUp.title("Cost Function Info")
         width = 500
@@ -306,21 +386,50 @@ class OptimizationPopUp:
         text_area.place(x=0,y=0 )
         text_area.pack()
 
-        string = " Cost Function Info\n ----- Vaiables -----\n 'DX': Node Deflection in the x direction.\n 'DY': Node Deflection in the y direction.\n 'DZ': Node Deflection in the z direction.\n 'RX': Node Rotation Deflection in the x direction.\n 'RY': Node Rotation Deflection in the y direction.\n 'RZ': Node Rotation Deflection in the z direction.\n  All Deflections: Index 1: Load Casses, Index 2: Node.\n \n 'Weight': Weight of the structure.\n 'Reactions': Index 1: Load Casses,\n                     Index 2: Node,\n                     Index 3: Direction (X, Y, Z, RX, RY, RZ).\n 'InternalForces': Index 1: Direction Type (Forces, Moments),\n                            Index 2: Direction (X, Y, Z),\n                            Index 3: Info (Magnitude, Governing Case).\n To be able to use 'Weight','Reactions','InternalForces' variables they must\n be selected to run.\n \n \n  ----- Functions -----\n ' + ': addition\n ' - ': subtraction\n ' * ': multiplication\n ' / ': division\n ' ** ': exponent\n ' max(list) ': finds the maximum value of list.\n ' min(list) ': finds the minimum value of list.\n ' abs(float) ': finds the absolute value of float."
+        string = (" Cost Function Info\n ----- Vaiables -----\n 'DX': Node Deflection in the x direction.\n "
+                  "'DY': Node Deflection in the y direction.\n 'DZ': Node Deflection in the z direction.\n "
+                  "'RX': Node Rotation Deflection in the x direction.\n "
+                  "'RY': Node Rotation Deflection in the y direction.\n "
+                  "'RZ': Node Rotation Deflection in the z direction.\n  "
+                  "All Deflections: Index 1: Load Casses, Index 2: Node.\n \n 'Weight': Weight of the structure.\n "
+                  "'Reactions': Index 1: Load Casses,\n"
+                  "                     Index 2: Node,\n"
+                  "                     Index 3: Direction (X, Y, Z, RX, RY, RZ).\n"
+                  " 'InternalForces': Index 1: Direction Type (Forces, Moments),\n"
+                  "                            Index 2: Direction (X, Y, Z),\n"
+                  "                            Index 3: Info (Magnitude, Governing Case).\n"
+                  " To be able to use 'Weight','Reactions','InternalForces' variables they must\n"
+                  " be selected to run.\n \n \n  ----- Functions -----\n ' + ': addition\n ' - ': subtraction\n"
+                  " ' * ': multiplication\n ' / ': division\n ' ** ': exponent\n"
+                  " ' max(list) ': finds the maximum value of list.\n ' min(list) ': finds the minimum value of list.\n"
+                  " ' abs(float) ': finds the absolute value of float.")
+
         text_area.insert(tk.END, string)
         text_area.config(state="disabled")
 
     def endPopUp(self):
+        """
+        Gets input table, closes the pop-up, and starts the ccross-section optimization.
+        """
+
         self.top.destroy()
 
-        GroupAssignments = [self.MemberGroupInputTable.item(item)['values'][1] for item in self.MemberGroupInputTable.get_children()]
-        GroupTypes = [self.GroupSettingsTable.item(item)['values'][1] for item in self.GroupSettingsTable.get_children()]
-        d_highBounds = [self.GroupSettingsTable.item(item)['values'][2] for item in self.GroupSettingsTable.get_children()]
-        d_LowBounds = [self.GroupSettingsTable.item(item)['values'][3] for item in self.GroupSettingsTable.get_children()]
-        b_highBounds = [self.GroupSettingsTable.item(item)['values'][4] for item in self.GroupSettingsTable.get_children()]
-        b_LowBounds = [self.GroupSettingsTable.item(item)['values'][5] for item in self.GroupSettingsTable.get_children()]
-        t_highBounds = [self.GroupSettingsTable.item(item)['values'][6] for item in self.GroupSettingsTable.get_children()]
-        t_LowBounds = [self.GroupSettingsTable.item(item)['values'][7] for item in self.GroupSettingsTable.get_children()]
+        GroupAssignments = [self.MemberGroupInputTable.item(item)['values'][1]
+                            for item in self.MemberGroupInputTable.get_children()]
+        GroupTypes = [self.GroupSettingsTable.item(item)['values'][1]
+                      for item in self.GroupSettingsTable.get_children()]
+        d_highBounds = [self.GroupSettingsTable.item(item)['values'][2]
+                        for item in self.GroupSettingsTable.get_children()]
+        d_LowBounds = [self.GroupSettingsTable.item(item)['values'][3]
+                       for item in self.GroupSettingsTable.get_children()]
+        b_highBounds = [self.GroupSettingsTable.item(item)['values'][4]
+                        for item in self.GroupSettingsTable.get_children()]
+        b_LowBounds = [self.GroupSettingsTable.item(item)['values'][5]
+                       for item in self.GroupSettingsTable.get_children()]
+        t_highBounds = [self.GroupSettingsTable.item(item)['values'][6]
+                        for item in self.GroupSettingsTable.get_children()]
+        t_LowBounds = [self.GroupSettingsTable.item(item)['values'][7]
+                       for item in self.GroupSettingsTable.get_children()]
 
         costFunction = self.costFunctionStringBox.get()
         weightRun = self.dropdownWeight.get()
@@ -338,12 +447,24 @@ class OptimizationPopUp:
             lowerBounds.append(t_LowBounds)
             upperBounds.append(t_highBounds)
 
-        self.mainwindow.GlobalOptimization(self, GroupAssignments, GroupTypes, lowerBounds, upperBounds, costFunction, weightRun, reactionRun, internalForcesRun)
+        self.mainwindow.GlobalOptimization(self, GroupAssignments, GroupTypes, lowerBounds, upperBounds, costFunction,
+                                           weightRun, reactionRun, internalForcesRun)
 
     def cancelPopUp(self):
+        """
+        Removes the pop-up window.
+        """
+
         self.top.destroy()
 
 def getNonSetMembersData(d):
+    """
+    Gets the number and indeces of what member cross-sections are not set and need to be optimized.
+
+    :param d: Info that defines the frame.
+    :return: Number of non-set members. Indeces of what member are not set.
+    """
+
     num = 0
     nonIndices = []
     for i in range(len(d.members[0])):
