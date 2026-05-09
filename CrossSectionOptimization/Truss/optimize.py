@@ -3,7 +3,7 @@ import cvxpy as cvx
 import matplotlib.pyplot as plt
 from scipy import sparse
 
-from OpeningAndSaving.Saving import saveTrussCrossSectionOptimizationExcel
+from opening_saving.saving import save_truss_cross_section_optimization_excel
 
 
 
@@ -179,10 +179,10 @@ def TrussMain(filePath, nodes, members, loadCasses, supports):
     """
         Optimizes the cross-sections of a truss
 
-        :param nodes: The locations of the printNodes of the truss [[x1,y1],[x2,y2],...]
-        :param members: The printNodes that the members run between [[n11,n21],[n12,n22],...]
+        :param nodes: The locations of the nodes of the truss [[x1,y1],[x2,y2],...]
+        :param members: The nodes that the members run between [[n11,n21],[n12,n22],...]
         :param loadCasses: the load casses applyed to the truss [[[x1,y1,fx1,fy1],[x2,y2,fx2,fy2],...],...]
-        :param supports: the printNodes the supports are at and what directions are supported [[x1,y1,sx1,sy1],[x2,y2,sx2,sy2],...]
+        :param supports: the nodes the supports are at and what directions are supported [[x1,y1,sx1,sy1],[x2,y2,sx2,sy2],...]
     """
 
     Nodes = np.array(nodes)
@@ -199,6 +199,6 @@ def TrussMain(filePath, nodes, members, loadCasses, supports):
     print("q: ", q)
     print("u: ", u)
 
-    saveTrussCrossSectionOptimizationExcel(filePath, nodes, members, loadCasses, supports, A, u, q, vol)
+    save_truss_cross_section_optimization_excel(filePath, nodes, members, loadCasses, supports, A, u, q, vol)
 
 

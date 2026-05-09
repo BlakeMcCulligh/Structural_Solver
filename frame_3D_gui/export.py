@@ -31,8 +31,9 @@ def export_optimization_results(results, cost):
                                               "J"])
         df2 = pd.DataFrame({'Cost': cost})
 
-        df1.to_excel(file_path, index=False, sheet_name="Results")
-        df2.to_excel(file_path, index=False, sheet_name="Cost")
+        with pd.ExcelWriter(file_path) as writer:
+            df1.to_excel(writer, sheet_name="Results", index=False)
+            df2.to_excel(writer, sheet_name="Cost", index=False)
 
     else:
         print("Failed to export optimization Results")
@@ -81,11 +82,12 @@ def export_results(results):
         internal_loads_df = pd.DataFrame(internal_loads_array, columns=["Load", "Governing Load Case"])
 
         # Writing to Excel file
-        node_deflection_df.to_excel(file_path, index=False, sheet_name="Node Deflections")
-        weight_df.to_excel(file_path, index=True, sheet_name="Weight")
-        overall_weight_df.to_excel(file_path, index=False, sheet_name="Overall Weight")
-        reactions_df.to_excel(file_path, index=False, sheet_name="Reactions")
-        internal_loads_df.to_excel(file_path, index=False, sheet_name="Internal Loads")
+        with pd.ExcelWriter(file_path) as writer:
+            node_deflection_df.to_excel(writer, index=False, sheet_name="Node Deflections")
+            weight_df.to_excel(writer, index=True, sheet_name="Weight")
+            overall_weight_df.to_excel(writer, index=False, sheet_name="Overall Weight")
+            reactions_df.to_excel(writer, index=False, sheet_name="Reactions")
+            internal_loads_df.to_excel(writer, index=False, sheet_name="Internal Loads")
 
     else:
         print("Failed to export Results")

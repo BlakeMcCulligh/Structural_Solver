@@ -7,7 +7,7 @@ from tkinter import filedialog
 from pathlib import Path
 
 from frame_3D_gui.opening import open_frame
-from OpeningAndSaving.Opening import openTrussTopologyOptimizationExcel, openTrussCrossSectionOptimizationExcel
+from opening_saving.opening import open_truss_topology_optimization_excel, open_truss_cross_section_optimization_excel
 from main.new_structure_pop_up import NewStructurePopUp
 import frame_3D_gui.window
 
@@ -107,7 +107,7 @@ class MainWindow(tk.Frame):
 
         fileTypes = [("Excel Files", "*.xlsx")]
         selected_file = select_file_gui(fileTypes)
-        openTrussTopologyOptimizationExcel(selected_file)
+        open_truss_topology_optimization_excel(selected_file)
 
     @staticmethod
     def open_truss_cross_section_optimization():
@@ -117,7 +117,7 @@ class MainWindow(tk.Frame):
 
         file_types = [("Excel Files", "*.xlsx")]
         selected_file = select_file_gui(file_types)
-        openTrussCrossSectionOptimizationExcel(selected_file)
+        open_truss_cross_section_optimization_excel(selected_file)
 
     def _new_structure(self):
         """

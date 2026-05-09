@@ -8,7 +8,7 @@ from shapely.geometry import Point, LineString, Polygon
 from time import time
 
 from CrossSectionOptimization.Truss.optimize import OptimizeTrussCrossSections
-from OpeningAndSaving.Saving import saveTrussTopologyOptimizationExcel
+from opening_saving.saving import save_truss_topology_optimization_excel
 
 def createNodeGrid(zone, nodeSpasing):
     """
@@ -181,7 +181,7 @@ def getNodesOnSegment(nodes,p1, p2):
 
 def constructLoadCases(loadCasses, maxLength, nodes, supports):
     nodes = np.array(nodes)
-    #print(loadCasses)
+    #print(load_casses)
 
     #TODO ONLY FIST LODE CASE CURRENTLY WORKS
     loads = loadCasses[0]
@@ -320,5 +320,5 @@ def OptimizeTruss(filePath, zoneNodes, loadCasses, supports, nodeSpasing =None, 
     volume = Vol[BestIndex]
 
 
-    saveTrussTopologyOptimizationExcel(filePath, nodes, Members, loadCasses, supports, areas, deflections, forces, volume)
+    save_truss_topology_optimization_excel(filePath, nodes, Members, loadCasses, supports, areas, deflections, forces, volume)
 
