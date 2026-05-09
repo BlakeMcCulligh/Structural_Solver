@@ -16,6 +16,10 @@ import ThreeDDrawing.ThreeDEngine as TDE
 import StructuralAnalysis.frame3DSolver.helperFunctions as hf
 
 class MainWindow(tk.Frame):
+    """
+    Main Window Object for 3D Frame Analysises and anything elce to do with 3D Frames.
+    """
+
     def __init__(self, root):
         tk.Frame.__init__(self, root)
 

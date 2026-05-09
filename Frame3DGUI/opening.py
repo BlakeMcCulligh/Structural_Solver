@@ -6,8 +6,13 @@ import numpy as np
 from Frame3DGUI.inputData import data
 from Frame3DGUI.results import Results
 
-
 def openFrame(window, file_path = None):
+    """
+    Opens a .structframe file eather from the provided file path or the selected one and reads in all the frame data.
+    :param window: Object storing the main window.
+    :param file_path: Potental file Path to get the frame from.
+    """
+
     if file_path is None:
         fileTypes = [("Struct Frame files", "*.structframe")]
         file_path = select_file_gui(window, fileTypes)
@@ -181,22 +186,26 @@ def openFrame(window, file_path = None):
 def select_file_gui(window, file_Types):
     """
     Opens a file explorer dialog using Tkinter and returns the selected file path.
+
+    :param window:  Object storing the main window.
+    :param file_Types: What type of file is being opend.
+    :return: Selected file path or None.
     """
 
     # Open the file dialog
-    file_path = filedialog.askopenfilename(
-        title="Select a file",
-        filetypes= file_Types
-    )
+    file_path = filedialog.askopenfilename(title="Select a file",filetypes= file_Types)
 
-    if file_path:
-        print(f"Selected file: {file_path}")
-        return file_path
-    else:
-        print("No file selected.")
-        return None
+    if file_path:return file_path
+    else: return None
 
 def openResults(window, filePath):
+    """
+    Opens a .structresult file from the provided file path and reads in all the structural results.
+
+    :param window:  Object storing the main window.
+    :param filePath: File path to get the structural results from.
+    """
+
     if filePath is not None:
         filePath = filePath + ".structresult"
 

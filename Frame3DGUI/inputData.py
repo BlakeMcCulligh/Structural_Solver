@@ -1,7 +1,14 @@
 import numpy as np
 
 class data:
+    """
+    Frame Object holding all the data needed to define the frame.
+    """
+
     def __init__(self):
+        """
+        Frame Object Constructor.
+        """
 
         self.nodes = [[],[],[]]
         self.materials = [[],[],[],[],[]]
@@ -13,6 +20,14 @@ class data:
         self.memberDistLoad = [[],[],[],[],[],[],[],[],[],[]]
 
     def addnodes(self, window, nodes, addToTables: bool, addToDisplay: bool):
+        """
+        Adds nodes to the frame.
+
+        :param window: Object storing the main window.
+        :param nodes: List of node cordinates to be added to the frame.
+        :param addToTables: If the nodes are to be added to the input table.
+        :param addToDisplay: If the nodes are to be added to the 3D display.
+        """
 
         if isinstance(nodes[0], float):
             nodes[0] = [nodes[0]]
@@ -28,7 +43,6 @@ class data:
             for i in range(len(nodes[0])):
                 window.tables[0].insert('', 'end', values=[str(numRow + i), nodes[0][i], nodes[1][i], nodes[2][i]])
 
-
         if addToDisplay:
             nodes = np.array(nodes)
             for i in range(len(nodes[0])):
@@ -37,6 +51,17 @@ class data:
         resetSolutions(window)
 
     def editnode(self, window, newNode, index,  editTable, editDisplay, row_id):
+        """
+        Edits the cordanites of a node in the frame.
+
+        :param window: Object storing the main window.
+        :param newNode: New coordanits for the node.
+        :param index: Index of the node to edit.
+        :param editTable: If the input tables are to be edited.
+        :param editDisplay: If the 3D display is to be edited.
+        :param row_id: the row within the input table that the edited node is in.
+        """
+
         for i in range(3): self.nodes[i][index] = newNode[i]
 
         if editTable:
@@ -51,6 +76,15 @@ class data:
         resetSolutions(window)
 
     def addmaterials(self, window, material, addToTables: bool, addToDisplay: bool):
+        """
+        Adds materials to the frame.
+
+        :param window: Object storing the main window.
+        :param material: list of materials to be added to the frame.
+        :param addToTables: If the input tables are to be edited.
+        :param addToDisplay: If the 3D display is to be edited.
+        """
+
         for i in range(5):
             if isinstance(material[i], float): material[i] = [material[i]]
             self.materials[i] = self.materials[i] + material[i]
@@ -67,6 +101,17 @@ class data:
         resetSolutions(window)
 
     def editmaterials(self, window, newMaterials, index, editTable, editDisplay, row_id):
+        """
+        Edits a material in the frame.
+
+        :param window:  Object storing the main window.
+        :param newMaterials: New property values for the material.
+        :param index: Index of the material to be edited.
+        :param editTable: If the input tables are to be edited.
+        :param editDisplay: If the 3D display is to be edited.
+        :param row_id: the row within the input table that the edited material is in.
+        """
+
         for i in range(5): self.materials[i][index] = newMaterials[i]
 
         if editTable:
@@ -80,6 +125,14 @@ class data:
         resetSolutions(window)
 
     def addmembers(self, window, members, addToTables: bool, addToDisplay: bool):
+        """
+        Adds members to the frame.
+
+        :param window:  Object storing the main window.
+        :param members: List of members to be added to the frame.
+        :param addToTables: If the input tables are to be edited.
+        :param addToDisplay: If the 3D display is to be edited.
+        """
 
         for i in range(8):
             if isinstance(members[i], float)  or isinstance(members[i], bool): members[i] = [members[i]]
@@ -100,6 +153,17 @@ class data:
         resetSolutions(window)
 
     def editmembers(self, window, newMembers, index, editTable, editDisplay, row_id):
+        """
+        Edits a member in the frame.
+
+        :param window: Object storing the main window.
+        :param newMembers: New property values for the member.
+        :param index: Index of the member to be edited.
+        :param editTable: If the input tables are to be edited.
+        :param editDisplay: If the 3D display is to be edited.
+        :param row_id: The input table row containing the member being edited.
+        """
+
         for i in range(8):
             self.nodes[i][index] = newMembers[i]
 
@@ -115,6 +179,15 @@ class data:
         resetSolutions(window)
 
     def addsupports(self, window, supports, addToTables: bool, addToDisplay: bool):
+        """
+        Adds supports to the frame.
+
+        :param window: Object storing the main window.
+        :param supports: List of supports to be added to the frame.
+        :param addToTables: If the input tables are to be edited.
+        :param addToDisplay: If the 3D display is to be edited.
+        """
+
         for i in range(7):
             if isinstance(supports[i], float) or isinstance(supports[i], bool): supports[i] = [supports[i]]
             self.supports[i] = self.supports[i] + supports[i]
@@ -132,6 +205,17 @@ class data:
         resetSolutions(window)
 
     def editsupports(self, window, newSupport, index, editTable, editDisplay, row_id):
+        """
+        Edits a supports in the frame.
+
+        :param window: Object storing the main window.
+        :param newSupport: The new values for the support being edited.
+        :param index: The index of the support being edited.
+        :param editTable: If the input tables are to be edited.
+        :param editDisplay: If the 3D display is to be edited.
+        :param row_id: The input table row containing the support being edited.
+        """
+
         for i in range(7): self.materials[i][index] = newSupport[i]
 
         if editTable:
@@ -145,6 +229,15 @@ class data:
         resetSolutions(window)
 
     def addreleases(self, window, releases, addToTables: bool, addToDisplay: bool):
+        """
+        Adds releases to the frame.
+
+        :param window: Object storing the main window.
+        :param releases: List of releases to be added to the frame.
+        :param addToTables: If the input tables are to be edited.
+        :param addToDisplay: If the 3D display is to be edited.
+        """
+
         for i in range(13):
             if isinstance(releases[i], float) or isinstance(releases[i], bool): releases[i] = [releases[i]]
             self.releases[i] = self.releases[i] + releases[i]
@@ -164,6 +257,17 @@ class data:
         resetSolutions(window)
 
     def editreleases(self, window, newReleases, index, editTable, editDisplay, row_id):
+        """
+        Edits a releases in the frame.
+
+        :param window: Object storing the main window.
+        :param newReleases: The New values for the release being edited.
+        :param index: Index of the release being edited.
+        :param editTable: If the input tables are to be edited.
+        :param editDisplay: If the 3D display is to be edited.
+        :param row_id: The input table row containing the release being edited.
+        """
+
         for i in range(12): self.materials[i][index] = newReleases[i]
 
         if editTable:
@@ -177,6 +281,15 @@ class data:
         resetSolutions(window)
 
     def addnodeLoads(self, window, nodeLoad, addToTables: bool, addToDisplay: bool):
+        """
+        Adds node point loads to the frame.
+
+        :param window: Object storing the main window.
+        :param nodeLoad: List of node point loads to be added to the frame.
+        :param addToTables: If the input tables are to be edited.
+        :param addToDisplay: If the 3D display is to be edited.
+        """
+
         for i in range(8):
             if isinstance(nodeLoad[i], float): nodeLoad[i] = [nodeLoad[i]]
             self.nodeLoad[i] = self.nodeLoad[i] + nodeLoad[i]
@@ -194,6 +307,17 @@ class data:
         resetSolutions(window)
 
     def editnodeLoads(self, window, newNodeLoad, index, editTable, editDisplay, row_id):
+        """
+        Edits a node point loads in the frame.
+
+        :param window: Object storing the main window.
+        :param newNodeLoad: The new values for the node load being edited.
+        :param index: Index of the node load being edited.
+        :param editTable: If the input tables are to be edited.
+        :param editDisplay: If the 3D display is to be edited.
+        :param row_id: The input table row containing the node load being edited.
+        """
+
         for i in range(8): self.materials[i][index] = newNodeLoad[i]
 
         if editTable:
@@ -207,11 +331,20 @@ class data:
         resetSolutions(window)
 
     def addmemberPointLoads(self, window, memberPointLoad, addToTables: bool, addToDisplay: bool):
-       for i in range(9):
+        """
+        Adds member point loads to the frame.
+
+        :param window: Object storing the main window.
+        :param memberPointLoad: List of member point loads to be added to the frame.
+        :param addToTables: If the input tables are to be edited.
+        :param addToDisplay: If the 3D display is to be edited.
+        """
+
+        for i in range(9):
            if isinstance(memberPointLoad[i], float): memberPointLoad[i] = [memberPointLoad[i]]
            self.memberPointLoad[i] = self.memberPointLoad[i] + memberPointLoad[i]
 
-       if addToTables:
+        if addToTables:
            numRow = len(window.tables[6].get_children())
            for i in range(len(memberPointLoad[0])):
                window.tables[6].insert('', 'end', values=[str(numRow + i), memberPointLoad[0][i], memberPointLoad[1][i],
@@ -220,12 +353,23 @@ class data:
                                                           memberPointLoad[6][i], memberPointLoad[7][i],
                                                           memberPointLoad[8][i]])
 
-       if addToDisplay:
+        if addToDisplay:
            pass #TODO
 
-       resetSolutions(window)
+        resetSolutions(window)
 
     def editmemberPointLoad(self, window, newMemberPointLoad, index, editTable, editDisplay, row_id):
+        """
+        Edits a member point loads in the frame.
+
+        :param window: Object storing the main window.
+        :param newMemberPointLoad: The new values for the member point load being edited.
+        :param index: Index of the member point load being edited.
+        :param editTable: If the input tables are to be edited.
+        :param editDisplay: If the 3D display is to be edited.
+        :param row_id: The Input table row containing the member point load being edited.
+        """
+
         for i in range(9): self.materials[i][index] = newMemberPointLoad[i]
 
         if editTable:
@@ -239,6 +383,15 @@ class data:
         resetSolutions(window)
 
     def addmemberDistLoads(self, window, memberDistLoad, addToTables: bool, addToDisplay: bool):
+        """
+        Adds member distributed loads to the frame.
+
+        :param window:  Object storing the main window.
+        :param memberDistLoad: List of member distributed loads to be added to the frame.
+        :param addToTables: If the input tables are to be edited.
+        :param addToDisplay: If the 3D display is to be edited.
+        """
+
         for i in range(10):
             if isinstance(memberDistLoad[i], float): memberDistLoad[i] = [memberDistLoad[i]]
             self.memberDistLoad[i] = self.memberDistLoad[i] + memberDistLoad[i]
@@ -258,6 +411,17 @@ class data:
         resetSolutions(window)
 
     def editmemberDistLoad(self, window, newMemberDistLoad, index, editTable, editDisplay, row_id):
+        """
+        Edits a member distributed loads in the frame.
+
+        :param window:  Object storing the main window.
+        :param newMemberDistLoad: The new values for the member distributed load being edited.
+        :param index: Index of the member distributed load being edited.
+        :param editTable: If the input tables are to be edited.
+        :param editDisplay: If the 3D display is to be edited.
+        :param row_id: The input table row containing the member distributed load being edited.
+        """
+
         for i in range(10): self.materials[i][index] = newMemberDistLoad[i]
 
         if editTable:
@@ -271,6 +435,12 @@ class data:
         resetSolutions(window)
 
 def resetSolutions(window):
+    """
+    Sets all solutions to not solved, when anything is changed within the frame.
+
+    :param window: Object storing the main window.
+    """
+
     window.Frame = None
     window.results = None
     window.Optimization_Results = None
