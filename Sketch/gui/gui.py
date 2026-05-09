@@ -89,8 +89,8 @@ class GUI(tk.Frame):
         self.currentTool = tk.StringVar(value="node")
         self.createToolBars()
 
-        # exitButton = tk.Button(root, text= "Complete Sketch", command = self.endSketch)
-        # self.canvas.create_window(100, 100, window=exitButton)
+        # exitButton = tk.Button(MainWindowRoot, text= "Complete Sketch", command = self.endSketch)
+        # self.canvas.create_window(100, 100, Window=exitButton)
 
     def endSketch(self):
         self.root.destroy()
@@ -179,7 +179,7 @@ class GUI(tk.Frame):
         # wheel bindings (zoom)
         self.canvas.bind("<MouseWheel>",self.on_zoom)
         
-        # resize of the main window
+        # resize of the main Window
         self.bind("<Configure>", self.on_resize)
 
         self.root.bind("<KeyPress>", self.on_key_press)
@@ -397,7 +397,7 @@ class GUI(tk.Frame):
 
     def remove_drawn_segment(self, segment: Segment):
         """
-        Removes drawn segment of node
+        Removes drawn segment of Node
         :param segment: The segment to be removed
         """
 

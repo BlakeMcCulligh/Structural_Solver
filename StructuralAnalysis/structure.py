@@ -19,11 +19,11 @@ class Structure:
         self.isTruss = False # is the structure a truss. (Boolean)
         self.is3D = False # is the structure 3D. (boolean)
 
-        self.nodes = [] # list of node objects for the structure (list)
+        self.nodes = [] # list of Node objects for the structure (list)
         self.members = [] # list of member objects for the structure (list)
         self.crossSections = [] # list of cross-section objects for the structure (list)
 
-        self.optimizationResults = None # the results of a member cross-secction optimization (list)
+        self.optimizationResults = None # the Results of a member cross-secction optimization (list)
 
     def setTruss(self):
         self.isTruss = True
@@ -39,7 +39,7 @@ class Structure:
 
     def addNode(self, cords: list):
         """
-        Adds a node to the structure.
+        Adds a Node to the structure.
         :param cords: list of cords [location, y] if 2D, [location, y, z] if 3D
         """
         self.nodes.append(Node(self.isTruss, self.is3D, cords))
@@ -47,7 +47,7 @@ class Structure:
     def addMember(self, nodeIndexs: list, crossSectionIndex: int):
         """
         Adds a member to the structure.
-        :param nodeIndexs: list of the node indexs the member is to conect [node 1, node 2].
+        :param nodeIndexs: list of the Node indexs the member is to conect [Node 1, Node 2].
         :param crossSectionIndex: i of the cross-section the member is to be.
         """
         self.members.append(Member(self.nodes, self.crossSections, self.is3D, self.isTruss, nodeIndexs, crossSectionIndex))
@@ -95,7 +95,7 @@ class Structure:
     def addSupport(self, nodeIndex: int, support: list):
         """
         Adds a support to the structure.
-        :param nodeIndex: i of the node the support is to be applied to. (int)
+        :param nodeIndex: i of the Node the support is to be applied to. (int)
         :param support: what degress of fredom the support is to be applied to. (list) of booleans
                         if 2D truss: length = 2
                         if 3D truss: length = 3
@@ -106,8 +106,8 @@ class Structure:
 
     def addNodeLoad(self, nodeIndex: int, load: list):
         """
-        Adds a point load at a node to the structure.
-        :param nodeIndex: i of the node the load is to be applied to. (int)
+        Adds a point load at a Node to the structure.
+        :param nodeIndex: i of the Node the load is to be applied to. (int)
         :param load: magnitude of the load in each degree of fredom. (list) of floats
                      if 2D truss: length = 2
                      if 3D truss: length = 3
@@ -356,7 +356,7 @@ class Structure:
 
     def printOptimizationResults(self):
         """
-        prints the results for the optimization variables returned from the optimizer.
+        prints the Results for the optimization variables returned from the optimizer.
         """
         if self.optimizationResults is not None:
             if self.isTruss:
@@ -366,9 +366,9 @@ class Structure:
                     print("A: ", self.optimizationResults)
             else:
                 if self.is3D:
-                    print("results: ", self.optimizationResults)
+                    print("Results: ", self.optimizationResults)
                 else:
-                    print("results: ", self.optimizationResults)
+                    print("Results: ", self.optimizationResults)
         else:
             print("The structure has not been optimized yet.")
 
@@ -418,10 +418,10 @@ testTruss2D()
 # #S.set3D()
 # S.setTruss()
 #
-# S.addPrintNode([0,0,0])
-# S.addPrintNode([1,0,0])
-# S.addPrintNode([1,1,0])
-# S.addPrintNode([0,1,0])
+# S.AddPrintNode([0,0,0])
+# S.AddPrintNode([1,0,0])
+# S.AddPrintNode([1,1,0])
+# S.AddPrintNode([0,1,0])
 #
 # S.addCrossSection(True, E=1, G=1, memberType="SquareHSS", minBounds=[0.1, 0.01], maxBounds=[10, 0.09])
 #

@@ -110,7 +110,7 @@ class CrossSection:
         Assignes the values for a 3D frame to be optimized
         :param E: Elastic Modulus
         :param G: shear Modulus
-        :param memberType: Type of member
+        :param memberType: _type of member
         :param minBounds: minimum bounds on the optimization variables
         :param maxBounds: maximum bounds on the optimization variables
         """
@@ -135,7 +135,7 @@ class CrossSection:
         """
         Assignes the values for a 2D frame to be optimized
         :param E: Elastic Modulus
-        :param memberType: Type of member
+        :param memberType: _type of member
         :param minBounds: minimum bounds on the optimization variables
         :param maxBounds: maximum bounds on the optimization variables
         """

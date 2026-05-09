@@ -3,222 +3,9 @@ import numpy as np
 from numpy import copy
 import pyvista as pv
 
-class MainWindow(tk.Frame):
-    def __init__(self, root):
-        super().__init__()
-        self.sizeW, self.sizeH = 1000, 800
-        self.root = root
-        self.root.geometry(str(self.sizeW) + "x" + str(self.sizeH))
-
-        self.graph = tk.Canvas(root, bg="white")
-        self.graph.pack(fill="both", expand=True)
-        self.camera = np.array([0.0,0.0,0.0])
-        self.up = np.array([0.0,1.0,0.0])
-        self.lookDir = np.array([0.0,0.0,1.0])
-        self.cam_Y_rot = 0
-        self.cam_X_rot = 0
-        self.target = np.array([0.0,0.0,1.0])
-        self.FOV = 90
-        self.Z_far, self.Z_near = 1000, 0.1
-        self.light_direction = np.array([0,0,-1])
-
-        self.nodes: np.ndarray = np.empty((0, 3))
-        self.lines: np.ndarray = np.empty((0, 2, 3))
-        self.surfaceTri: np.ndarray = np.empty((0, 3, 3))
-        self.solidTri: np.ndarray = np.empty((0, 3, 3))
-
-        #self.node = triangles
-
-        self.root.bind("<MouseWheel>", self.zoom)
-
-        self.scroolCordsLast = []
-        self.shiftStateLast = False
-        self.root.bind("<Button-2>", self.scroolDown)
-        self.root.bind("<B2-Motion>", self.scroolUpdate)
-        self.root.bind("<ButtonRelease-2>", self.scroolUp)
-
-    def addNode(self, node):
-        self.nodes = np.vstack((self.nodes, node))
-        self.updateCanves()
-
-    def addLine(self, line):
-        self.lines = np.vstack((self.lines, self.nodes[line]))
-        self.updateCanves()
-
-    def addSurface(self, surface):
-        tri = triangalizeSurface(self, surface, False)
-        for i in range(len(tri)):
-            self.surfaceTri = np.vstack((self.surfaceTri, tri[i]))
-        self.updateCanves()
-
-    def addSolid(self, solid, flipNormal: list | None = None):
-        numSurfaces = len(solid)
-        for i in range(numSurfaces):
-            if isinstance(flipNormal, list): # needs triangalized
-                tri = triangalizeSurface(self, solid[i], flipNormal[i])
-                for j in range(len(tri)):
-                    self.solidTri = np.vstack((self.solidTri, [tri[j]]))
-            else: # already triangalized
-                self.solidTri = np.vstack((self.solidTri, [solid[i]]))
-
-    def scroolDown(self, event):
-        if bool(event.state & 0x0001):
-            self.shiftStateLast = True
-            self.rotStart(event)
-        else:
-            self.shiftStateLast = False
-            self.panStart(event)
-
-    def scroolUpdate(self, event):
-        if bool(event.state & 0x0001):
-            if not self.shiftStateLast:
-                self.shiftStateLast = True
-                self.panEnd(event)
-                self.rotStart(event)
-            else: self.rotUpdate(event)
-        else:
-            if self.shiftStateLast:
-                self.shiftStateLast = False
-                self.rotEnd(event)
-                self.panStart(event)
-            else: self.panUpdate(event)
-
-    def scroolUp(self, event):
-        if bool(event.state & 0x0001):
-            if not self.shiftStateLast: self.panEnd(event)
-            else: self.rotEnd(event)
-        else:
-            if self.shiftStateLast: self.rotEnd(event)
-            else: self.panEnd(event)
-
-    def zoom(self, event):
-        if event.delta > 0:
-            self.camera = self.camera + self.lookDir * 0.1
-        else:
-            self.camera = self.camera - self.lookDir * 0.1
-        self.updateCanves()
-
-    def panStart(self, event):
-        self.scroolCordsLast = [event.x, event.y]
-
-    def panUpdate(self, event):
-        cords = [event.x, event.y]
-        self.panMove(cords)
-
-    def panEnd(self, event):
-        cords = [event.x, event.y]
-        self.panMove(cords)
-
-    def panMove(self, cords):
-        changeCords = [cords[0] - self.scroolCordsLast[0], cords[1] - self.scroolCordsLast[1]]
-        self.camera = self.camera - self.up * changeCords[1] * 0.01
-        self.camera = self.camera + np.cross(self.lookDir, self.up) * changeCords[0] * 0.01
-        self.updateCanves()
-        self.scroolCordsLast = cords
-
-    def rotStart(self, event):
-        self.scroolCordsLast = [event.x, event.y]
-
-    def rotUpdate(self, event):
-        cords = [event.x, event.y]
-        self.rotMove(cords)
-
-    def rotEnd(self, event):
-        cords = [event.x, event.y]
-        self.rotMove(cords)
-
-    def rotMove(self, cords):
-        changeCords = [cords[0] - self.scroolCordsLast[0], cords[1] - self.scroolCordsLast[1]]
-        self.cam_Y_rot = self.cam_Y_rot + changeCords[0] * 0.005
-        self.cam_X_rot = self.cam_X_rot + changeCords[1] * 0.005
-        self.updateCanves()
-        self.scroolCordsLast = cords
-
-    def updateCanves(self):
-        node = copy(self.nodes)
-        line = copy(self.lines)
-        surfTri = copy(self.surfaceTri)
-        solidTri = copy(self.solidTri)
-
-        self.updateCamData()
-        solidTriNormals = getNormals(solidTri)
-        solidTri, solidTriNormals = removeTriFaceingAway(self, solidTri, solidTriNormals)
-        triColor = illumination(self, solidTriNormals, len(surfTri))
-
-        for i in range(len(surfTri)):
-            solidTri = np.append(solidTri, surfTri[i], axis=0)
-        tri = solidTri
-
-        node, line, tri = transformToLocal(self, node, line, tri)
-
-        node, line, tri, triColor = clipClose(node, line, tri, triColor)
-
-        self.graph.delete("all")
-        if len(node) > 0 or len(line) > 0 or len(tri) > 0:
-            w = self.graph.winfo_width()
-            h = self.graph.winfo_height()
-            node, line, tri = project(self, node, line, tri)
-
-            if len(tri) > 0: tri = tri[:, :, :-1]
-            node, line, tri, triColor = clipEadges(node, line, tri, triColor, h, w)
-
-            if len(tri) > 0:
-                self.printTri(np.array(tri), np.array(triColor))
-            if len(line) > 0:
-                self.printLine(np.array(line))
-            if len(node) > 0:
-                self.printNode(np.array(node))
-
-        self.update()
-
-    def updateCamData(self):
-        matCameraRotY = getRotationYMatrix(self.cam_Y_rot)
-        matCameraRotX = getRotationXMatrix(self.cam_X_rot)
-        self.lookDir = (np.append(np.array([0, 0, 1]), 1) @ matCameraRotY @ matCameraRotX)[:-1]
-        self.lookDir = self.lookDir / np.linalg.norm(self.lookDir)
-        self.target = self.camera + self.lookDir
-        self.up = (np.append(np.array([0, 1, 0]), 1) @ matCameraRotY @ matCameraRotX)[:-1]
-        self.up = self.up / np.linalg.norm(self.up)
-
-    def printTri(self, tri, triColor):
-        avgDistance = np.sum(tri[:, :, 2], axis=-1)
-        idx = np.argsort(avgDistance)
-        tri = tri[idx[::-1]]
-        triColor = triColor[idx[::-1]]
-
-        triPrint = []
-        for i in range(len(tri)):
-            triPrint.append([tri[i][0][0], tri[i][0][1],
-                             tri[i][1][0], tri[i][1][1],
-                             tri[i][2][0], tri[i][2][1]])
-        for i in range(len(triPrint)):
-            color = int(triColor[i])
-            self.graph.create_polygon(triPrint[i], outline='', fill="#%02x%02x%02x" % (color, color, color))
-
-    def printLine(self, line):
-        avgDistance = np.sum(line[:, :, 2], axis=-1)
-        idx = np.argsort(avgDistance)
-        line = line[idx[::-1]]
-
-        linePrint = []
-        for i in range(len(line)):
-            linePrint.append([line[i][0][0], line[i][0][1],
-                             line[i][1][0], line[i][1][1]])
-        for i in range(len(linePrint)):
-            self.graph.create_line(linePrint[i], width = 5, fill="red")
-
-    def printNode(self, node):
-        idx = np.argsort(node[:,2])
-        node = node[idx[::-1]]
-
-        for i in range(len(node)):
-            nodeP = [node[i][0], node[i][1]]
-            self.graph.create_oval(nodeP[0] - 4, nodeP[1] - 4, nodeP[0] + 4, nodeP[1] + 4, fill="green")
-
-
 def triangalizeSurface(window, surface, flipNormal):
 
-    nodes = window.printNodes[surface]
+    nodes = window.PrintNodes[surface]
 
     cloud = pv.PolyData(nodes)
     surf = cloud.delaunay_2d()
@@ -262,7 +49,7 @@ def getNormals(tri):
     return triNormals
 
 def removeTriFaceingAway(window, tri, triNormals):
-    veiwingVector = tri[:,0] - window.camera
+    veiwingVector = tri[:,0] - window.Camera
     l_veiwingVector = np.linalg.norm(veiwingVector)
     veiwingVector = veiwingVector/l_veiwingVector
     result = np.array([np.dot(a, b) for a, b in zip(triNormals, veiwingVector)])
@@ -271,9 +58,9 @@ def removeTriFaceingAway(window, tri, triNormals):
     return tri, triNormals
 
 def illumination(window, solidTriNormals, numSurfTri):
-    l_lightDirection = np.linalg.norm(window.light_direction)
-    window.light_direction = window.light_direction / l_lightDirection
-    result = np.array([np.dot(a, window.light_direction) for a in solidTriNormals])
+    l_lightDirection = np.linalg.norm(window.LIGHT_DIR)
+    window.LIGHT_DIR = window.LIGHT_DIR / l_lightDirection
+    result = np.array([np.dot(a, window.LIGHT_DIR) for a in solidTriNormals])
     triColor = result * 150 + 50
     for i in range(len(triColor)):
         if triColor[i] < 50: triColor[i] = 50
@@ -283,8 +70,8 @@ def illumination(window, solidTriNormals, numSurfTri):
     return triColor
 
 def transformToLocal(window, node, line, tri):
-    target = window.camera + window.lookDir
-    lookAtMatrix = getLookAtMatrix(window.camera, target, window.up)
+    target = window.Camera + window.LookDir
+    lookAtMatrix = getLookAtMatrix(window.Camera, target, window.Up)
     nodeMove = []
     for i in range(len(node)):
         nodeMove.append((np.append(node[i],1) @ lookAtMatrix)[:-1])
@@ -344,7 +131,7 @@ def project(window, node, line, tri):
         triProjected.append(triProjectedSub)
     triProjected = np.array(triProjected)
 
-    # scale to window
+    # scale to Window
     w = window.graph.winfo_width()
     h = window.graph.winfo_height()
 
@@ -365,12 +152,12 @@ def project(window, node, line, tri):
 def getProjectionMatrix(window):
     a = window.graph.winfo_height() / window.graph.winfo_width()
     f = 1 / np.tan(np.radians(window.FOV / 2))
-    q = window.Z_far / (window.Z_far - window.Z_near)
+    q = window.Z_FAR / (window.Z_FAR - window.Z_NEAR)
     projectionMatrix = np.zeros((4, 4))
     projectionMatrix[0, 0] = a * f
     projectionMatrix[1, 1] = f
     projectionMatrix[2, 2] = q
-    projectionMatrix[3, 2] = -window.Z_near * q
+    projectionMatrix[3, 2] = -window.Z_NEAR * q
     projectionMatrix[2, 3] = 1
     return projectionMatrix
 
@@ -505,26 +292,3 @@ def Triangle_ClipAgainstPlane(planePoint, planeNormal, in_tri):
         return 2, out_tri1, out_tri2
     else:
         raise Exception('ERROR')
-
-def main():
-
-    # Window Set Up
-    root_widget = tk.Tk()
-    root_widget.title('3D Grphics Engine')
-    window = MainWindow(root_widget)
-
-    # test cube
-    window.addNode([0,0,0])
-    window.addNode([1,0,0])
-    window.addNode([1,1,0])
-    window.addNode([0,1,0])
-    window.addNode([0,0,1])
-    window.addNode([1,0,1])
-    window.addNode([1,1,1])
-    window.addNode([0,1,1])
-    window.addSolid([[0,1,2,3],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]], [True, False, True, False, False, True])
-
-    window.updateCanves()
-    root_widget.mainloop()
-
-#main()

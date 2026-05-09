@@ -9,9 +9,9 @@ class Node:
     def __init__(self, isTruss: bool, is3D: bool, cords: list):
         """
         Creation of a Node object.
-        :param isTruss: is the node for a truss.
-        :param is3D: is the node 3D.
-        :param cords: the cordinates of the node.
+        :param isTruss: is the Node for a truss.
+        :param is3D: is the Node 3D.
+        :param cords: the cordinates of the Node.
         """
 
         self.isTruss = isTruss
@@ -50,8 +50,8 @@ class Node:
 
     def addSupport(self, support: list):
         """
-        Updates the node's supports to the paramiter.
-        :param support: the new node's supports.
+        Updates the Node's Supports to the paramiter.
+        :param support: the new Node's Supports.
         """
         if self.isTruss:
             if self.is3D:
@@ -78,8 +78,8 @@ class Node:
 
     def addLoad(self, load: list):
         """
-        Updates the node's loads to the paramiter.
-        :param load: the new node's loads.
+        Updates the Node's loads to the paramiter.
+        :param load: the new Node's loads.
         """
         if self.isTruss:
             if self.is3D:

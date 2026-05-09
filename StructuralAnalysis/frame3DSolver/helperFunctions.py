@@ -7,7 +7,7 @@ def partD(nodes_Support):
     """
     Builds lists of unreleased and released degree of freedom.
 
-    :param nodes_Support: ndarray. What printNodes are supported in what DOFs.
+    :param nodes_Support: ndarray. What nodes are supported in what DOFs.
     :return:
         D_unknown: ndarray. A ndarray of the indices for the released DOFs.
         D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
@@ -24,7 +24,7 @@ def prepMembers(nodes_cord, members, members_Releases, members_PointLoads, membe
     does not need to be rerun is only cross-sections are changed.
 
 
-    :param nodes_cord: ndarray. Cordinates of the printNodes [X, Y, Z]
+    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
     :param members:  list. [i_node, j_node, material_index, setCrossSectionProps]
     :param members_Releases: list. What directions are relesed Bool. [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
     :param members_PointLoads: list. Point loads applyed to members. [case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]]
@@ -51,7 +51,7 @@ def get_L(nodes_cord, members):
     """
     Builds an array of the lengths of the members.
 
-    :param nodes_cord: ndarray. Cordinates of the printNodes [X, Y, Z]
+    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
     :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
     :return:
         L: ndarray. A ndarray of the lengths of the members.
@@ -64,9 +64,9 @@ def get_L(nodes_cord, members):
 
 def buildDOFVector(nodes: np.ndarray):
     """
-    Returns the flattened list of global DOF indices for the supplied printNodes.
+    Returns the flattened list of global DOF indices for the supplied nodes.
 
-    :param nodes: ndarray. A 3D ndarray of the indices of the printNodes to get the DOF indices for. shape: (# Members, 2)
+    :param nodes: ndarray. A 3D ndarray of the indices of the nodes to get the DOF indices for. shape: (# Members, 2)
     :return: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# Members, 12)
     """
     dofs = nodes[:, :, None] * 6 + np.arange(6)
@@ -91,7 +91,7 @@ def getMemberT(nodes_cord, members, L: np.ndarray):
     """
     Builds an array of the transformation matrices for each member.
 
-    :param nodes_cord: ndarray. Cordinates of the printNodes [X, Y, Z]
+    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
     :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
     :param L: ndarray. A ndarray of the lengths of the members. shape: (# Members)
     :return: ndarray: 4D array of the transformation matrices for each member. shape: (# Members, 12, 12)
@@ -141,7 +141,7 @@ def getGlobalFixedEndReactionVector(nodes_cord, members_DOF, T: np.ndarray, D_un
     """
     Builds array of the global fixed end reaction vector for both fixed and released DOFs.
 
-    :param nodes_cord: ndarray. Cordinates of the printNodes [X, Y, Z]
+    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
     :param members_DOF: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# Members, 12)
     :param T: ndarray. 4D array of the transformation matrices for each member. shape: (# Members, 12, 12)
     :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
@@ -498,7 +498,7 @@ def getPartedGlobalNodalForceVector(nodes_loads, casses, D_unknown, D_known, num
     :param casses: list. Load Case Indexes.
     :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
     :param D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
-    :param numN: int. Number of printNodes
+    :param numN: int. Number of nodes
     :return: ndarray. Global nodal force vector partitioned into 2 vectors.
     """
 
@@ -539,7 +539,7 @@ def get_K_Global(members_DOF, k_global: np.ndarray, numN: int, numM:int):
 
     :param members_DOF: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# Members, 12)
     :param k_global: ndarray. 4D array of the global stiffness matrices for each member. shape: (# Members, 12, 12)
-    :param numN: int. Number of printNodes.
+    :param numN: int. Number of nodes.
     :param numM: int. Number of casses.
     :return: ndarray. Global stiffness matrix. shape: (# Nodes * 6, # Nodes * 6)
     """
@@ -575,7 +575,7 @@ def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.nd
     :param FER1_array: ndarray. An array of the released DOFs fixed end reactions.
     :param Index_Unsupported: ndarray. Indeces of the unsupported DOFs.
     :param Index_Supported: ndarray. Indeces of the supported DOFs.
-    :param numN: int. Number of printNodes.
+    :param numN: int. Number of nodes.
     :param numC: int. Number of casses.
     :return:
         D: ndarray. Array of the nodal displacements.
@@ -623,7 +623,7 @@ def assemble_D_array(D1_array, D2, Index_Supported, Index_Unsupported, numN: int
     :param D2: ndarray. Array of displacements for all supported DOFs.
     :param Index_Supported: ndarray. Indeces of the supported DOFs.
     :param Index_Unsupported: ndarray. Indeces of the unsupported DOFs.
-    :param numN: int: Number of printNodes.
+    :param numN: int: Number of nodes.
     :param numC: intL Number of casses.
     :return: ndarray. Array of the nodal displacements.
     """
@@ -646,7 +646,7 @@ def get_node_direcction_deflections(D_array, numN: int, numC: int):
     Gets the nodal deflection in each direction.
 
     :param D_array: ndarray. Array of the nodal displacements.
-    :param numN: int: Number of printNodes.
+    :param numN: int: Number of nodes.
     :param numC: int: Number of casses.
     :return:
         DX: ndarray. Array of the nodel displacements in the X direction.

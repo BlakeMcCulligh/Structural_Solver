@@ -1,3 +1,16 @@
+"""
+Holds the object the stores all the results, incuding sub objects.
+"""
+
+__author__ = "Blake McCulligh"
+__copyright__ = ""
+__credits__ = ["Blake McCulligh"]
+
+__license__ = ""
+__version__ = ""
+__maintainer__ = "Blake McCulligh"
+__email__ = "bmcculli@uwaterloo.ca"
+__status__ = ""
 
 class NodeDeflections:
     """
@@ -32,7 +45,7 @@ class Reactions:
         """
         Reactions object constructer.
 
-        :param reactions: Node ractions. Shape: (# nodes, 6)
+        :param reactions: Node ractions. Shape: (# Nodes, 6)
         """
 
         self.RX = reactions[:,0]
@@ -83,13 +96,13 @@ class Results:
         Results object constructor.
         """
 
-        self.nodalDeflections = []
-        self.weight = None
-        self.overallWeight = None
-        self.reactions = []
-        self.maxInternalForces = None
+        self.NodalDeflections = []
+        self.Weight = None
+        self.OverallWeight = None
+        self.Reactions = []
+        self.MaxInternalForces = None
 
-    def addNodalDeflections(self, DX, DY, DZ, RX, RY, RZ):
+    def AddNodalDeflections(self, DX, DY, DZ, RX, RY, RZ):
         """
         Adds node deflections to the results object.
 
@@ -102,20 +115,20 @@ class Results:
         """
 
         for case_id in range(len(DX)):
-            self.nodalDeflections.append(NodeDeflections(DX[case_id], DY[case_id], DZ[case_id],
+            self.NodalDeflections.append(NodeDeflections(DX[case_id], DY[case_id], DZ[case_id],
                                                          RX[case_id], RY[case_id], RZ[case_id]))
 
-    def addWeight(self, weight):
+    def AddWeight(self, weight):
         """
         Adds weigits to the results object.
 
         :param weight: List of wights of each member.
         """
 
-        self.weight = weight
-        self.overallWeight = sum(weight)
+        self.Weight = weight
+        self.OverallWeight = sum(weight)
 
-    def addReactions(self, reactions):
+    def AddReactions(self, reactions):
         """
         Adds reactions to the results object.
 
@@ -123,13 +136,13 @@ class Results:
         """
 
         for case_id in range(len(reactions)):
-            self.reactions.append(Reactions(reactions[case_id]))
+            self.Reactions.append(Reactions(reactions[case_id]))
 
-    def addInternalForces(self, internalForces):
+    def AddInternalForces(self, internalForces):
         """
         Adds the maximum forces in each momber to the results object.
 
         :param internalForces: Maximum forces in each member. Shape: (2,3,2)
         """
 
-        self.maxInternalForces = MaximumInternalForces(internalForces)
+        self.MaxInternalForces = MaximumInternalForces(internalForces)

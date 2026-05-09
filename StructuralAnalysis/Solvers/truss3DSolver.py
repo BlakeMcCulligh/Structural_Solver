@@ -6,12 +6,12 @@ from CrossSectionOptimization import truss3DOptimizer
 class Truss3D:
     def __init__(self):
         self.nodes = None # [location,y, z]
-        self.members = None # [node 1, node 2]
-        self.loads = None # [node, location, y, z]
-        self.supports = None # [node, location, y, z]
+        self.members = None # [Node 1, Node 2]
+        self.loads = None # [Node, location, y, z]
+        self.supports = None # [Node, location, y, z]
         self.memberGroup = None
-        self.A = None # [A] * length members
-        self.E = None # [E] * length members
+        self.A = None # [A] * length Members
+        self.E = None # [E] * length Members
 
         self.L = None
         self.K_m_local = None

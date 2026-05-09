@@ -9,10 +9,10 @@ class Frame2D:
         Handels the large computations for 2D frames.
         """
         self.nodes = None # [location,y]
-        self.members = None # [node 1, node 2]
-        self.loads = None # [node, location, y, m]
-        self.supports = None # [node, location, y, m]
-        self.releases = None # [node, x_i, y_i, m_i, x_j, y_j, m_j]
+        self.members = None # [Node 1, Node 2]
+        self.loads = None # [Node, location, y, m]
+        self.supports = None # [Node, location, y, m]
+        self.releases = None # [Node, x_i, y_i, m_i, x_j, y_j, m_j]
         self.memberGroups = None
         self.A = None
         self.E = None
@@ -60,7 +60,7 @@ class Frame2D:
 
     def calcLengths(self):
         """
-        Calculates the lengths of the members.
+        Calculates the lengths of the Members.
         """
         dx = self.nodes[self.members[:,1],0] - self.nodes[self.members[:,0],0]
         dy = self.nodes[self.members[:,1],1] - self.nodes[self.members[:,0],1]
@@ -68,7 +68,7 @@ class Frame2D:
 
     def calcLocalStiffnessMatrices(self):
         """
-        Calculates the local stiffness matrices of the members.
+        Calculates the local stiffness matrices of the Members.
         """
         self.K_m_local = []
         for i in range(len(self.members)):
@@ -118,7 +118,7 @@ class Frame2D:
 
     def calcTransformationMatrices(self):
         """
-        Calculates the transformation matrices for the members.
+        Calculates the transformation matrices for the Members.
         """
         C = (self.nodes[self.members[:, 1], 0] - self.nodes[self.members[:, 0], 0]) /self.L
         S = (self.nodes[self.members[:, 1], 1] - self.nodes[self.members[:, 0], 1]) /self.L
@@ -137,14 +137,14 @@ class Frame2D:
 
     def calcTransfromLocalToGlobalStiffnessMatrix(self):
         """
-        Converts the local stiffness matrices to global stiffness matrices for the members
+        Converts the local stiffness matrices to global stiffness matrices for the Members
         :return:
         """
         self.K_m_global = self.T_T @ self.K_m_local @ self.T
 
     def calcGlobalStiffnessMatrix(self):
         """
-        Calcs the global stiffness matrices for the members from strart to finish.
+        Calcs the global stiffness matrices for the Members from strart to finish.
         """
         self.calcLocalStiffnessMatrices()
         self.applyRelecesTOLocalStiffnessMatrices()
@@ -199,7 +199,7 @@ class Frame2D:
 
     def calcReactions(self):
         """
-        Calculates the reactions for the structure.
+        Calculates the Reactions for the structure.
         """
         self.Reactions = self.F
         self.Reactions[self.fixedDOF] = self.K[self.fixedDOF, :] @ self.U
@@ -250,7 +250,7 @@ class Frame2D:
         Runs the optimization of the frame.
         :param crossSections: list of cross-section objects
         :param initalGuess: the initial guess for the optimization
-        :return results
+        :return Results
         """
 
         self.AFormulas = []
@@ -264,19 +264,19 @@ class Frame2D:
             minBounds = minBounds + crossSection.minBounds
             maxBounds = maxBounds + crossSection.maxBounds
 
-            if crossSection.Type == "SquareHSS":
+            if crossSection._type == "SquareHSS":
                 self.AFormulas.append(SquareHSS.getA)
                 self.IFormulas.append(SquareHSS.getI)
                 self.numVariables.append(2)
-            elif crossSection.Type == "RectHSS":
+            elif crossSection._type == "RectHSS":
                 self.AFormulas.append(RectHSS.getA)
                 self.IFormulas.append(RectHSS.getIx)
                 self.numVariables.append(3)
-            elif crossSection.Type == "TubeHSS":
+            elif crossSection._type == "TubeHSS":
                 self.AFormulas.append(TubeHSS.getA)
                 self.IFormulas.append(TubeHSS.getI)
                 self.numVariables.append(2)
-            elif crossSection.Type == "Angle":
+            elif crossSection._type == "Angle":
                 self.AFormulas.append(Angle.getA)
                 self.IFormulas.append(Angle.getIx)
                 self.numVariables.append(3)

@@ -9,13 +9,13 @@ from StructuralAnalysis.CrossSectionCalculaters import SquareHSS, RectHSS, TubeH
 class Frame3D:
     def __init__(self):
         self.nodes = None # [location,y, z]
-        self.members = None # [node 1, node 2]
-        self.loads = None # [node, location, y, z, mx, my, mz]
-        self.supports = None # [node, location, y, location, mx, my, mz]
-        self.releases = None # [node, x_i, y_i, z_i, mx_i, my_i, mz_i, x_j, y_j, z_j, mx_j, my_j, mz_j]
+        self.members = None # [Node 1, Node 2]
+        self.loads = None # [Node, location, y, z, mx, my, mz]
+        self.supports = None # [Node, location, y, location, mx, my, mz]
+        self.releases = None # [Node, x_i, y_i, z_i, mx_i, my_i, mz_i, x_j, y_j, z_j, mx_j, my_j, mz_j]
         self.memberGroups = None
-        self.A = None # [A] * length members
-        self.E = None # [E] * length members
+        self.A = None # [A] * length Members
+        self.E = None # [E] * length Members
         self.G = None
         self.J = None
         self.Iy = None
@@ -132,7 +132,7 @@ class Frame3D:
             Zi = self.nodes[m[0], 2]
             Zj = self.nodes[m[1], 2]
             x = [(Xj - Xi) / self.L[i], (Yj - Yi) / self.L[i], (Zj - Zi) / self.L[i]]
-            # Vertical members
+            # Vertical Members
             if math.isclose(Xi, Xj) and math.isclose(Zi, Zj):
                 if Yj > Yi:
                     y = [-1, 0, 0]
@@ -140,7 +140,7 @@ class Frame3D:
                 else:
                     y = [1, 0, 0]
                     z = [0, 0, 1]
-            # Horizontal members
+            # Horizontal Members
             elif math.isclose(Yi, Yj):
                 y = [0, 1, 0]
                 z = np.cross(x, y)
@@ -278,25 +278,25 @@ class Frame3D:
             minBounds = minBounds + crossSection.minBounds
             maxBounds = maxBounds + crossSection.maxBounds
 
-            if crossSection.Type == "SquareHSS":
+            if crossSection._type == "SquareHSS":
                 self.AFormulas.append(SquareHSS.getA)
                 self.IxFormulas.append(SquareHSS.getI)
                 self.IyFormulas.append(SquareHSS.getI)
                 self.JFormulas.append(SquareHSS.getJ)
                 self.numVariables.append(2)
-            elif crossSection.Type == "RectHSS":
+            elif crossSection._type == "RectHSS":
                 self.AFormulas.append(RectHSS.getA)
                 self.IxFormulas.append(RectHSS.getIx)
                 self.IyFormulas.append(RectHSS.getIy)
                 self.JFormulas.append(RectHSS.getJ)
                 self.numVariables.append(3)
-            elif crossSection.Type == "TubeHSS":
+            elif crossSection._type == "TubeHSS":
                 self.AFormulas.append(TubeHSS.getA)
                 self.IxFormulas.append(TubeHSS.getI)
                 self.IyFormulas.append(TubeHSS.getI)
                 self.JFormulas.append(TubeHSS.getJ)
                 self.numVariables.append(2)
-            elif crossSection.Type == "Angle":
+            elif crossSection._type == "Angle":
                 self.AFormulas.append(Angle.getA)
                 self.IxFormulas.append(Angle.getIx)
                 self.IyFormulas.append(Angle.getIy)

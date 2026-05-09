@@ -12,11 +12,11 @@ from OpeningAndSaving.Saving import saveTrussTopologyOptimizationExcel
 
 def createNodeGrid(zone, nodeSpasing):
     """
-    Crates the grid of printNodes to be used in the optimization
+    Crates the grid of nodes to be used in the optimization
 
     :param zone: A shapely polygon that the truss must be within
-    :param nodeSpasing: How far apart the printNodes should be in the location and y directions
-    :return: array of printNodes, number of columbes of printNodes, number of rows of printNodes
+    :param nodeSpasing: How far apart the nodes should be in the location and y directions
+    :return: array of nodes, number of columbes of nodes, number of rows of nodes
     """
 
     minX, minY, maxX, maxY = zone.bounds
@@ -27,7 +27,7 @@ def createNodeGrid(zone, nodeSpasing):
 
     pts = [Point(xv.flat[i], yv.flat[i]) for i in range(xv.size)]
 
-    # only add printNodes that are inside the zone
+    # only add nodes that are inside the zone
     Nodes = np.array([[pt.x, pt.y] for pt in pts if zone.intersects(pt)])
 
     return Nodes, numColumbs, numRows
@@ -36,9 +36,9 @@ def createInitialStructure(Nodes, zone):
     """
     Creates the list of members and findes what ones should be initaly active
 
-    :param Nodes: Array of printNodes
+    :param Nodes: Array of nodes
     :param zone: A shapely polygon that the truss must be within
-    :return: Array of members: [node 1 i, node 2 i, length]
+    :return: Array of members: [Node 1 i, Node 2 i, length]
     """
 
     convex = True if zone.convex_hull.area == zone.area else False
@@ -131,7 +131,7 @@ def is_on_line_segment(points, p1, p2, tolerance=1e-6):
 
 def sort_nodes_along_line(nodes, start_point, end_point):
     """
-    Sorts a list of printNodes based on their position along the node
+    Sorts a list of nodes based on their position along the node
     defined by start_point and end_point.
 
     Args:
@@ -140,7 +140,7 @@ def sort_nodes_along_line(nodes, start_point, end_point):
         end_point (tuple/array): The ending point of the reference node.
 
     Returns:
-        list of tuples/arrays: The sorted printNodes.
+        list of tuples/arrays: The sorted nodes.
     """
 
     # 1. Calculate the node's direction vector (V)
@@ -159,11 +159,11 @@ def sort_nodes_along_line(nodes, start_point, end_point):
     # This gives us a single scalar value for each node, which we can sort by
     projections = np.dot(vectors_to_nodes, unit_direction)
 
-    # 4. Sort the printNodes based on these projection values
+    # 4. Sort the nodes based on these projection values
     # np.argsort returns the indices that would sort the array
     sorted_indices = np.argsort(projections)
 
-    # Use the sorted indices to reorder the original printNodes list
+    # Use the sorted indices to reorder the original nodes list
     sorted_nodes = nodes[sorted_indices]
 
     return sorted_nodes

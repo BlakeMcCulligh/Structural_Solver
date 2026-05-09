@@ -1,133 +1,137 @@
+"""
+Holds the object for the main window of the program.
+"""
 
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 
-from CrossSectionAnalysis.main_CrossSectionAnalysis import getSectionProperties
-from Frame3DGUI.opening import openFrame
+from frame_3D_gui.opening import open_frame
 from OpeningAndSaving.Opening import openTrussTopologyOptimizationExcel, openTrussCrossSectionOptimizationExcel
-from Sketch.main import startSketch
-from main.newStructurePopUp import NewStructurePopUp
+from main.new_structure_pop_up import NewStructurePopUp
+import frame_3D_gui.window
 
-import Frame3DGUI.window
+__author__ = "Blake McCulligh"
+__copyright__ = ""
+__credits__ = ["Blake McCulligh"]
 
+__license__ = ""
+__version__ = ""
+__maintainer__ = "Blake McCulligh"
+__email__ = "bmcculli@uwaterloo.ca"
+__status__ = ""
 
 class MainWindow(tk.Frame):
-    def __init__(self, root, openSketch):
-        tk.Frame.__init__(self, root)
+    """
+    Object containing the main window of the program.
+    """
 
-        self.root = root
-        self.sketch = openSketch
+    def __init__(self, Root):
+        """
+        Constructor for the main window.
 
-        self.create_top_menu()
+        :param Root: Root of the main window.
+        """
 
-        self.centerWindow()
+        tk.Frame.__init__(self, Root)
 
-        exitButton = tk.Button(root, text="Complete Sketch", command=self.closeProgram)
-        #self.canvas.create_window(100, 100, window=exitButton)
+        self.Root = Root
 
-    def centerWindow(self):
-        width = 1000
-        height = 800
+        self._create_top_menu()
 
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
+        self._center_window()
 
-        if width > screen_width or height > screen_height:
-            width = screen_width * 0.8
-            height = screen_height * 0.8
-        x = (screen_width // 2) - (width // 2)
-        y = (screen_height // 2) - (height // 2) - 50
+    def _center_window(self):
+        """
+        Centers the window on the screen and sets its dimentions.
+        """
 
-        self.root.geometry(f"{width}x{height}+{x}+{y}")
+        WIDTH = 1000
+        HEIGHT = 800
 
-    def create_top_menu(self):
-        menubar = tk.Menu(self.root)
-        self.root.config(menu=menubar)
+        screen_width = self.Root.winfo_screenwidth()
+        screen_height = self.Root.winfo_screenheight()
+
+        if WIDTH > screen_width or HEIGHT > screen_height:
+            WIDTH = screen_width * 0.8
+            HEIGHT = screen_height * 0.8
+        x = (screen_width // 2) - (WIDTH // 2)
+        y = (screen_height // 2) - (HEIGHT // 2) - 50
+
+        self.Root.geometry(f"{WIDTH}x{HEIGHT}+{x}+{y}")
+
+    def _create_top_menu(self):
+        """
+        Creates the top menu with all the dropdowns for the window and handels all of thair buttons
+        """
+
+        menubar = tk.Menu(self.Root)
+        self.Root.config(menu=menubar)
 
         file_menu = tk.Menu(menubar, tearoff=False)
-        file_menu.add_command(label='Open', command= self.open)
+        file_menu.add_command(label='Open', command= self._open)
         menubar.add_cascade(label='File', menu=file_menu)
 
         new_menu = tk.Menu(menubar, tearoff=False)
-        new_menu.add_command(label='Structure', command= self.newStructure)
+        new_menu.add_command(label='Structure', command= self._new_structure)
         menubar.add_cascade(label="New", menu=new_menu)
 
 
         open_menu = tk.Menu(menubar, tearoff=False)
-        open_menu.add_command(label='Truss Topology Optimization', command=self.openTrussTopologyOptimization)
-        open_menu.add_command(label='Truss Cross-Section Optimization', command=self.openTrussCrossSectionOptimization)
+        open_menu.add_command(label='Truss Topology Optimization', command=self._open_truss_topology_optimization)
+        open_menu.add_command(label='Truss Cross-Section Optimization', command=self.open_truss_cross_section_optimization)
         menubar.add_cascade(label="Analysis Excel File", menu=open_menu)
 
-    def closeProgram(self):
-        self.root.destroy()
+    def _open(self):
+        """
+        Lets the user select a save file and opens it.
+        """
 
-    def open(self):
-        fileTypes = [("Struct Frame files", "*.structframe")]
-        file_path = select_file_gui(fileTypes)
+        file_types = [("Struct Frame files", "*.structframe")]
+        file_path = select_file_gui(file_types)
 
         if Path(file_path).suffix == ".structframe":
-            self.root.destroy()
+            self.Root.destroy()
 
             root_widget = tk.Tk()
             root_widget.title('3D Frame')
-            window = Frame3DGUI.window.MainWindow(root_widget)
-            openFrame(window, file_path)
-            window.root.mainloop()
+            window = frame_3D_gui.window.MainWindow(root_widget)
+            open_frame(window, file_path)
+            window.Root.mainloop()
 
+    @staticmethod
+    def _open_truss_topology_optimization():
+        """
+        Opens an Excel file and runs a truss topology optimization from the excels Data.
+        """
 
-    def newTrussTopologyOptimization(self):
-        startSketch(self.root, self, "Closed Shape", self.setNodesTrussTopologyOptimization)
-
-    def setNodesTrussTopologyOptimization(self, poly):
-        print(poly)
-
-        #TODO
-        # lock polygon in grayed out background
-        # draw Functions:
-            # printNodes
-            # have it so printLines can be drawn with printNodes auto generated in a specified spasing along it
-            # fill polgon with specified spacing
-        # when sketch complete run truss iptimization
-        # display results
-
-    def startCrossSectionAnalysis(self):
-        startSketch(self.root, self, "Closed Shape", self.returnCrossSectionAnalysis)
-
-    def returnCrossSectionAnalysis(self, poly):
-        section, properties = getSectionProperties(poly)
-        print(properties)
-
-    def openTrussTopologyOptimization(self):
         fileTypes = [("Excel Files", "*.xlsx")]
         selected_file = select_file_gui(fileTypes)
         openTrussTopologyOptimizationExcel(selected_file)
 
-    def openTrussCrossSectionOptimization(self):
-        fileTypes = [("Excel Files", "*.xlsx")]
-        selected_file = select_file_gui(fileTypes)
+    @staticmethod
+    def open_truss_cross_section_optimization():
+        """
+        Opens an Excel file and runs a truss cross-section optimization from the excels Data.
+        """
+
+        file_types = [("Excel Files", "*.xlsx")]
+        selected_file = select_file_gui(file_types)
         openTrussCrossSectionOptimizationExcel(selected_file)
 
-    def newStructure(self):
-        NewStructurePopUp(self.root)
+    def _new_structure(self):
+        """
+        When a new structure is selected, create a pop-Up to get the info on what kind of pop-Up is wanted.
+        """
+        NewStructurePopUp(self.Root)
 
+def select_file_gui(file_types):
+    """
+    Lets the user select a file of the type: file_types.
 
+    :param file_types: List of file types that can be opend.
+    """
 
-def select_file_gui(file_Types):
-
-    # Open the file dialog
-    file_path = filedialog.askopenfilename(
-        title="Select a file",
-        filetypes= file_Types
-    )
-
-    if file_path:
-        print(f"Selected file: {file_path}")
-        return file_path
-    else:
-        print("No file selected.")
-        return None
-
-
-
-
+    file_path = filedialog.askopenfilename(title="Select a file", filetypes= file_types)
+    if file_path:return file_path
+    else:return None
