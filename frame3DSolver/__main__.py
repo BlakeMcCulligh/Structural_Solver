@@ -1,5 +1,5 @@
 
-import frame3DSolver.helperFunctions as hf
+import frame3DSolver.helper_functions as hf
 import numpy as np
 import scipy.optimize as opt
 
@@ -164,8 +164,8 @@ class Frame3D:
         self.members = np.array(self.members)
         self.nodes_cord = np.array(self.nodes_cord)
 
-        self.D_unknown, self.D_known = hf.partD(self.nodes_Support)
-        self.members_DOF, self.members_L, self.members_PartD_unreleced, self.members_PartD_releced, self.members_T, self.pointLoads, self.distLoads = hf.prepMembers(self.nodes_cord, self.members, self.members_Releases, self.members_PointLoads, self.members_DistLoads, len(self.casses))
+        self.D_unknown, self.D_known = hf.part_D(self.nodes_Support)
+        self.members_DOF, self.members_L, self.members_PartD_unreleced, self.members_PartD_releced, self.members_T, self.pointLoads, self.distLoads = hf.prep_members(self.nodes_cord, self.members, self.members_Releases, self.members_PointLoads, self.members_DistLoads, len(self.casses))
         self.members_L = np.array(self.members_L)
 
         if log:
@@ -176,8 +176,8 @@ class Frame3D:
             print("members_PartD_unreleced: ", self.members_PartD_unreleced)
             print("members_PartD_releced: ", self.members_PartD_releced)
             print("members_T: ", self.members_T)
-            print("pointLoads: ", self.pointLoads)
-            print("distLoads: ", self.distLoads)
+            print("point_loads: ", self.pointLoads)
+            print("dist_loads: ", self.distLoads)
 
     def analysis_linear(self, getWeight = False, getReactions = False, getInternalForces = False, log=False):
         if log:
@@ -192,9 +192,9 @@ class Frame3D:
 
             self.members_CrossSectionProps = np.array(self.members_CrossSectionProps)
 
-            k_local = hf.get_k_local_ARRAY(self.materials, self.members, self.members_CrossSectionProps, self.members_L, log)
+            k_local = hf.get_k_local_array(self.materials, self.members, self.members_CrossSectionProps, self.members_L, log)
 
-            k11, k12, k21, k22 = hf.memberPart_k_ARRAY(k_local, self.members_PartD_unreleced, self.members_PartD_releced, numM)
+            k11, k12, k21, k22 = hf.member_part_k_array(k_local, self.members_PartD_unreleced, self.members_PartD_releced, numM)
             if log:
                 print("k11: ", k11)
                 print("k12: ", k12)
@@ -205,7 +205,7 @@ class Frame3D:
             if log:
                 print("fer_unc_ARRAY: ", fer_unc_ARRAY)
 
-            fer1, fer2 = hf.memberPart_fer(fer_unc_ARRAY, self.members_PartD_unreleced, self.members_PartD_releced, numM, numC)
+            fer1, fer2 = hf.member_part_fer(fer_unc_ARRAY, self.members_PartD_unreleced, self.members_PartD_releced, numM, numC)
             if log:
                 print("fer1 dim: ", np.shape(fer1))
                 print("fer1: ", fer1)
@@ -215,12 +215,12 @@ class Frame3D:
             if log:
                 print("ferCondensed: ", ferCondensed)
 
-            FER1, FER2 = hf.getGlobalFixedEndReactionVector(self.nodes_cord, self.members_DOF, self.members_T, self.D_unknown, self.D_known, ferCondensed, numM, numC)
+            FER1, FER2 = hf.get_global_fixed_end_reaction_vector(self.nodes_cord, self.members_DOF, self.members_T, self.D_unknown, self.D_known, ferCondensed, numM, numC)
             if log:
                 print("FER1: ", FER1)
                 print("FER2: ", FER2)
 
-            P1, P2 = hf.getPartedGlobalNodalForceVector(self.nodes_loads, self.casses, self.D_unknown, self.D_known, numN)
+            P1, P2 = hf.get_parted_global_nodal_force_vector(self.nodes_loads, self.casses, self.D_unknown, self.D_known, numN)
             if log:
                 print("P1: ", P1)
                 print("P2: ", P2)
@@ -228,7 +228,7 @@ class Frame3D:
             k_global_members = hf.k_member_make_global(k_local, self.members_T)
             if log: print("k_global_members: ", k_global_members)
 
-            K_global = hf.get_K_Global(self.members_DOF, k_global_members, numN, numM)
+            K_global = hf.get_K_global(self.members_DOF, k_global_members, numN, numM)
             if log: print("K_global: ", K_global)
 
             K11, K12, K21, K22 = hf.partition_K_gloabl(K_global, self.D_unknown, self.D_known)
@@ -245,20 +245,20 @@ class Frame3D:
             internalForces = None
 
             if getWeight:
-                weight = hf.getWeight(self.materials, self.members, self.members_L, self.members_CrossSectionProps)
+                weight = hf.get_weight(self.materials, self.members, self.members_L, self.members_CrossSectionProps)
 
             if getReactions or getInternalForces:
                 #TODO needs fixing
                 D_members = hf.get_member_direction_deflections(self, DX, DY, DZ, RX, RY, RZ, numM, numC)
-                d = hf.getd(self.members_T, D_members, numM, numC)
-                f = hf.getf(k_local, d, ferCondensed, numM, numC)
+                d = hf.get_d(self.members_T, D_members, numM, numC)
+                f = hf.get_f(k_local, d, ferCondensed, numM, numC)
 
                 if getReactions:
-                    F = hf.getF(self.members_T, f, numM, numC)
-                    reactions = hf.getReactions(self.nodes_Support, self.nodes_loads, self.members, self.members_Releases, F, numC, numM, numN)
+                    F = hf.get_F(self.members_T, f, numM, numC)
+                    reactions = hf.get_reactions(self.nodes_Support, self.nodes_loads, self.members, self.members_Releases, F, numC, numM, numN)
 
                 if getInternalForces:
-                    abs_F, abs_M = hf.solveInternalForces(self.members, self.members_L, self.members_CrossSectionProps, self.materials, self.casses, self.pointLoads, self.distLoads, f, fer_unc_ARRAY, d, numM, numC)
+                    abs_F, abs_M = hf.solve_internal_forces(self.members, self.members_L, self.members_CrossSectionProps, self.materials, self.casses, self.pointLoads, self.distLoads, f, fer_unc_ARRAY, d, numM, numC)
                     internalForces = [abs_F, abs_M]
 
             return D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces
@@ -285,16 +285,16 @@ class Frame3D:
             print("-----------------  Global Optimization  ----------------------")
             print("--------------------------------------------------------------")
 
-        hf.chackInputs(self.members, memberGroup, memberGroupType)
+        hf.chack_inputs(self.members, memberGroup, memberGroupType)
 
-        numVarables = hf.getNumVarables(memberGroupType)
-        if log: print("numVarables: ", numVarables)
+        numVarables = hf.get_num_varables(memberGroupType)
+        if log: print("num_varables: ", numVarables)
 
         self.preAnalysis_linear(log=log)
 
         constants = [self, costFunction, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
 
-        bounds = hf.getBounds(lowerBound, upperBound, numVarables)
+        bounds = hf.get_bounds(lowerBound, upperBound, numVarables)
 
         optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants])
 
@@ -328,9 +328,9 @@ class Frame3D:
 #     # simple_beam.addMemberSelfWeight()
 #     # simple_beam.addMemberSelfWeight(case=1)
 #     simple_beam.preAnalysis_linear(log=False)
-#     #print(simple_beam.analysis_linear(getWeight=True,getInternalForces=True))
+#     #print(simple_beam.analysis_linear(get_weight=True,getInternalForces=True))
 #     simple_beam.analysis_linear(log=False)
 #
-#     memberGroupType = ["Angle"]
-#     memberGroup = [0, 0]
-#     simple_beam.optimize(memberGroup, memberGroupType, [1,1,0.1],[10,10,0.9], getWeight = True, getReactions = False, getInternalForces = False, log = False)
+#     member_group_type = ["Angle"]
+#     member_group = [0, 0]
+#     simple_beam.optimize(member_group, member_group_type, [1,1,0.1],[10,10,0.9], get_weight = True, get_reactions = False, getInternalForces = False, log = False)

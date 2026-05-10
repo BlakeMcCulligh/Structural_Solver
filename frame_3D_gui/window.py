@@ -18,7 +18,7 @@ from frame_3D_gui.save import save_frame, save_results
 from frame3DSolver.__main__ import Frame3D
 # noinspection PyPep8Naming
 import drawing_3D.engine_3D as TDE
-import frame3DSolver.helperFunctions as hf
+import frame3DSolver.helper_functions as hf
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -375,7 +375,7 @@ class MainWindow(tk.Frame):
         """
 
         x = self.OptimizationResults.x
-        opt_cross_section_props = hf.getCrossSectionProps(x, group_assignments, group_types)
+        opt_cross_section_props = hf.get_cross_section_props(x, group_assignments, group_types)
         member_indices = []
         j = 0
         for i in range(len(self.Data.Members[0])):
@@ -402,7 +402,7 @@ class MainWindow(tk.Frame):
 
         x = self.OptimizationResults.x
         cost = [self.OptimizationResults.fun]
-        opt_cross_section_props = hf.getCrossSectionProps(x, group_assignments, group_types)
+        opt_cross_section_props = hf.get_cross_section_props(x, group_assignments, group_types)
 
         results = []
         curent_x_index = 0
