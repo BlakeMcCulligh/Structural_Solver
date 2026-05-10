@@ -1,0 +1,337 @@
+"""
+Optimize the topology of a 2D truss.
+"""
+
+import math
+import itertools
+
+from scipy.spatial import Delaunay
+import numpy as np
+import matplotlib.pyplot as plt
+from shapely.geometry import Point, LineString, Polygon
+from time import time
+
+from inport_optimizers.truss_cross_section import optimize_truss_cross_sections
+from opening_saving.saving import save_truss_topology_optimization_excel
+
+__author__ = "Blake McCulligh"
+__copyright__ = ""
+__credits__ = ["Blake McCulligh"]
+
+__license__ = ""
+__version__ = ""
+__maintainer__ = "Blake McCulligh"
+__email__ = "bmcculli@uwaterloo.ca"
+__status__ = ""
+
+def optimize_truss(file_path, zone_nodes, load_casses, supports, node_spasing =None, nodes = None, MAX_LENGTH = None):
+    """
+    Optimizes the topology of a 2D truss.
+
+    :param file_path: File path to the Excel file to save to.
+    :param zone_nodes: Nodes that define the polygone that all members must be in.
+    :param load_casses: # TODO
+    :param supports: Nodes that are supported and in what directions. Shape: (# Supported nodes, 4: [x,y,sx,sy])
+    :param node_spasing: How far apart each node column and row should be. Is not needed if nodes are defined.
+    :param nodes:  Locations of the nodes of the truss. Shape: (# nodes, 2). Is not needed if node_spacing is defined.
+    :param MAX_LENGTH: Maximum length of a member. OPTIONAL
+    """
+
+    MAX_LENGTH = 42
+
+    start = time()
+
+    zone = Polygon(zone_nodes)
+
+    if nodes is None:
+        nodes, num_columns, num_rows = _create_node_grid(zone, node_spasing)
+    else:
+        nodes = np.array(nodes)
+
+    structure_cases = _construct_load_cases(load_casses, MAX_LENGTH, nodes, supports)
+
+    members = _create_initial_structure(nodes, zone)
+
+    #_plot_truss(nodes, members, np.ones((len(members))) * 30, 0)
+
+    Vol = []
+    A = []
+    Q = []
+    U = []
+    for load_casses in structure_cases:
+        if load_casses is not None:
+            vol, a, q, u = optimize_truss_cross_sections(nodes, members, load_casses, supports)
+            Vol.append(vol)
+            A.append(a)
+            Q.append(q)
+            U.append(u)
+        else:
+            print("No Load Case Found")
+
+    plt.show()
+    # print("finished")
+    # print("Time taken: ", time() - start)
+
+    best_index = Vol.index(min(Vol))
+
+    load_casses = structure_cases[best_index]
+    areas = A[best_index]
+    deflections = U[best_index]
+    forces = Q[best_index]
+    volume = Vol[best_index]
+
+    save_truss_topology_optimization_excel(file_path, nodes, members, load_casses, supports, areas, deflections, forces, volume)
+
+def _create_node_grid(zone, node_spasing):
+    """
+    Crates the grid of nodes to be used in the optimization.
+
+    :param zone: A shapely polygon that the truss must be within.
+    :param node_spasing: How far apart the nodes should be in the x and y directions.
+    :return: Array of nodes, number of columns of nodes, number of rows of nodes.
+    """
+
+    min_x, min_y, max_x, max_y = zone.bounds
+    dx, dy = max_x - min_x, max_y - min_y
+    num_columns, num_rows = dx / node_spasing[0], dy / node_spasing[1]
+
+    xv, yv = np.meshgrid(range(int(num_columns) + 1), range(int(num_rows) + 1))
+
+    pts = [Point(xv.flat[i], yv.flat[i]) for i in range(xv.size)]
+
+    # only add nodes that are inside the zone
+    nodes = np.array([[pt.x, pt.y] for pt in pts if zone.intersects(pt)])
+
+    return nodes, num_columns, num_rows
+
+def _create_initial_structure(nodes, zone):
+    """
+    Creates the list of members.
+
+    :param nodes: Locations of the nodes of the truss. Shape: (# nodes, 2). Is not needed if node_spacing is defined.
+    :param zone: A shapely polygon that the truss must be within.
+    :return: members: Indeces of the nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
+    """
+
+    convex = True if zone.convex_hull.area == zone.area else False
+
+    members = []
+
+    tri = Delaunay(nodes)
+    for simplex in tri.simplices:
+        for i in range(3):
+            line = tuple(sorted((simplex[i], simplex[(i + 1) % 3])))
+            dx, dy = abs(nodes[line[0]][0] - nodes[line[1]][0]), abs(nodes[line[0]][1] - nodes[line[1]][1])
+            seg = [] if convex else LineString([nodes[line[0]], nodes[line[1]]])
+
+            if convex or zone.contains(seg) or zone.boundary.contains(seg):
+                members.append([line[0], line[1], np.sqrt(dx ** 2 + dy ** 2)])
+
+    members = np.array(members)
+    A1 = np.zeros((len(nodes), len(nodes)))
+
+    A1[members[:, 0].astype(int) , members[:, 1].astype(int) ] = 1
+    for k in range(5):
+        A1 = A1 @ A1
+        np.fill_diagonal(A1, 0)
+        A1[A1 > 0] = 1
+        A1[A1 != 1] = 0
+
+        A1 = A1 + A1.T
+        A1[A1 > 0] = 1
+
+    members = []
+    for i in range(len(nodes)):
+        for j in range(len(nodes)):
+            if i != j and A1[i,j] == 1:
+                dx, dy = abs(nodes[j][0] - nodes[i][0]), abs(nodes[j][1] - nodes[i][1])
+                seg = [] if convex else LineString([nodes[i], nodes[j]])
+                if convex or zone.contains(seg) or zone.boundary.contains(seg):
+                    if np.sqrt(dx ** 2 + dy ** 2) <= 42:
+                        members.append([i, j, np.sqrt(dx ** 2 + dy ** 2)])
+
+    members = np.array(members)
+
+    return members
+
+def _construct_load_cases(load_casses, max_length, nodes, supports):
+    """
+    # TODO
+
+    :param load_casses: # TODO
+    :param max_length: Maximum length of a member.
+    :param nodes: Locations of the nodes of the truss. Shape: (# nodes, 2).
+    :param supports: Nodes that are supported and in what directions. Shape: (# Supported nodes, 4: [x,y,sx,sy])
+    :return: #TODO
+    """
+
+    nodes = np.array(nodes)
+
+    #TODO ONLY FIST LOAD CASE CURRENTLY WORKS
+    loads = load_casses[0]
+
+    disLoads = []
+    for i, load in enumerate(loads):
+        if load[4] is not None and not math.isnan(float(load[4])):
+            disLoads.append([load[4], load[5], load[6], load[7], load[8], load[9]])
+
+    # disLoads: list of loads, loads: [x1,y1, x2,y2, fx,fy]
+    #print("disLoads: ", disLoads)
+
+    posibleCombinationsOverall = []
+    for i, load in enumerate(disLoads):
+        p1, p2 = [load[0], load[1]], [load[2], load[3]]
+
+        nodesOnSegment = _get_nodes_on_segment(nodes, p1, p2)
+
+        posibleCombinationsPerDisLoad = []
+        n = len(nodesOnSegment)
+
+        # Backtracking to find subsets of intervals that cover the range
+        def backtrack(start_idx, current_combination):
+            if start_idx == n - 1:
+                posibleCombinationsPerDisLoad.append(list(current_combination))
+                return
+
+            for end_idx in range(start_idx + 1, n):
+                if np.linalg.norm(nodesOnSegment[start_idx] - nodesOnSegment[end_idx]) <= max_length:
+                    interval = (nodesOnSegment[start_idx], nodesOnSegment[end_idx], load[4], load[5])
+                    backtrack(end_idx, current_combination + [interval])
+
+        backtrack(0, [])
+
+        # posible combinations: list of structure layouts, Structure layouts: list of loads, loads: [[x1,y1], [x2,y2], fx,fy]
+        #print("posibleCombinationsPerDisLoad: ", posibleCombinationsPerDisLoad)
+        posibleCombinationsOverall.append(posibleCombinationsPerDisLoad)
+
+    # combining posible structure layouts for each distributed load
+    posibleCombinationsOverall = list(itertools.product(*posibleCombinationsOverall))
+    for i, posibleCombinationIn in enumerate(posibleCombinationsOverall):
+        p = []
+        for newloads in posibleCombinationIn:
+            for newload in newloads:
+                p.append(newload)
+        posibleCombinationsOverall[i] = p
+
+    # posibleCombinationsOverall: list of structure layouts, Structure layouts: list of loads, loads: [[x1,y1], [x2,y2], fx,fy]
+    #print("posibleCombinationsOverall: ", posibleCombinationsOverall)
+
+    # converting distributed loads into point loads
+    posibleStructures = []
+    for i, disLoads in enumerate(posibleCombinationsOverall):
+        newloads = []
+        for j, disLoad in enumerate(disLoads):
+            length = math.dist(disLoad[0], disLoad[1])
+            Rx, Ry = disLoad[2] * length / 2, disLoad[3] * length / 2
+            newloads.append([float(disLoad[0][0]), float(disLoad[0][1]), Rx, Ry])
+            newloads.append([float(disLoad[1][0]), float(disLoad[1][1]), Rx, Ry])
+        posibleStructures.append(newloads)
+
+    #print("posibleStructures 1: ", posibleStructures)
+
+    # adding point loads
+    for i, newloads in enumerate(posibleStructures):
+        for load in loads:
+            if load[0] is not None and not math.isnan(float(load[0])):
+                posibleStructures[i] = posibleStructures[i] + [[load[0], load[1], load[2], load[3]]]
+
+    #print("posibleStructures 2: ", posibleStructures)
+
+    for i, loads in enumerate(posibleStructures):
+        newLoads = []
+        for load in loads:
+            loadFound = False
+            for newLoad in newLoads:
+                if float(load[0]) == float(newLoad[0]) and float(load[1]) == float(newLoad[1]):
+                    newLoad[2] += load[2]
+                    newLoad[3] += load[3]
+                    loadFound = True
+                    break
+
+            if not loadFound:
+                for support in supports:
+                    if float(support[0]) == float(load[0]) and float(support[1]) == float(load[1]):
+                        loadFound = True
+
+            if not loadFound:
+                newLoads.append(load)
+        posibleStructures[i] = [newLoads] # TODO brakets added as only one load case is posible curently
+
+    #print("posibleStructures 3: ", posibleStructures)
+
+    return posibleStructures
+
+
+def _get_nodes_on_segment(nodes, n1, n2):
+    """
+    Gets what nodes are on the segment defined by n1 and n2.
+
+    :param nodes: Locations of the nodes of the truss. Shape: (# nodes, 2).
+    :param n1: The starting node of the sagment.
+    :param n2: The ending node of the sagment.
+    :return: Orderd ndarray of nodes on the segment. Shape: (# nodes, 2).
+    """
+
+    n1 = np.array(n1)
+    n2 = np.array(n2)
+
+    nodes_on_segment = nodes[_is_on_line_segment(nodes, n1, n2)]
+    nodes_on_segment = _sort_nodes_along_line(nodes_on_segment, n1, n2)
+    nodes_on_segment = np.unique(nodes_on_segment, axis=0)
+
+    return nodes_on_segment
+
+
+def _is_on_line_segment(nodes, n1, n2, tolerance=1e-6):
+    """
+    Checks which points from a list lie on the node segment defined by w1 and n2.
+
+    :param nodes: Locations of the nodes of the truss. Shape: (# nodes, 2).
+    :param n1: The starting node of the sagment.
+    :param n2: The ending node of the sagment.
+    :param tolerance: A tolerance for floating-point comparisons.
+    :return: A boolean array indicating if each point is on the segment.
+    """
+
+    n1 = np.array(n1)
+    n2 = np.array(n2)
+
+    vec_p1_to_points = nodes - n1
+    vec_segment = n2 - n1
+
+    # check if the nodes are collinear (cross product is near zero)
+    cross_products = np.cross(vec_segment, vec_p1_to_points)
+    is_collinear = np.abs(cross_products) < tolerance
+
+    # Check if the nodes are between w1 and n2: dot product > 0 and < length of segment squared
+    dot_products = np.sum(vec_p1_to_points * vec_segment, axis=1)
+    segment_len_sq = np.sum(vec_segment * vec_segment)
+    is_within_bounds = (dot_products >= -tolerance) & (dot_products <= segment_len_sq + tolerance)
+
+    return is_collinear & is_within_bounds
+
+def _sort_nodes_along_line(nodes, start_point, end_point):
+    """
+    Sorts a list of nodes based on their position along the node
+    defined by start_point and end_point.
+
+    :param nodes: Locations of the nodes of the truss. Shape: (# nodes, 2).
+    :param start_point: The starting node of the sagment.
+    :param end_point: The ending node of the sagment.
+    :return: The sorted nodes. Shape: (# nodes, 2)
+    """
+
+    direction_vector = end_point - start_point
+    unit_direction = direction_vector / np.linalg.norm(direction_vector)
+
+    # calculate projection of each node relative to the start point
+    vectors_to_nodes = nodes - start_point
+    projections = np.dot(vectors_to_nodes, unit_direction)
+
+    # sort the nodes based on these projection values
+    sorted_indices = np.argsort(projections)
+    sorted_nodes = nodes[sorted_indices]
+
+    return sorted_nodes
+
+

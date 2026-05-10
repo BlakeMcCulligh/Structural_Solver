@@ -1,8 +1,8 @@
 import math
 
-from Sketch.geometric_primitives.arc import Arc
-from Sketch.geometric_primitives.point import Point
-from Sketch.geometric_primitives.segment import Segment
+from OLD_Sketch.geometric_primitives.arc import Arc
+from OLD_Sketch.geometric_primitives.point import Point
+from OLD_Sketch.geometric_primitives.segment import Segment
 
 
 

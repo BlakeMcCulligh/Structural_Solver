@@ -1,5 +1,5 @@
 """
-Saves the results from the Eexcel import analysises.
+Saves the results from the Excel import analysises.
 """
 
 import numpy as np
@@ -22,12 +22,12 @@ def save_truss_cross_section_optimization_excel(file_path, nodes, members, load_
 
     :param file_path: File path to the Excel file to save to.
     :param nodes: Locations of the nodes of the truss. Shape: (# Nodes, 2)
-    :param members: Indeces of the Nodes that the members run between. Shape: (# Members, 2)
+    :param members: Indeces of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
     :param load_casses: Load casses applyed to the truss. Shape: (# Load Cases, # Loads per Case, 4: [x,y,fx,fy] )
     :param supports: Nodes that are supported and in what directions. Shape: (# Supported Nodes, 4: [x,y,sx,sy])
     :param areas: Areas of each member. Shape: (# Members)
-    :param deflections: Deflections at each node. Shape: (2 * # Nodes)
-    :param forces: Axial forces within each member. Shape: (# Members)
+    :param deflections: Deflections at each node. Shape: (2 * # Nodes * # Load Cases)
+    :param forces: Axial forces within each member. Shape: (# Members * # Load Cases)
     :param volume: Overall volume of the truss.
     """
 
@@ -45,12 +45,12 @@ def save_truss_topology_optimization_excel(file_path, nodes, members, load_casse
 
     :param file_path: File path to the Excel file to save to.
     :param nodes: Locations of the nodes of the truss. shape: (# Nodes, 2)
-    :param members: Indeces of the Nodes that the members run between (# Members, 2)
+    :param members: Indeces of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
     :param load_casses: Load casses applyed to the truss. Shape: (# Load Cases, # Loads per Case, 4: [x1,y1,fx1,fy1] )
     :param supports: Nodes that are supported and in what directions. Shape: (# Supported Nodes, 4: [x,y,sx,sy])
     :param areas: Areas of each member. Shape: (# Members)
-    :param deflections: Deflections at each node. Shape: (2 * # Nodes)
-    :param forces: Axial forces within each member. Shape: (# Members)
+    :param deflections: Deflections at each node. Shape: (2 * # Nodes * # Load Cases)
+    :param forces: Axial forces within each member. Shape: (# Members * # Load Cases)
     :param volume: Overall volume of the truss.
     """
 
@@ -67,7 +67,7 @@ def _convert_nodes_to_df(nodes, deflections):
     Gets the data frame for the nodes sheet to be printed to the Excel.
 
     :param nodes: Locations of the nodes of the truss. shape: (# Nodes, 2)
-    :param deflections: Deflections at each node. Shape: (2 * # Nodes)
+    :param deflections: Deflections at each node. Shape: (2 * # Nodes * # Load Cases)
     :return: Nodes Data Frame
     """
 
@@ -84,9 +84,9 @@ def _convert_members_to_df(members, areas, forces, remove_small_members=False):
     """
     Gets the data frame for the members sheet to be printed to the Excel.
 
-    :param members: Indeces of the Nodes that the members run between (# Members, 2)
+    :param members: Indeces of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
     :param areas: Areas of each member. Shape: (# Members)
-    :param forces: Axial forces within each member. Shape: (# Members)
+    :param forces: Axial forces within each member. Shape: (# Members * # Load Cases)
     :param remove_small_members: If members under 0.001 times the cross-section area of the largest member should be
                                  removed.
     :return: Members Data Frame

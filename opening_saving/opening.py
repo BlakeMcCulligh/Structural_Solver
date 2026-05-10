@@ -5,8 +5,8 @@ Opens Excel files to run analyses and optimizations on the structure they store.
 import numpy as np
 import pandas as pd
 
-from TopologyOptimization.Truss.optimize import OptimizeTruss
-from CrossSectionOptimization.Truss.optimize import TrussMain
+from inport_optimizers.truss_topology import optimize_truss
+from inport_optimizers.truss_cross_section import truss_main
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -58,7 +58,7 @@ def open_truss_topology_optimization_excel(file_path):
     nodes = np.array(nodes).T.tolist()
     supports = np.array(supports).T.tolist()
 
-    OptimizeTruss(file_path, boundary, LoadCasses, supports, nodes = nodes)
+    optimize_truss(file_path, boundary, LoadCasses, supports, nodes = nodes)
 
 def open_truss_cross_section_optimization_excel(file_path):
     """
@@ -94,4 +94,4 @@ def open_truss_cross_section_optimization_excel(file_path):
     members = np.array(members).T.tolist()
     supports = np.array(supports).T.tolist()
 
-    TrussMain(file_path, nodes, members, load_casses, supports)
+    truss_main(file_path, nodes, members, load_casses, supports)
