@@ -5,7 +5,7 @@ Helper functions used for the analysis of a 3D frame.
 import numpy as np
 
 import frame3DSolver.fixedEndReactionsCalculaters as ferCalc
-import frame3DSolver.memberForceSolvers as MFSolvers
+import frame3DSolver.member_solvers as ms
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -879,21 +879,21 @@ def get_reactions(nodes_support, nodes_loads, members, members_releases, F_array
 #todo
 def solve_internal_forces(members, members_L, members_cross_section_props, materials, casses, point_loads, dist_loads,
                           f_array, fer_array, d_array, num_m, num_c):
-    segments = MFSolvers.segment_Member(members, members_L, members_cross_section_props, materials, point_loads,
-                                        dist_loads, f_array, fer_array, d_array, num_m, num_c)
+    segments = ms.segment_member(members, members_L, members_cross_section_props, materials, point_loads,
+                                 dist_loads, f_array, fer_array, d_array, num_m, num_c)
 
     seg, seg_internal_loads, seg_dist_loads, seg_thata, seg_delta = segments
     abs_F = []
     abs_M = []
     for mINDEX in range(num_m):
-        FX_min, _ = MFSolvers.min_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        FX_max, _ = MFSolvers.max_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        FY_min, FZ_min, _, _ = MFSolvers.min_shear(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        FY_max, FZ_max, _, _ = MFSolvers.max_shear(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        MX_min, _ = MFSolvers.min_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        MX_max, _ = MFSolvers.max_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        MY_min, MZ_min, _, _ = MFSolvers.min_moment(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        MY_max, MZ_max, _, _ = MFSolvers.max_moment(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        FX_min, _ = ms.min_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        FX_max, _ = ms.max_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        FY_min, FZ_min, _, _ = ms.min_shear(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        FY_max, FZ_max, _, _ = ms.max_shear(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        MX_min, _ = ms.min_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        MX_max, _ = ms.max_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        MY_min, MZ_min, _, _ = ms.min_moment(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        MY_max, MZ_max, _, _ = ms.max_moment(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
         abs_F.append([max(FX_max,abs(FX_min)), max(FY_max,abs(FY_min)), max(FZ_max,abs(FZ_min))])
         abs_M.append([max(MX_max, abs(MX_min)), max(MY_max, abs(MY_min)), max(MZ_max, abs(MZ_min))])
     return abs_F, abs_M

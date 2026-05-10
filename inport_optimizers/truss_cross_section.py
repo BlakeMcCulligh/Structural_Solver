@@ -124,7 +124,7 @@ def _solve_optimum_problem(nodes, members, f, dof):
     q = [cvx.Variable(len(members), name='q_lc' + str(k)) for k in range(len(f))]  # Element elastic energy
     beta = cvx.Variable(len(f), nonneg=True)  # Dual variables of lower bound on case weighting = slacks of eqn
 
-    # setting objective absFunction
+    # setting objective function
     obj = cvx.Minimize((cvx.sum(l @ a) - cvx.sum(lb * beta)))
 
     # setting equilibrium constraints

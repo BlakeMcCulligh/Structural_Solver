@@ -138,7 +138,7 @@ class Structure:
     def assembleGeoLists(self):
         """
         Assembles the lists of geometric properties to be sent to the solver.
-        helper absFunction for the solve and optimize functions.
+        helper abs_function for the solve and optimize functions.
         :return: nodes, members, Loads, Supports
         """
         NODES = []
