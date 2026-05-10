@@ -17,7 +17,7 @@ from frame_3D_gui.results import Results
 from frame_3D_gui.save import save_frame, save_results
 from frame3DSolver.__main__ import Frame3D
 # noinspection PyPep8Naming
-import ThreeDDrawing.ThreeDEngine as TDE
+import drawing_3D.engine_3D as TDE
 import frame3DSolver.helperFunctions as hf
 
 __author__ = "Blake McCulligh"
@@ -769,7 +769,7 @@ class MainWindow(tk.Frame):
         :param Surface: Serface's corner cordinates. [X,Y,Z].
         """
 
-        tri = TDE.triangalizeSurface(self, Surface, False)
+        tri = TDE.triangalize_surface(self, Surface, False)
         for i in range(len(tri)): self.PrintSurfaceTri = np.vstack((self.PrintSurfaceTri, tri[i]))
         self.UpdateCanves()
 
@@ -785,7 +785,7 @@ class MainWindow(tk.Frame):
         num_surfaces = len(Solid)
         for i in range(num_surfaces):
             if isinstance(FlipNormal, list): # needs triangalized
-                tri = TDE.triangalizeSurface(self, Solid[i], FlipNormal[i])
+                tri = TDE.triangalize_surface(self, Solid[i], FlipNormal[i])
                 for j in range(len(tri)): self.PrintSolidTri = np.vstack((self.PrintSolidTri, [tri[j]]))
             else: # already triangalized
                 self.PrintSolidTri = np.vstack((self.PrintSolidTri, [Solid[i]]))
@@ -956,10 +956,10 @@ class MainWindow(tk.Frame):
         self._update_cam_data()
 
         # gets all the normals of the tris used for solids being displeyed
-        solid_tri_normals = TDE.getNormals(solid_tri)
+        solid_tri_normals = TDE.get_normals(solid_tri)
 
         # removes solid tris that are facing away from the camera.
-        solid_tri, solid_tri_normals = TDE.removeTriFaceingAway(self, solid_tri, solid_tri_normals)
+        solid_tri, solid_tri_normals = TDE.remove_tri_faceing_away(self, solid_tri, solid_tri_normals)
 
         # handels shadding and ilumination of solids
         tri_color = TDE.illumination(self, solid_tri_normals, len(surf_tri))
@@ -969,10 +969,10 @@ class MainWindow(tk.Frame):
         tri = solid_tri
 
         # transforming all the cordinates to the local cordinate system based on the camera.
-        node, line, tri = TDE.transformToLocal(self, node, line, tri)
+        node, line, tri = TDE.transform_to_local(self, node, line, tri)
 
         # trims all nodes, lines, and tris that are eather to close to the camera or are behinde it.
-        node, line, tri, tri_color = TDE.clipClose(node, line, tri, tri_color)
+        node, line, tri, tri_color = TDE.clip_close(node, line, tri, tri_color)
 
         self.graph.delete("all") # clearing canvise of old rendering
 
@@ -986,7 +986,7 @@ class MainWindow(tk.Frame):
             # trimming all nodes, lines, and tris that are outside the frame of the camera.
             if len(tri) > 0: tri = tri[:, :, :-1]
             if len(line) > 0: line = line[:, :, :-1]
-            node, line, tri, tri_color = TDE.clipEadges(node, line, tri, tri_color, h, w)
+            node, line, tri, tri_color = TDE.clip_eadges(node, line, tri, tri_color, h, w)
 
             # printing tris, lines, and nodes
             if len(tri) > 0: self._print_tri(np.array(tri), np.array(tri_color))
@@ -1000,8 +1000,8 @@ class MainWindow(tk.Frame):
         Updating all the data about the location and direction of the camera.
         """
 
-        mat_camera_rot_y = TDE.getRotationYMatrix(self.CamYRot)
-        mat_camera_rot_x = TDE.getRotationXMatrix(self.CamXRot)
+        mat_camera_rot_y = TDE.get_rotation_y_matrix(self.CamYRot)
+        mat_camera_rot_x = TDE.get_rotation_x_matrix(self.CamXRot)
         self.LookDir = (np.append(np.array([0, 0, 1]), 1) @ mat_camera_rot_y @ mat_camera_rot_x)[:-1]
         self.LookDir = self.LookDir / np.linalg.norm(self.LookDir)
         self.Target = self.Camera + self.LookDir
