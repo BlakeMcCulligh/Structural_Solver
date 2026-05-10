@@ -425,14 +425,14 @@ testTruss2D()
 #
 # S.addCrossSection(True, E=1, G=1, memberType="SquareHSS", minBounds=[0.1, 0.01], maxBounds=[10, 0.09])
 #
-# S.addMember([0,1], 0)
-# S.addMember([1,2], 0)
-# S.addMember([2,3], 0)
-# S.addMember([3,0], 0)
-# S.addMember([0,2], 0)
+# S.AddMember([0,1], 0)
+# S.AddMember([1,2], 0)
+# S.AddMember([2,3], 0)
+# S.AddMember([3,0], 0)
+# S.AddMember([0,2], 0)
 #
-# S.addNodeLoad(2, [5, 0, 0, 0, 0, 0])
-# S.addNodeLoad(3, [0, 2, 0, 0, 0, 0])
+# S.AddNodeLoad(2, [5, 0, 0, 0, 0, 0])
+# S.AddNodeLoad(3, [0, 2, 0, 0, 0, 0])
 # #Supports = [[0,True,True,True,True,False,False],[1,False,True,False,True,False,False]]
 # S.addSupport(0, [True,True, True,True, False, False])
 # S.addSupport(1, [False,True, False, True, False, False])

@@ -4,7 +4,7 @@ Helper functions used for the analysis of a 3D frame.
 
 import numpy as np
 
-import frame3DSolver.fixedEndReactionsCalculaters as ferCalc
+import frame3DSolver.fixed_end_reactions_calculaters as fer_calc
 import frame3DSolver.member_solvers as ms
 
 __author__ = "Blake McCulligh"
@@ -23,8 +23,8 @@ def part_D(nodes_support):
 
     :param nodes_support: ndarray. What nodes are supported in what DOFs.
     :return:
-        D_unknown: ndarray. A ndarray of the indices for the released DOFs.
-        D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
+        nodes_dof_unknown: ndarray. A ndarray of the indices for the released DOFs.
+        nodes_dof_known: ndarray. A ndarray of the indices for the unreleased DOFs.
     """
     n_nodes = nodes_support.shape[0]
     dof_indices = np.arange(n_nodes * 6).reshape(n_nodes, 6)
@@ -39,7 +39,7 @@ def prep_members(nodes_cord, members, members_releases, members_point_loads, mem
 
 
     :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
-    :param members:  list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members:  list. [i_node, j_node, material_index, set_cross_section_props]
     :param members_releases: list. What directions are relesed Bool.
                              [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
     :param members_point_loads: list. Point loads applyed to members.
@@ -65,19 +65,19 @@ def prep_members(nodes_cord, members, members_releases, members_point_loads, mem
     dist_loads = _assemble_dist_loads(members_dist_loads, num_c)
     return DOFs, L, member_unrelesed_DOFs, member_relesed_DOFs, T, point_loads, dist_loads
 
-def _get_L(nodes_cord, members):
+def _get_L(nodes_cord: np.ndarray, members: np.ndarray):
     """
     Builds an array of the lengths of the members.
 
     :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
-    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members: ndarray. [i_node, j_node, material_index, set_cross_section_props]
     :return:
         L: ndarray. A ndarray of the lengths of the members.
     """
 
-    dx = nodes_cord[members[:, 1], 0] - nodes_cord[members[:, 0], 0]
-    dy = nodes_cord[members[:, 1], 1] - nodes_cord[members[:, 0], 1]
-    dz = nodes_cord[members[:, 1], 2] - nodes_cord[members[:, 0], 2]
+    dx = nodes_cord[members[:, 1].astype(int) , 0] - nodes_cord[members[:, 0].astype(int) , 0]
+    dy = nodes_cord[members[:, 1].astype(int) , 1] - nodes_cord[members[:, 0].astype(int) , 1]
+    dz = nodes_cord[members[:, 1].astype(int) , 2] - nodes_cord[members[:, 0].astype(int) , 2]
     return np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
 
 def _build_dof_vector(nodes: np.ndarray):
@@ -111,13 +111,13 @@ def _get_member_t(nodes_cord, members, L: np.ndarray):
     Builds an array of the transformation matrices for each member.
 
     :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
-    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members: list. [i_node, j_node, material_index, set_cross_section_props]
     :param L: ndarray. A ndarray of the lengths of the members. shape: (# members)
     :return: ndarray: 4D array of the transformation matrices for each member. shape: (# members, 12, 12)
     """
 
-    i = members[:, 0]
-    j = members[:, 1]
+    i = members[:, 0].astype(int)
+    j = members[:, 1].astype(int)
     Xi, Yi, Zi = nodes_cord[i].T
     Xj, Yj, Zj = nodes_cord[j].T
     # Local x-axis (direction cosines)
@@ -210,14 +210,14 @@ def get_k_local_array(materials, members, members_CrossSectionProps, L: np.ndarr
     Builds an array of the local stiffness matrices for each member.
 
     :param materials: list. [E, G, nu, rho, fy]
-    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members: list. [i_node, j_node, material_index, set_cross_section_props]
     :param members_CrossSectionProps: ndarray. [A, Iy, Iz, J]
     :param L: ndarray. A ndarray of the lengths of the members. shape: (# members)
     :return: 4D array of the local stiffness matrices for each member. shape: (# members, 12, 12)
     """
 
-    E = materials[members[:, 2], 0]
-    G = materials[members[:, 2], 1]
+    E = materials[members[:, 2].astype(int), 0]
+    G = materials[members[:, 2].astype(int), 1]
     A = members_CrossSectionProps[:, 0]
     Iy = members_CrossSectionProps[:, 1]
     Iz = members_CrossSectionProps[:, 2]
@@ -410,7 +410,7 @@ def _get_fixed_end_reactions_point_load_array(members_L, point_loads: list):
     members_L = np.asarray(members_L)
     reactions = []
     for i, loadCases in enumerate(point_loads):
-        L = members_L[i]
+        L = float(members_L[i])
         reactionsMember = []
         for loads in loadCases:
             if loads is None or len(loads) == 0:
@@ -425,12 +425,12 @@ def _get_fixed_end_reactions_point_load_array(members_L, point_loads: list):
             My = loads[:, 5]
             Mz = loads[:, 6]
             R = np.zeros((12,))
-            if np.any(Fx): R += ferCalc.pointLoadX_batch(Fx, x, L).sum(axis=0)
-            if np.any(Fy): R += ferCalc.pointLoadY_batch(Fy, x, L).sum(axis=0)
-            if np.any(Fz): R += ferCalc.pointLoadZ_batch(Fz, x, L).sum(axis=0)
-            if np.any(Mx): R += ferCalc.momentX_batch(Mx, x, L).sum(axis=0)
-            if np.any(My): R += ferCalc.momentY_batch(My, x, L).sum(axis=0)
-            if np.any(Mz): R += ferCalc.momentZ_batch(Mz, x, L).sum(axis=0)
+            if np.any(Fx): R += fer_calc.point_load_x(Fx, x, L).sum(axis=0)
+            if np.any(Fy): R += fer_calc.point_load_y(Fy, x, L).sum(axis=0)
+            if np.any(Fz): R += fer_calc.point_load_z(Fz, x, L).sum(axis=0)
+            if np.any(Mx): R += fer_calc.moment_x(Mx, x, L).sum(axis=0)
+            if np.any(My): R += fer_calc.moment_y(My, x, L).sum(axis=0)
+            if np.any(Mz): R += fer_calc.moment_z(Mz, x, L).sum(axis=0)
             reactionsMember.append(R.reshape(12, 1))
         reactions.append(reactionsMember)
     return reactions
@@ -454,11 +454,11 @@ def _get_fixed_end_reactions_dist_load_array(members_L, dist_loads):
             reactions = np.zeros((12, 1))
             for k, load in enumerate(loads):
                 if not (load[2] == 0 and load[3] == 0):
-                    reactions = reactions + ferCalc.distributedLoadX([load[2],load[3]], [load[0], load[1]], L)
+                    reactions = reactions + fer_calc.distributed_load_x([load[2], load[3]], [load[0], load[1]], L)
                 if not (load[4] == 0 and load[5] == 0):
-                    reactions = reactions + ferCalc.distributedLoadY([load[4],load[5]], [load[0], load[1]], L)
+                    reactions = reactions + fer_calc.distributed_load_y([load[4], load[5]], [load[0], load[1]], L)
                 if not (load[6] == 0 and load[7] == 0):
-                    reactions = reactions + ferCalc.distributedLoadZ([load[6],load[7]], [load[0], load[1]], L)
+                    reactions = reactions + fer_calc.distributed_load_z([load[6], load[7]], [load[0], load[1]], L)
             reactions_member.append(reactions)
         reactions.append(reactions_member)
     return reactions
@@ -735,7 +735,7 @@ def get_member_direction_deflections(members, DX_array: np.ndarray, DY_array: np
     """
     Gets the global end deflections for each member.
 
-    :param members:  list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members:  list. [i_node, j_node, material_index, set_cross_section_props]
     :param DX_array: ndarray. Array of the nodel displacements in the X direction.
     :param DY_array: ndarray. Array of the nodel displacements in the Y direction.
     :param DZ_array: ndarray. Array of the nodel displacements in the Z direction.
@@ -832,13 +832,13 @@ def get_weight(materials, members, members_L, members_cross_section_props):
     Gets the weight of each member of the frame.
 
     :param materials:  list. [E, G, nu, rho, fy]
-    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members: list. [i_node, j_node, material_index, set_cross_section_props]
     :param members_L: ndarray. length of each member.
     :param members_cross_section_props: ndarray. [A, Iy, Iz, J]
     :return: ndarry. Array of the weights of each member of the frame.
     """
 
-    return materials[members[:,2],3] * members_cross_section_props[:, 0] * members_L
+    return materials[members[:,2].astype(int),3] * members_cross_section_props[:, 0] * members_L
 
 def get_reactions(nodes_support, nodes_loads, members, members_releases, F_array, num_c:int, num_m:int, num_n:int):
     """
@@ -846,7 +846,7 @@ def get_reactions(nodes_support, nodes_loads, members, members_releases, F_array
 
     :param nodes_support: list. [support_DX, support_DY, support_DZ, support_RX, support_RY, support_RZ]
     :param nodes_loads:  list. [case, [Px, Py, Pz, Mx, My, Mz]]
-    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members: list. [i_node, j_node, material_index, set_cross_section_props]
     :param members_releases: list. What directions are relesed Bool.
                              [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
     :param F_array: ndarray. Array of the global forces acting at the ends of the members.
@@ -926,14 +926,14 @@ def get_cost(X, constants):
     if log: print("Variable cross section properties: ", cross_section_props)
 
     j = 0
-    for i in range(len(frame.members_CrossSectionProps)):
+    for i in range(len(frame.members_cross_section_props)):
         if not frame.members[i][3]:
-            frame.members_CrossSectionProps[i] = cross_section_props[j]
+            frame.members_cross_section_props[i] = cross_section_props[j]
             j += 1
-    if log: print("Cross Seciton Properites: ", frame.members_CrossSectionProps)
+    if log: print("Cross Seciton Properites: ", frame.members_cross_section_props)
 
     D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = (
-        frame.analysis_linear(weight_needed, reactions_needed, internal_forces_needed, log))
+        frame.AnalysisLinear(weight_needed, reactions_needed, internal_forces_needed, log))
 
     return _cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces, cost_function)
 
@@ -941,7 +941,7 @@ def chack_inputs(members, member_group: list, member_group_type: list):
     """
     Checks if the input lists for the optimization are valid.
 
-    :param members: list. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members: list. [i_node, j_node, material_index, set_cross_section_props]
     :param member_group: list. list of indices of member groups for non set members to be assigned to.
     :param member_group_type: list. List of cross-section types for each member group to be assigned.
     """

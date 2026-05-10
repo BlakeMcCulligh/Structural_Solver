@@ -15,7 +15,7 @@ from frame_3D_gui.opening import open_frame, open_results
 from frame_3D_gui.optimize_pop_up import OptimizationPopUp
 from frame_3D_gui.results import Results
 from frame_3D_gui.save import save_frame, save_results
-from frame3DSolver.__main__ import Frame3D
+from frame3DSolver.main import Frame3D
 # noinspection PyPep8Naming
 import drawing_3D.engine_3D as TDE
 import frame3DSolver.helper_functions as hf
@@ -312,10 +312,10 @@ class MainWindow(tk.Frame):
 
         frame = _add_data_to_frame(self.Data)
 
-        frame.preAnalysis_linear()
-        D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internal_forces = frame.analysis_linear(getWeight = True,
-                                                                                             getReactions = True,
-                                                                                             getInternalForces = True)
+        frame.PreAnalysisLinear()
+        D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internal_forces = frame.AnalysisLinear(get_weight= True,
+                                                                                             get_reactions= True,
+                                                                                             get_internal_forces= True)
         self.Frame = frame
         self.Results = Results()
         self.Results.AddNodalDeflections(DX, DY, DZ, RX, RY, RZ)
@@ -354,7 +354,7 @@ class MainWindow(tk.Frame):
 
         frame = _add_data_to_frame(self.Data)
 
-        frame.preAnalysis_linear()
+        frame.PreAnalysisLinear()
         results = frame.optimize(GroupAssignments, GroupTypes, LowerBound, UpperBound, CostFunction, WeightRun,
                                  ReactionRun, InternalForcesRun)
         self.Frame = frame
@@ -1086,30 +1086,30 @@ def _add_data_to_frame(d):
     frame = Frame3D()
 
     for i in range(len(d.Nodes[0])):
-        frame.addNode(d.Nodes[0][i], d.Nodes[1][i], d.Nodes[2][i])
+        frame.AddNode(d.Nodes[0][i], d.Nodes[1][i], d.Nodes[2][i])
 
     for i in range(len(d.Materials[0])):
-        frame.addMaterial(d.Materials[0][i], d.Materials[1][i], d.Materials[2][i], d.Materials[3][i], d.Materials[4][i])
+        frame.AddMaterial(d.Materials[0][i], d.Materials[1][i], d.Materials[2][i], d.Materials[3][i], d.Materials[4][i])
 
     for i in range(len(d.Members[0])):
-        frame.addMember(d.Members[0][i], d.Members[1][i], d.Members[2][i], d.Members[3][i], d.Members[4][i],
+        frame.AddMember(d.Members[0][i], d.Members[1][i], d.Members[2][i], d.Members[3][i], d.Members[4][i],
                         d.Members[5][i], d.Members[6][i], d.Members[7][i])
 
     for i in range(len(d.Supports[0])):
-        frame.defSupport(d.Supports[0][i], d.Supports[1][i], d.Supports[2][i], d.Supports[3][i], d.Supports[4][i],
+        frame.AddSupport(d.Supports[0][i], d.Supports[1][i], d.Supports[2][i], d.Supports[3][i], d.Supports[4][i],
                          d.Supports[5][i], d.Supports[6][i])
 
     for i in range(len(d.Releases[0])):
-        frame.defReleases(d.Releases[0][i], d.Releases[1][i], d.Releases[2][i], d.Releases[3][i], d.Releases[4][i],
+        frame.AddReleases(d.Releases[0][i], d.Releases[1][i], d.Releases[2][i], d.Releases[3][i], d.Releases[4][i],
                           d.Releases[5][i], d.Releases[6][i], d.Releases[7][i], d.Releases[8][i], d.Releases[9][i],
                           d.Releases[10][i], d.Releases[11][i], d.Releases[12][i])
 
     for i in range(len(d.NodeLoad[0])):
-        frame.addNodeLoad(d.NodeLoad[0][i], d.NodeLoad[1][i], d.NodeLoad[2][i], d.NodeLoad[3][i], d.NodeLoad[4][i],
+        frame.AddNodeLoad(d.NodeLoad[0][i], d.NodeLoad[1][i], d.NodeLoad[2][i], d.NodeLoad[3][i], d.NodeLoad[4][i],
                           d.NodeLoad[5][i], d.NodeLoad[6][i], d.NodeLoad[7][i])
 
     for i in range(len(d.MemberPointLoad[0])):
-        frame.addMemberPointLoad(d.MemberPointLoad[0][i], d.MemberPointLoad[1][i], d.MemberPointLoad[2][i],
+        frame.AddMemberPointLoad(d.MemberPointLoad[0][i], d.MemberPointLoad[1][i], d.MemberPointLoad[2][i],
                                  d.MemberPointLoad[3][i], d.MemberPointLoad[4][i], d.MemberPointLoad[5][i],
                                  d.MemberPointLoad[6][i], d.MemberPointLoad[7][i], d.MemberPointLoad[8][i])
 

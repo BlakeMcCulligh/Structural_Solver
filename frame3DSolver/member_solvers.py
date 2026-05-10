@@ -21,7 +21,7 @@ def segment_member(members: np.ndarray, members_L: np.ndarray, members_cross_sec
     """
     Segments all the members into sections where the loading of the member changes.
 
-    :param members: ndarray. [i_node, j_node, material_index, setCrossSectionProps]
+    :param members: ndarray. [i_node, j_node, material_index, set_cross_section_props]
     :param members_L: ndarray. length of each member.
     :param members_cross_section_props: ndarray. [A, Iy, Iz, J]
     :param materials: list. [E, G, nu, rho, fy]
@@ -947,9 +947,9 @@ def deflection(x: float, m_index: int, combo_index: int, members_L: np.ndarray, 
 
     return [0,0,0]
 
-def difflection_extrem_finder(casses: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
-                              seg_thata: list, seg_delta: list, abs_function_direction: str,
-                              members_L: np.ndarray, combo_indexs: list | None = None):
+def _difflection_extrem_finder(casses: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
+                               seg_thata: list, seg_delta: list, abs_function_direction: str,
+                               members_L: np.ndarray, combo_indexs: list | None = None):
     """
     Finds the most extrem value and governing load case for the given member and direction.
 
@@ -1043,8 +1043,8 @@ def max_difflection(casses: list, members_L: np.ndarray, m_index: int, seg: list
     :return: Deflection, Governing Casse
     """
 
-    return difflection_extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, seg_thata,
-                                     seg_delta, "max", members_L, combo_indexs)
+    return _difflection_extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, seg_thata,
+                                      seg_delta, "max", members_L, combo_indexs)
 
 def min_difflection(casses: list, members_L: np.ndarray, m_index: int, seg: list, seg_internal_loads: list,
                     seg_dist_loads: list, seg_thata: list, seg_delta: list, combo_indexs: list | None = None):
@@ -1068,5 +1068,5 @@ def min_difflection(casses: list, members_L: np.ndarray, m_index: int, seg: list
     :return: Deflection, Governing Casse
     """
 
-    return difflection_extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, seg_thata, seg_delta,
+    return _difflection_extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, seg_thata, seg_delta,
                                      "min", members_L, combo_indexs)
