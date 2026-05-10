@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from CrossSectionOptimization import frame3DOptimizer
-from frame3DSolver.CrossSectionCalculaters import SquareHSS, TubeHSS, Angle, RectHSS
+from frame3DSolver.cross_section_calculaters import square_hss, tube_hss, angle, rect_hss
 
 
 class Frame3D:
@@ -279,28 +279,28 @@ class Frame3D:
             maxBounds = maxBounds + crossSection.maxBounds
 
             if crossSection._type == "SquareHSS":
-                self.AFormulas.append(SquareHSS.getA)
-                self.IxFormulas.append(SquareHSS.getI)
-                self.IyFormulas.append(SquareHSS.getI)
-                self.JFormulas.append(SquareHSS.getJ)
+                self.AFormulas.append(SquareHSS.get_A)
+                self.IxFormulas.append(SquareHSS.get_I)
+                self.IyFormulas.append(SquareHSS.get_I)
+                self.JFormulas.append(SquareHSS.get_J)
                 self.numVariables.append(2)
             elif crossSection._type == "RectHSS":
-                self.AFormulas.append(RectHSS.getA)
-                self.IxFormulas.append(RectHSS.getIx)
-                self.IyFormulas.append(RectHSS.getIy)
-                self.JFormulas.append(RectHSS.getJ)
+                self.AFormulas.append(RectHSS.get_A)
+                self.IxFormulas.append(RectHSS.get_Ix)
+                self.IyFormulas.append(RectHSS.get_Iy)
+                self.JFormulas.append(RectHSS.get_J)
                 self.numVariables.append(3)
             elif crossSection._type == "TubeHSS":
-                self.AFormulas.append(TubeHSS.getA)
-                self.IxFormulas.append(TubeHSS.getI)
-                self.IyFormulas.append(TubeHSS.getI)
-                self.JFormulas.append(TubeHSS.getJ)
+                self.AFormulas.append(TubeHSS.get_A)
+                self.IxFormulas.append(TubeHSS.get_I)
+                self.IyFormulas.append(TubeHSS.get_I)
+                self.JFormulas.append(TubeHSS.get_J)
                 self.numVariables.append(2)
             elif crossSection._type == "Angle":
-                self.AFormulas.append(Angle.getA)
-                self.IxFormulas.append(Angle.getIx)
-                self.IyFormulas.append(Angle.getIy)
-                self.JFormulas.append(Angle.getJ)
+                self.AFormulas.append(Angle.get_A)
+                self.IxFormulas.append(Angle.get_Ix)
+                self.IyFormulas.append(Angle.get_Iy)
+                self.JFormulas.append(Angle.get_J)
                 self.numVariables.append(3)
 
         self.calcLengths()

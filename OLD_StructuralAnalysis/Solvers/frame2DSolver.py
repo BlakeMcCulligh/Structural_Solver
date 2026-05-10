@@ -1,7 +1,7 @@
 import numpy as np
 
 from CrossSectionOptimization import frame2DOptimizer
-from frame3DSolver.CrossSectionCalculaters import SquareHSS, TubeHSS, Angle, RectHSS
+from frame3DSolver.cross_section_calculaters import square_hss, tube_hss, angle, rect_hss
 
 
 class Frame2D:
@@ -266,20 +266,20 @@ class Frame2D:
             maxBounds = maxBounds + crossSection.maxBounds
 
             if crossSection._type == "SquareHSS":
-                self.AFormulas.append(SquareHSS.getA)
-                self.IFormulas.append(SquareHSS.getI)
+                self.AFormulas.append(SquareHSS.get_A)
+                self.IFormulas.append(SquareHSS.get_I)
                 self.numVariables.append(2)
             elif crossSection._type == "RectHSS":
-                self.AFormulas.append(RectHSS.getA)
-                self.IFormulas.append(RectHSS.getIx)
+                self.AFormulas.append(RectHSS.get_A)
+                self.IFormulas.append(RectHSS.get_Ix)
                 self.numVariables.append(3)
             elif crossSection._type == "TubeHSS":
-                self.AFormulas.append(TubeHSS.getA)
-                self.IFormulas.append(TubeHSS.getI)
+                self.AFormulas.append(TubeHSS.get_A)
+                self.IFormulas.append(TubeHSS.get_I)
                 self.numVariables.append(2)
             elif crossSection._type == "Angle":
-                self.AFormulas.append(Angle.getA)
-                self.IFormulas.append(Angle.getIx)
+                self.AFormulas.append(Angle.get_A)
+                self.IFormulas.append(Angle.get_Ix)
                 self.numVariables.append(3)
 
         self.calcLengths()

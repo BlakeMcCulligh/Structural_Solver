@@ -2,7 +2,7 @@
 Holds the 3D frame solver object and handels everything to do with the solving of 3D frames.
 """
 
-import frame3DSolver.helper_functions as hf
+import frame_3D_solver.helper_functions as hf
 import numpy as np
 import scipy.optimize as opt
 

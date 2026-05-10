@@ -15,10 +15,10 @@ from frame_3D_gui.opening import open_frame, open_results
 from frame_3D_gui.optimize_pop_up import OptimizationPopUp
 from frame_3D_gui.results import Results
 from frame_3D_gui.save import save_frame, save_results
-from frame3DSolver.main import Frame3D
+from frame_3D_solver.main import Frame3D
 # noinspection PyPep8Naming
 import drawing_3D.engine_3D as TDE
-import frame3DSolver.helper_functions as hf
+import frame_3D_solver.helper_functions as hf
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""

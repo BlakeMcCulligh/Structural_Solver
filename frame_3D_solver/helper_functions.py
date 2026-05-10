@@ -3,9 +3,12 @@ Helper functions used for the analysis of a 3D frame.
 """
 
 import numpy as np
+import scipy.optimize as opt
 
-import frame3DSolver.fixed_end_reactions_calculaters as fer_calc
-import frame3DSolver.member_solvers as ms
+from frame_3D_solver.cross_section_calculaters import angle, rect_hss, square_hss, tube_hss
+
+import frame_3D_solver.fixed_end_reactions_calculaters as fer_calc
+import frame_3D_solver.member_solvers as ms
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -902,9 +905,6 @@ def solve_internal_forces(members, members_L, members_cross_section_props, mater
 
 """-----------------Optimization-----------------------------"""
 
-from frame3DSolver.CrossSectionCalculaters import SquareHSS, TubeHSS, Angle, RectHSS
-import scipy.optimize as opt
-
 # noinspection PyUnusedLocal
 def _cost(D, DX, DY, DZ, RX, RY, RZ, Weight, Reactions, InternalForces, cost_function):
     return eval(cost_function)
@@ -1012,29 +1012,29 @@ def get_cross_section_props(X, member_groups, member_group_type):
     j = 0
     for t in member_group_type:
         if t == "Angle":
-            A = Angle.getA(X[j], X[j + 1], X[j + 2])
-            Iy = Angle.getIy(X[j], X[j + 1], X[j + 2])
-            Iz = Angle.getIx(X[j], X[j + 1], X[j + 2])
-            J = Angle.getJ(X[j], X[j + 1], X[j + 2])
+            A = angle.get_A(X[j], X[j + 1], X[j + 2])
+            Iy = angle.get_Iy(X[j], X[j + 1], X[j + 2])
+            Iz = angle.get_Ix(X[j], X[j + 1], X[j + 2])
+            J = angle.get_J(X[j], X[j + 1], X[j + 2])
             group_properties.append([A, Iy, Iz, J])
             j += 3
         elif t == "RectHSS":
-            A = RectHSS.getA(X[j], X[j + 1], X[j + 2])
-            Iy = RectHSS.getIy(X[j], X[j + 1], X[j + 2])
-            Iz = RectHSS.getIx(X[j], X[j + 1], X[j + 2])
-            J = RectHSS.getJ(X[j], X[j + 1], X[j + 2])
+            A = rect_hss.get_A(X[j], X[j + 1], X[j + 2])
+            Iy = rect_hss.get_Iy(X[j], X[j + 1], X[j + 2])
+            Iz = rect_hss.get_Ix(X[j], X[j + 1], X[j + 2])
+            J = rect_hss.get_J(X[j], X[j + 1], X[j + 2])
             group_properties.append([A, Iy, Iz, J])
             j += 3
         elif t == "SquareHSS":
-            A = SquareHSS.getA(X[j], X[j + 1])
-            I = SquareHSS.getI(X[j], X[j + 1])
-            J = SquareHSS.getJ(X[j], X[j + 1])
+            A = square_hss.get_A(X[j], X[j + 1])
+            I = square_hss.get_I(X[j], X[j + 1])
+            J = square_hss.get_J(X[j], X[j + 1])
             group_properties.append([A, I, I, J])
             j += 2
         elif t == "TubeHSS":
-            A = TubeHSS.getA(X[j], X[j + 1])
-            I = TubeHSS.getI(X[j], X[j + 1])
-            J = TubeHSS.getJ(X[j], X[j + 1])
+            A = tube_hss.get_A(X[j], X[j + 1])
+            I = tube_hss.get_I(X[j], X[j + 1])
+            J = tube_hss.get_J(X[j], X[j + 1])
             group_properties.append([A, I, I, J])
             j += 2
 
