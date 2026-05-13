@@ -113,9 +113,9 @@ def save_results(results, file_path):
         with open(file_path, "w") as f:
 
             f.write(f"{len(results.NodalDeflections)}\n")
-            f.write(f"{len(results.NodalDeflections.DX)}\n")
+            f.write(f"{len(results.NodalDeflections[0].DX)}\n")
             for i in range(len(results.NodalDeflections)):
-                for j in range(len(results.NodalDeflections.DX)):
+                for j in range(len(results.NodalDeflections[0].DX)):
                     f.write(f"{results.NodalDeflections[i].DX[j]},{results.NodalDeflections[i].DY[j]},"
                             f"{results.NodalDeflections[i].DZ[j]},{results.NodalDeflections[i].RX[j]},"
                             f"{results.NodalDeflections[i].RY[j]},{results.NodalDeflections[i].RZ[j]},\n")
@@ -127,15 +127,15 @@ def save_results(results, file_path):
             f.write(f"{results.OverallWeight}\n")
 
             f.write(f"{len(results.Reactions)}\n")
-            f.write(f"{len(results.Reactions.RX)}\n")
+            f.write(f"{len(results.Reactions[0].RX)}\n")
             for i in range(len(results.Reactions)):
-                for j in range(len(results.Reactions.RX)):
+                for j in range(len(results.Reactions[0].RX)):
                     f.write(f"{results.Reactions[i].RX[j]},{results.Reactions[i].RY[j]},{results.Reactions[i].RZ[j]},"
                             f"{results.Reactions[i].MX[j]},{results.Reactions[i].MY[j]},{results.Reactions[i].MZ[j]}\n")
 
-            f.write(f"{results.MaxInternalForces[0][0][0]},{results.MaxInternalForces[0][0][1]},\n")
-            f.write(f"{results.MaxInternalForces[0][1][0]},{results.MaxInternalForces[0][1][1]},\n")
-            f.write(f"{results.MaxInternalForces[0][2][0]},{results.MaxInternalForces[0][2][1]},\n")
-            f.write(f"{results.MaxInternalForces[1][0][0]},{results.MaxInternalForces[1][0][1]},\n")
-            f.write(f"{results.MaxInternalForces[1][1][0]},{results.MaxInternalForces[1][1][1]},\n")
-            f.write(f"{results.MaxInternalForces[1][2][0]},{results.MaxInternalForces[1][2][1]},\n")
+            f.write(f"{results.MaxInternalForces.FX},{results.MaxInternalForces.FX_case},\n")
+            f.write(f"{results.MaxInternalForces.FY},{results.MaxInternalForces.FY_case},\n")
+            f.write(f"{results.MaxInternalForces.FZ},{results.MaxInternalForces.FZ_case},\n")
+            f.write(f"{results.MaxInternalForces.MX},{results.MaxInternalForces.MX_case},\n")
+            f.write(f"{results.MaxInternalForces.MY},{results.MaxInternalForces.MY_case},\n")
+            f.write(f"{results.MaxInternalForces.MZ},{results.MaxInternalForces.MZ_case},\n")

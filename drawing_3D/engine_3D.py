@@ -5,6 +5,7 @@ tutorial that can be found at https://youtu.be/ih20l3pJoeU.
 
 import numpy as np
 import pyvista as pv
+import warnings
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -372,7 +373,10 @@ def line_clip_against_plane(plane_point, plane_normal, line):
     plane_normal = plane_normal / np.linalg.norm(plane_normal)
 
     def dist(p):  # return the signed shortest distance from point to plane
-        p = p / np.linalg.norm(p)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            p = p / np.linalg.norm(p)
+
         return np.dot(plane_normal, p) - np.dot(plane_normal, plane_point)
 
     inside_points, inside_points_counter = [], 0

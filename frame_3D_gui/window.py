@@ -1096,8 +1096,8 @@ def _add_data_to_frame(d):
                         d.Members[5][i], d.Members[6][i], d.Members[7][i])
 
     for i in range(len(d.Supports[0])):
-        frame.AddSupport(d.Supports[0][i], d.Supports[1][i], d.Supports[2][i], d.Supports[3][i], d.Supports[4][i],
-                         d.Supports[5][i], d.Supports[6][i])
+        frame.AddSupport(d.Supports[0][i], bool(d.Supports[1][i]), bool(d.Supports[2][i]), bool(d.Supports[3][i]),
+                         bool(d.Supports[4][i]),bool(d.Supports[5][i]), bool(d.Supports[6][i]))
 
     for i in range(len(d.Releases[0])):
         frame.AddReleases(d.Releases[0][i], d.Releases[1][i], d.Releases[2][i], d.Releases[3][i], d.Releases[4][i],

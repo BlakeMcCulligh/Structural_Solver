@@ -74,11 +74,11 @@ def segment_member(members: np.ndarray, members_L: np.ndarray, members_cross_sec
                 disconts.append(load[1])  # Distributed load end locations
             disconts = sorted(set(disconts)) # Sort the list and eliminate duplicate values
 
-            E = materials[members[m_index,2],0]
-            A = members_cross_section_props[m_index,0]
-            Iy = members_cross_section_props[m_index,1]
-            Iz = members_cross_section_props[m_index,2]
-            J = members_cross_section_props[m_index,3]
+            E = materials[members[m_index,2].astype(int)][0]
+            A = members_cross_section_props[m_index][0]
+            Iy = members_cross_section_props[m_index][1]
+            Iz = members_cross_section_props[m_index][2]
+            J = members_cross_section_props[m_index][3]
             L = members_L[m_index]
 
             seg_x1 = []
@@ -310,7 +310,7 @@ def _extrem_finder(casses: list, m_index: int, seg: list, seg_internal_loads: li
     seg, seg_internal_loads, seg_dist_loads = seg[m_index], seg_internal_loads[m_index], seg_dist_loads[m_index]
 
     for combo_index in combo_indexs:
-
+        combo_index = int(combo_index)
         abs_ = []
 
         L = np.array(seg[combo_index][1]) - np.array(seg[combo_index][0])

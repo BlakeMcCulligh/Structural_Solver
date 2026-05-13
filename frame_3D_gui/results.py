@@ -2,6 +2,8 @@
 Holds the object the stores all the results, incuding sub objects.
 """
 
+import numpy as np
+
 __author__ = "Blake McCulligh"
 __copyright__ = ""
 __credits__ = ["Blake McCulligh"]
@@ -47,7 +49,7 @@ class Reactions:
 
         :param reactions: Node ractions. Shape: (# Nodes, 6)
         """
-
+        reactions = np.array(reactions)
         self.RX = reactions[:,0]
         self.RY = reactions[:,1]
         self.RZ = reactions[:,2]
@@ -69,8 +71,8 @@ class MaximumInternalForces:
 
         self.internalForces = internalForces
         F, M = internalForces
-        FX, FY, FZ = F
-        MX, MY, MZ = M
+        FX, FY, FZ = F[0]
+        MX, MY, MZ = M[0]
 
         self.FX = FX[0]
         self.FX_case = FX[1]

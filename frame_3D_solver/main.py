@@ -126,7 +126,7 @@ class Frame3D:
         :param support_RZ: bool. Indicates if the z rotation direction should be supported.
         """
 
-        self.nodes_support[node_index] = [support_DX, support_DY, support_DZ, support_RX, support_RY, support_RZ]
+        self.nodes_support[int(node_index)] = [support_DX, support_DY, support_DZ, support_RX, support_RY, support_RZ]
 
     def AddReleases(self, member_index: int, Dxi: bool = False, Dyi: bool = False, Dzi: bool = False,
                     Rxi: bool = False, Ryi: bool = False, Rzi: bool = False, Dxj: bool = False, Dyj: bool = False,
@@ -205,7 +205,7 @@ class Frame3D:
 
         case_found = False
 
-        for loads_case in self.members_point_loads[member_index]:
+        for loads_case in self.members_point_loads[int(member_index)]:
 
             case_index, loads = loads_case[0], loads_case[1]
 
@@ -232,7 +232,7 @@ class Frame3D:
 
         if not case_found:
 
-            self.members_point_loads[member_index].append([case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]])
+            self.members_point_loads[int(member_index)].append([case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]])
 
             if case not in self.casses: self.casses.append(case)
 
@@ -406,7 +406,7 @@ class Frame3D:
                 weight = hf.get_weight(self.materials, self.members, self.members_L, self.members_cross_section_props)
 
             if get_reactions or get_internal_forces:
-                D_members = hf.get_member_direction_deflections(self, DX, DY, DZ, RX, RY, RZ, num_m, num_c)
+                D_members = hf.get_member_direction_deflections(self.members, DX, DY, DZ, RX, RY, RZ, num_m, num_c)
                 d = hf.get_d(self.members_T, D_members, num_m, num_c)
                 f = hf.get_f(k_local, d, fer_condensed, num_m, num_c)
 
@@ -420,6 +420,7 @@ class Frame3D:
                                                             self.members_cross_section_props, self.materials,
                                                             self.casses, self.point_loads, self.dist_loads, f,
                                                             fer_unc_ARRAY, d, num_m, num_c)
+
                     internal_forces = [abs_F, abs_M]
 
             return D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internal_forces

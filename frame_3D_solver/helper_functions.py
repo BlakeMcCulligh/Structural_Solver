@@ -31,8 +31,21 @@ def part_D(nodes_support):
     """
     n_nodes = nodes_support.shape[0]
     dof_indices = np.arange(n_nodes * 6).reshape(n_nodes, 6)
-    D_unknown = dof_indices[~nodes_support].ravel()
-    D_known = dof_indices[nodes_support].ravel()
+
+    D_known = []
+    D_unknown = []
+
+    for i in range(n_nodes):
+        for j in range(6):
+
+            if nodes_support[i,j]:
+                D_known.append(dof_indices[i,j])
+            else:
+                D_unknown.append(dof_indices[i,j])
+
+    D_known = np.array(D_known)
+    D_unknown = np.array(D_unknown)
+
     return D_unknown, D_known
 
 def prep_members(nodes_cord, members, members_releases, members_point_loads, members_dist_loads, num_c):
@@ -184,7 +197,7 @@ def get_global_fixed_end_reaction_vector(nodes_cord, members_dof, T: np.ndarray,
     nDOF = len(nodes_cord) * 6
     FER_val = np.zeros((num_c, nDOF))
     dof_flat = members_dof.ravel()
-    for j in range(num_c):np.add.at(FER_val[j], dof_flat, FER_stack[:, j, :].ravel())
+    for j in range(num_c):np.add.at(FER_val[j], dof_flat.astype(int), FER_stack[:, j, :].ravel())
     FER_val = FER_val[..., None]
     FER1, FER2 = _part_force_vector(FER_val, D_unknown, D_known)
     return FER1, FER2
@@ -347,7 +360,7 @@ def _assemble_point_loads(members_point_loads, num_c):
             new_load  = []
             for j in range(len(loads[1][0])):
                 new_load.append([loads[1][0][j]] + loads[1][1][j])
-            new_loads[loads[0]] = new_load
+            new_loads[int(loads[0])] = new_load
         for j in range(len(new_loads)):
             if new_loads[j] is None:
                 # noinspection PyTypeChecker
@@ -449,7 +462,7 @@ def _get_fixed_end_reactions_dist_load_array(members_L, dist_loads):
     :return: ndarray. fixed end reactions for distributed loads. shape: (# members, # Casses, 12, 1)
     """
 
-    reactions = []
+    reactions_array = []
     for i, load_casses in enumerate(dist_loads):
         L = members_L[i]
         reactions_member = []
@@ -463,8 +476,8 @@ def _get_fixed_end_reactions_dist_load_array(members_L, dist_loads):
                 if not (load[6] == 0 and load[7] == 0):
                     reactions = reactions + fer_calc.distributed_load_z([load[6], load[7]], [load[0], load[1]], L)
             reactions_member.append(reactions)
-        reactions.append(reactions_member)
-    return reactions
+        reactions_array.append(reactions_member)
+    return reactions_array
 
 def member_part_fer(fer: np.ndarray, R_unrelesed: np.ndarray or list, R_relesed: np.ndarray or list,
                     num_m: int, num_c: int):
@@ -550,8 +563,8 @@ def get_parted_global_nodal_force_vector(nodes_loads, casses, D_unknown, D_known
     for load_case_i in casses:
         p = np.zeros((num_n * 6, 1))
         for i in range(num_n):
-            if np.size(nodes_loads[load_case_i]) != 0:
-                local = np.array(nodes_loads[load_case_i][1])
+            if np.size(nodes_loads[int(load_case_i)]) != 0:
+                local = np.array(nodes_loads[int(load_case_i)][1])
             else:
                 local = np.zeros(6, dtype=float)
             dofs = np.empty(len([i]) * 6, dtype=np.int64)
@@ -590,7 +603,7 @@ def get_K_global(members_dof, k_global: np.ndarray, num_n: int, num_m:int):
 
     K = np.zeros((num_n * 6, num_n * 6))
     for i in range(num_m):
-        K[np.ix_(members_dof[i], members_dof[i])] += np.asarray(k_global[i], dtype=float)
+        K[np.ix_(members_dof[i].astype(int), members_dof[i].astype(int))] += np.asarray(k_global[i], dtype=float)
     return K
 
 def partition_K_gloabl(K_global: np.ndarray, R_unrelesed: np.ndarray, R_relesed: np.ndarray):
@@ -603,10 +616,10 @@ def partition_K_gloabl(K_global: np.ndarray, R_unrelesed: np.ndarray, R_relesed:
     :return: ndarray. 4 sub-matrices of the global stiffness matrix with respect to the frames supports.
     """
 
-    K11 = (K_global[R_unrelesed, :][:, R_unrelesed])
-    K12 = (K_global[R_unrelesed, :][:, R_relesed])
-    K21 = (K_global[R_relesed, :][:, R_unrelesed])
-    K22 = (K_global[R_relesed, :][:, R_relesed])
+    K11 = (K_global[R_unrelesed.astype(int), :][:, R_unrelesed.astype(int)])
+    K12 = (K_global[R_unrelesed.astype(int), :][:, R_relesed.astype(int)])
+    K21 = (K_global[R_relesed.astype(int), :][:, R_unrelesed.astype(int)])
+    K22 = (K_global[R_relesed.astype(int), :][:, R_relesed.astype(int)])
     return K11, K12, K21, K22
 
 def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.ndarray, index_unsupported:np.ndarray,
@@ -754,18 +767,18 @@ def get_member_direction_deflections(members, DX_array: np.ndarray, DY_array: np
     for i in range(num_c):
         D_sub = []
         for j in range(num_m):
-            Dx1 = DX_array[i, members[j,0]]
-            Dy1 = DY_array[i, members[j,0]]
-            Dz1 = DZ_array[i, members[j,0]]
-            Rx1 = RX_array[i, members[j,0]]
-            Ry1 = RY_array[i, members[j,0]]
-            Rz1 = RZ_array[i, members[j,0]]
-            Dx2 = DX_array[i, members[j, 1]]
-            Dy2 = DY_array[i, members[j, 1]]
-            Dz2 = DZ_array[i, members[j, 1]]
-            Rx2 = RX_array[i, members[j, 1]]
-            Ry2 = RY_array[i, members[j, 1]]
-            Rz2 = RZ_array[i, members[j, 1]]
+            Dx1 = DX_array[i, members[j, 0].astype(int)]
+            Dy1 = DY_array[i, members[j, 0].astype(int)]
+            Dz1 = DZ_array[i, members[j, 0].astype(int)]
+            Rx1 = RX_array[i, members[j, 0].astype(int)]
+            Ry1 = RY_array[i, members[j, 0].astype(int)]
+            Rz1 = RZ_array[i, members[j, 0].astype(int)]
+            Dx2 = DX_array[i, members[j, 1].astype(int)]
+            Dy2 = DY_array[i, members[j, 1].astype(int)]
+            Dz2 = DZ_array[i, members[j, 1].astype(int)]
+            Rx2 = RX_array[i, members[j, 1].astype(int)]
+            Ry2 = RY_array[i, members[j, 1].astype(int)]
+            Rz2 = RZ_array[i, members[j, 1].astype(int)]
             D_sub.append(np.array([Dx1, Dy1, Dz1, Rx1, Ry1, Rz1, Dx2, Dy2, Dz2, Rx2, Ry2, Rz2]))
         D_member_array.append(D_sub)
     return np.array(D_member_array)
@@ -810,13 +823,13 @@ def get_F(T_array: np.ndarray, f_array: np.ndarray, num_m: int, num_c:int):
         F.append(F_sub)
     return np.array(F)
 
-def get_f(k_array: np.ndarray, d_array: np.ndarray, fer_array: np.ndarray, num_m: int, num_c: int):
+def get_f(k_array: np.ndarray, d_array: np.ndarray, fer_array: list, num_m: int, num_c: int):
     """
     Gets the local forces acting at each end of the members.
 
     :param k_array: ndarray. 4D array of the local stiffness matrices for each member. shape: (# members, 12, 12)
     :param d_array: ndarray. Array of the local end deflections for each member. shape: (# casses, # members, 12)
-    :param fer_array: ndarray. Condensed local fixed end reaction vector. shape: (# members, # Casses, 12, 1)
+    :param fer_array: list. Condensed local fixed end reaction vector. shape: (# members, # Casses, 12, 1)
     :param num_m: int: Number of members.
     :param num_c: int: Number of casses.
     :return: ndarray. Array of the local forces acting at the ends of the members. shape: (# casses, # members, 12)
@@ -826,7 +839,7 @@ def get_f(k_array: np.ndarray, d_array: np.ndarray, fer_array: np.ndarray, num_m
     for i in range(num_c):
         f_sub = []
         for j in range(num_m):
-            f_sub.append(k_array[j] @ d_array[i, j] + fer_array[j, i])
+            f_sub.append(k_array[j] @ d_array[i, j] + fer_array[j][i])
         f.append(f_sub)
     return np.array(f)
 
@@ -889,16 +902,35 @@ def solve_internal_forces(members, members_L, members_cross_section_props, mater
     abs_F = []
     abs_M = []
     for mINDEX in range(num_m):
-        FX_min, _ = ms.min_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        FX_max, _ = ms.max_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        FY_min, FZ_min, _, _ = ms.min_shear(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        FY_max, FZ_max, _, _ = ms.max_shear(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        MX_min, _ = ms.min_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        MX_max, _ = ms.max_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        MY_min, MZ_min, _, _ = ms.min_moment(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        MY_max, MZ_max, _, _ = ms.max_moment(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        abs_F.append([max(FX_max,abs(FX_min)), max(FY_max,abs(FY_min)), max(FZ_max,abs(FZ_min))])
-        abs_M.append([max(MX_max, abs(MX_min)), max(MY_max, abs(MY_min)), max(MZ_max, abs(MZ_min))])
+        min_val = [0,0,0,0,0,0]
+        max_val = [0, 0, 0, 0, 0, 0]
+        min_case = [0,0,0,0,0,0]
+        max_case = [0,0,0,0,0,0]
+        min_val[0], min_case[0] = ms.min_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        max_val[0], max_case[0] = ms.max_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        min_val[1], min_val[2], min_case[1], min_case[2] = ms.min_shear(casses, mINDEX, seg, seg_internal_loads,
+                                                                        seg_dist_loads)
+        max_val[1], max_val[2], max_case[1], max_case[2] = ms.max_shear(casses, mINDEX, seg, seg_internal_loads,
+                                                                        seg_dist_loads)
+        min_val[3], min_case[3] = ms.min_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        max_val[3], max_case[3] = ms.max_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        min_val[4], min_val[5], min_case[4], min_case[5] = ms.min_moment(casses, mINDEX, seg, seg_internal_loads,
+                                                                         seg_dist_loads)
+        max_val[4], max_val[5], max_case[4], max_case[5] = ms.max_moment(casses, mINDEX, seg, seg_internal_loads,
+                                                                         seg_dist_loads)
+
+        val = []
+        case = []
+        for i in range(6):
+            if abs(min_val[i]) > abs(max_val[i]):
+                val.append(min_val[i])
+                case.append(min_case[i])
+            else:
+                val.append(max_val[i])
+                case.append(max_case[i])
+
+        abs_F.append([[val[0], case[0]], [val[1], case[1]],[val[2], case[2]]])
+        abs_M.append([[val[3], case[3]], [val[4], case[4]],[val[5], case[5]]])
     return abs_F, abs_M
 
 
