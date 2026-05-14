@@ -19,6 +19,7 @@ from frame_3D_solver.main import Frame3D
 # noinspection PyPep8Naming
 import drawing_3D.engine_3D as TDE
 import frame_3D_solver.helper_functions as hf
+from frame_3D_gui.display import Display
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -76,10 +77,12 @@ class MainWindow(tk.Frame):
         self.LIGHT_DIR = np.array([0, 0, -1]) # 3D rendering ligingting direction unit vector
 
         # arrays of geomitry being displayed in the 3D rendering
-        self.PrintNodes: np.ndarray = np.empty((0, 3))
-        self.PrintLines: np.ndarray = np.empty((0, 2, 3))
-        self.PrintSurfaceTri: np.ndarray = np.empty((0, 3, 3))
-        self.PrintSolidTri: np.ndarray = np.empty((0, 3, 3))
+        # self.PrintNodes: np.ndarray = np.empty((0, 3))
+        # self.PrintLines: np.ndarray = np.empty((0, 2, 3))
+        # self.PrintSurfaceTri: np.ndarray = np.empty((0, 3, 3))
+        # self.PrintSolidTri: np.ndarray = np.empty((0, 3, 3))
+
+        self.DisplayData = Display()
 
         # binding 3D rendering movement inputs
         self.Root.bind("<MouseWheel>", self._zoom)
@@ -862,6 +865,16 @@ class MainWindow(tk.Frame):
     """ ----------------------------------------------------------------------------------------------"""
     """ ---------------------------------------- 3D Rendering ----------------------------------------"""
     """ ----------------------------------------------------------------------------------------------"""
+    # TODO add display system for turning off and on parts of the model (Nodes, Members, Supports, Releces, loads (by case) x 6)
+        # todo pop-up window with check boxes to get whay to display
+        # todo converting all data into text, nodes, lines, and sefeces
+        # todo updating print lists
+    # TODO add display system for turning off and on results (deflections x 6, reactions x 6, internal loads x 6)
+        # todo pop-up window with check boxes to get whay to display
+        # todo solving for list of deflections along each member and geting key points
+        # todo solving for list of internal loads along each member and geting key points
+        # todo converting all data into text, nodes, lines, and sefeces
+        # todo updating print lists
 
     def AddPrintNode(self, Node):
         """
@@ -885,6 +898,7 @@ class MainWindow(tk.Frame):
             l.append(int(Line[i]))
         l = np.array(l)
         self.PrintLines = np.vstack((self.PrintLines, [self.PrintNodes[l]]))
+
         self.UpdateCanves()
 
     def AddPrintSurface(self, Surface):
@@ -1072,10 +1086,14 @@ class MainWindow(tk.Frame):
         """
 
         # creates a copy of all the geomitry to be shown
-        node = copy(self.PrintNodes)
-        line = copy(self.PrintLines)
-        surf_tri = copy(self.PrintSurfaceTri)
-        solid_tri = copy(self.PrintSolidTri)
+        # node = copy(self.PrintNodes)
+        # line = copy(self.PrintLines)
+        # surf_tri = copy(self.PrintSurfaceTri)
+        # solid_tri = copy(self.PrintSolidTri)
+        node = copy(self.DisplayData.PrintNodes)
+        line = copy(self.DisplayData.PrintLines)
+        surf_tri = copy(self.DisplayData.PrintSurfaceTri)
+        solid_tri = copy(self.DisplayData.PrintSolidTri)
 
         # updating all the data about the location and direction of the camera.
         self._update_cam_data()

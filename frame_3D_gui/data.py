@@ -61,7 +61,8 @@ class Data:
         if AddToDisplay:
             Nodes = np.array(Nodes)
             for i in range(len(Nodes[0])):
-                Window.AddPrintNode(Nodes[:, i])
+                #Window.AddPrintNode(Nodes[:, i])
+                Window.DisplayData.AddNode(Nodes[:, i])
 
         _reset_solutions(Window)
 
@@ -85,7 +86,15 @@ class Data:
             for i in range(3): Window.Tables[0].set(RowID, col_ids[i + 1], NewNode[i])
 
         if EditDisplay:
-            Window.PrintNodes[Index] = NewNode
+            Window.DisplayData.Nodes[Index] = NewNode
+
+            # updating members
+            Window.DisplayData.Members = []
+            Members = np.array(self.Members)
+            for i in range(len(self.Members[0])):
+                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int))
+
+            Window.DisplayData.ConvertToPrint()
             Window.UpdateCanves()
 
         _reset_solutions(Window)
@@ -163,7 +172,8 @@ class Data:
         if AddToDisplay:
             Members = np.array(Members)
             for i in range(len(Members[0])):
-                Window.AddPrintLine(Members[[0, 1], i])
+                #Window.AddPrintLine(Members[[0, 1], i])
+                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int))
 
         _reset_solutions(Window)
 
@@ -188,7 +198,8 @@ class Data:
             for i in range(8): Window.Tables[2].set(RowID, col_ids[i + 1], NewMembers[i])
 
         if EditDisplay:
-            Window.PrintLine[Index] = NewMembers[0, 1]
+            Window.DisplayData.Member[Index] = NewMembers[0, 1]
+            Window.DisplayData.ConvertToPrint()
             Window.UpdateCanves()
 
         _reset_solutions(Window)
