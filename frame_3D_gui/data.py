@@ -94,6 +94,12 @@ class Data:
             for i in range(len(self.Members[0])):
                 Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int))
 
+            # updating supports
+            Window.DisplayData.supports = []
+            Supports = np.array(self.Supports)
+            for i in range(len(self.Supports[0])):
+                Window.DisplayData.AddSupports(self.Nodes, Supports[:,i])
+
             Window.DisplayData.ConvertToPrint()
             Window.UpdateCanves()
 
@@ -226,7 +232,13 @@ class Data:
                                                            Supports[5][i], Supports[6][i]])
 
         if AddToDisplay:
-            pass #TODO
+            for i in range(len(Supports[0])):
+                sup = []
+                for j in range(7):
+                    sup.append(Supports[j][i])
+                print(sup)
+                Window.DisplayData.AddSupports(self.Nodes, sup)
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -242,7 +254,7 @@ class Data:
         :param RowID: The input table row containing the support being edited.
         """
 
-        for i in range(7): self.Materials[i][Index] = NewSupport[i]
+        for i in range(7): self.Supports[i][Index] = NewSupport[i]
 
         if EditTable:
             col_ids = Window.Tables[3]["columns"]
@@ -250,7 +262,14 @@ class Data:
             for i in range(7): Window.Tables[3].set(RowID, col_ids[i + 1], NewSupport[i])
 
         if EditDisplay:
-            pass # todo
+            sup = []
+            for j in range(7): sup.append(self.Supports[j][Index])
+            sup = np.array(sup)
+            location = [self.Nodes[0][int(sup[0])], self.Nodes[1][int(sup[0])], self.Nodes[2][int(sup[0])]]
+            supports = sup[1:7]
+            Window.DisplayData.supports[Index] = [location, supports]
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 

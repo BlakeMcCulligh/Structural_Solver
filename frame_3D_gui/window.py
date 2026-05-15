@@ -65,23 +65,18 @@ class MainWindow(tk.Frame):
         self.graph.pack(fill="both", expand=True)
 
         # 3D camera Data
-        self.Camera = np.array([0.0, 0.0, 0.0])
-        self.Up = np.array([0.0, 1.0, 0.0])
-        self.LookDir = np.array([0.0, 0.0, 1.0])
+        self.Camera = np.array([0.0, -2.0, 0.0])
+        self.Up = np.array([0.0, 0.0, 1.0])
+        self.LookDir = np.array([0.0, 1.0, 0.0])
         self.CamYRot = 0
-        self.CamXRot = 0
-        self.Target = np.array([0.0, 0.0, 1.0])
+        self.CamXRot = -np.pi/2
+        self.Target = np.array([0.0, -1.0, 0.0])
         self.FOV = 90
         self.Z_FAR, self.Z_NEAR = 1000, 0.1
 
         self.LIGHT_DIR = np.array([0, 0, -1]) # 3D rendering ligingting direction unit vector
 
         # arrays of geomitry being displayed in the 3D rendering
-        # self.PrintNodes: np.ndarray = np.empty((0, 3))
-        # self.PrintLines: np.ndarray = np.empty((0, 2, 3))
-        # self.PrintSurfaceTri: np.ndarray = np.empty((0, 3, 3))
-        # self.PrintSolidTri: np.ndarray = np.empty((0, 3, 3))
-
         self.DisplayData = Display()
 
         # binding 3D rendering movement inputs
@@ -876,58 +871,33 @@ class MainWindow(tk.Frame):
         # todo converting all data into text, nodes, lines, and sefeces
         # todo updating print lists
 
-    def AddPrintNode(self, Node):
-        """
-        Adds a node to be printed in the 3D rendering.
-
-        :param Node: Node cordinates. [X,Y,Z].
-        """
-
-        self.PrintNodes = np.vstack((self.PrintNodes, Node))
-        self.UpdateCanves()
-
-    def AddPrintLine(self, Line):
-        """
-        Adds a line to be printed in the 3D rendering.
-
-        :param Line: Line end Node indeces in the print Node array [i Node, j Node].
-        """
-
-        l = []
-        for i in range(len(Line)):
-            l.append(int(Line[i]))
-        l = np.array(l)
-        self.PrintLines = np.vstack((self.PrintLines, [self.PrintNodes[l]]))
-
-        self.UpdateCanves()
-
-    def AddPrintSurface(self, Surface):
-        """
-        Adds a surface to be printed in the 3D rendering.
-
-        :param Surface: Serface's corner cordinates. [X,Y,Z].
-        """
-
-        tri = TDE.triangalize_surface(self, Surface, False)
-        for i in range(len(tri)): self.PrintSurfaceTri = np.vstack((self.PrintSurfaceTri, tri[i]))
-        self.UpdateCanves()
-
-    def AddPrintSolid(self, Solid, FlipNormal: list | None = None):
-        """
-        Adds a solid to be printed in the 3D rendering.
-
-        :param Solid: Solid's corner cordinates. [X,Y,Z].
-        :param FlipNormal: List of weather each of the solid's face's normals are to be flipped or not.
-                           Is not needed if the solid is already triangalized.
-        """
-
-        num_surfaces = len(Solid)
-        for i in range(num_surfaces):
-            if isinstance(FlipNormal, list): # needs triangalized
-                tri = TDE.triangalize_surface(self, Solid[i], FlipNormal[i])
-                for j in range(len(tri)): self.PrintSolidTri = np.vstack((self.PrintSolidTri, [tri[j]]))
-            else: # already triangalized
-                self.PrintSolidTri = np.vstack((self.PrintSolidTri, [Solid[i]]))
+    # def AddPrintSurface(self, Surface):
+    #     """
+    #     Adds a surface to be printed in the 3D rendering.
+    #
+    #     :param Surface: Serface's corner cordinates. [X,Y,Z].
+    #     """
+    #
+    #     tri = TDE.triangalize_surface(self, Surface, False)
+    #     for i in range(len(tri)): self.PrintSurfaceTri = np.vstack((self.PrintSurfaceTri, tri[i]))
+    #     self.UpdateCanves()
+    #
+    # def AddPrintSolid(self, Solid, FlipNormal: list | None = None):
+    #     """
+    #     Adds a solid to be printed in the 3D rendering.
+    #
+    #     :param Solid: Solid's corner cordinates. [X,Y,Z].
+    #     :param FlipNormal: List of weather each of the solid's face's normals are to be flipped or not.
+    #                        Is not needed if the solid is already triangalized.
+    #     """
+    #
+    #     num_surfaces = len(Solid)
+    #     for i in range(num_surfaces):
+    #         if isinstance(FlipNormal, list): # needs triangalized
+    #             tri = TDE.triangalize_surface(self, Solid[i], FlipNormal[i])
+    #             for j in range(len(tri)): self.PrintSolidTri = np.vstack((self.PrintSolidTri, [tri[j]]))
+    #         else: # already triangalized
+    #             self.PrintSolidTri = np.vstack((self.PrintSolidTri, [Solid[i]]))
 
     def _scrool_down(self, event):
         """
@@ -1108,7 +1078,7 @@ class MainWindow(tk.Frame):
         tri_color = TDE.illumination(self, solid_tri_normals, len(surf_tri))
 
         # combing the surfice tri and the solid tri into one list
-        for i in range(len(surf_tri)): solid_tri = np.append(solid_tri, surf_tri[i], axis=0)
+        for i in range(len(surf_tri)): solid_tri = np.append(solid_tri, [surf_tri[i]], axis=0)
         tri = solid_tri
 
         # transforming all the cordinates to the local cordinate system based on the camera.
