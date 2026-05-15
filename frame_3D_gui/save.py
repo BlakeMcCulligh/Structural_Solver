@@ -1,5 +1,5 @@
 """
-Handels saving of 3D frames and results
+Handles saving of 3D frames and results
 """
 
 from tkinter import filedialog

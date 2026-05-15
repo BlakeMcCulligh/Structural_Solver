@@ -1,6 +1,6 @@
 """
 Holds the object that stores all the 3D frame's data
-and handels distributing data when a new part of the frame is added or edited.
+and handles distributing data when a new part of the frame is added or edited.
 """
 
 import numpy as np
@@ -39,7 +39,7 @@ class Data:
         Adds nodes to the frame.
 
         :param Window: Object storing the main window.
-        :param Nodes: List of node cordinates to be added to the frame.
+        :param Nodes: List of node coordinates to be added to the frame.
         :param AddToTables: If the nodes are to be added to the input table.
         :param AddToDisplay: If the nodes are to be added to the 3D display.
         """
@@ -62,16 +62,16 @@ class Data:
             Nodes = np.array(Nodes)
             for i in range(len(Nodes[0])):
                 #Window.AddPrintNode(Nodes[:, i])
-                Window.DisplayData.AddNode(Nodes[:, i])
+                Window.DisplayData.add_node(Nodes[:, i])
 
         _reset_solutions(Window)
 
     def EditNode(self, Window, NewNode, Index, EditTable, EditDisplay, RowID):
         """
-        Edits the cordanites of a node in the frame.
+        Edits the coordinates of a node in the frame.
 
         :param Window: Object storing the main window.
-        :param NewNode: New coordanits for the node.
+        :param NewNode: New coordinates for the node.
         :param Index: Index of the node to edit.
         :param EditTable: If the input Tables are to be edited.
         :param EditDisplay: If the 3D display is to be edited.
@@ -92,22 +92,22 @@ class Data:
             Window.DisplayData.Members = []
             Members = np.array(self.Members)
             for i in range(len(self.Members[0])):
-                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int))
+                Window.DisplayData.add_member(self.Nodes, Members[[0, 1], i].astype(int))
 
             # updating supports
             Window.DisplayData.supports = []
             Supports = np.array(self.Supports)
             for i in range(len(self.Supports[0])):
-                Window.DisplayData.AddSupports(self.Nodes, Supports[:,i])
+                Window.DisplayData.add_supports(self.Nodes, Supports[:, i])
 
-            Window.DisplayData.ConvertToPrint()
-            Window.UpdateCanves()
+            Window.DisplayData.convert_to_print()
+            Window.update_canvas()
 
         _reset_solutions(Window)
 
     def AddMaterials(self, Window, Material, AddToTables: bool, AddToDisplay: bool):
         """
-        Adds naterials to the frame.
+        Adds materials to the frame.
 
         :param Window: Object storing the main window.
         :param Material: list of materials to be Added to the frame.
@@ -179,7 +179,7 @@ class Data:
             Members = np.array(Members)
             for i in range(len(Members[0])):
                 #Window.AddPrintLine(Members[[0, 1], i])
-                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int))
+                Window.DisplayData.add_member(self.Nodes, Members[[0, 1], i].astype(int))
 
         _reset_solutions(Window)
 
@@ -205,8 +205,8 @@ class Data:
 
         if EditDisplay:
             Window.DisplayData.Member[Index] = NewMembers[0, 1]
-            Window.DisplayData.ConvertToPrint()
-            Window.UpdateCanves()
+            Window.DisplayData.convert_to_print()
+            Window.update_canvas()
 
         _reset_solutions(Window)
 
@@ -237,8 +237,8 @@ class Data:
                 for j in range(7):
                     sup.append(Supports[j][i])
                 print(sup)
-                Window.DisplayData.AddSupports(self.Nodes, sup)
-            Window.UpdateCanves()
+                Window.DisplayData.add_supports(self.Nodes, sup)
+            Window.update_canvas()
 
         _reset_solutions(Window)
 
@@ -268,8 +268,8 @@ class Data:
             location = [self.Nodes[0][int(sup[0])], self.Nodes[1][int(sup[0])], self.Nodes[2][int(sup[0])]]
             supports = sup[1:7]
             Window.DisplayData.supports[Index] = [location, supports]
-            Window.DisplayData.ConvertToPrint()
-            Window.UpdateCanves()
+            Window.DisplayData.convert_to_print()
+            Window.update_canvas()
 
         _reset_solutions(Window)
 

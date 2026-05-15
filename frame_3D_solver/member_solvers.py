@@ -26,33 +26,33 @@ def segment_member(members: np.ndarray, members_L: np.ndarray, members_cross_sec
     :param members_cross_section_props: ndarray. [A, Iy, Iz, J]
     :param materials: list. [E, G, nu, rho, fy]
     :param point_loads: list. Point loads applied to each member.
-                        shape: (# members, # Casses, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
+                        shape: (# members, # Cases, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
     :param dist_loads: list. Distributed loads applied to each member.
-                       shape: (# members, # Casses, varys,
+                       shape: (# members, # Cases, varys,
                        # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
     :param f_array: ndarray. Array of the local forces acting at the ends of the members.
-                    shape: (# casses, # members, 12)
-    :param fer_array: ndarray. local fixed end reaction vector for the members. shape: (# members, # Casses, 12, 1)
-    :param d_array: ndarray. Array of the local end deflections for each member. shape: (# casses, # members, 12)
+                    shape: (# Cases, # members, 12)
+    :param fer_array: ndarray. local fixed end reaction vector for the members. shape: (# members, # Cases, 12, 1)
+    :param d_array: ndarray. Array of the local end deflections for each member. shape: (# Cases, # members, 12)
     :param num_m: Number of members.
-    :param num_c: Number of load casses.
+    :param num_c: Number of load Cases.
     :return:
         seg: list. Holds basic data to do with the segment.
-             shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+             shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
         seg_internal_loads: list. Holds the end reaction forces of each segment.
-                            shape: (# Members, # Casses, # Segments: varys, 3, 2: (P, M))
+                            shape: (# Members, # Cases, # Segments: varys, 3, 2: (P, M))
         seg_dist_loads: list. Holds the distributed loads on the segment.
-                        shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-        seg_thata: list. Holds the slope at the start of the segment.
-                   shape: (# Members, # Casses, # Segments: varys, 3)
+                        shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+        seg_theta: list. Holds the slope at the start of the segment.
+                   shape: (# Members, # Cases, # Segments: varys, 3)
         seg_delta: list. Holds the deflection at the start of the segment.
-                   shape: (# Members, # Casses, # Segments: varys, 3)
+                   shape: (# Members, # Cases, # Segments: varys, 3)
     """
 
     seg = []
     seg_internal_loads = []
     seg_dist_loads = []
-    seg_thata = []
+    seg_theta = []
     seg_delta = []
 
     for m_index in range(num_m):
@@ -60,19 +60,19 @@ def segment_member(members: np.ndarray, members_L: np.ndarray, members_cross_sec
         seg_sub = []
         seg_sub_internal_loads = []
         seg_sub_dist_loads = []
-        seg_sub_thata = []
+        seg_sub_theta = []
         seg_sub_delta = []
 
         for c_index in range(num_c):
 
             # Create a list of discontinuity locations
-            disconts = [0, float(members_L[m_index])]
+            discontinuities = [0, float(members_L[m_index])]
             for load in point_loads[m_index][c_index]:
-                disconts.append(load[0])
+                discontinuities.append(load[0])
             for load in dist_loads[m_index][c_index]:
-                disconts.append(load[0])  # Distributed load start locations
-                disconts.append(load[1])  # Distributed load end locations
-            disconts = sorted(set(disconts)) # Sort the list and eliminate duplicate values
+                discontinuities.append(load[0])  # Distributed load start locations
+                discontinuities.append(load[1])  # Distributed load end locations
+            discontinuities = sorted(set(discontinuities)) # Sort the list and eliminate duplicate values
 
             E = materials[members[m_index,2].astype(int)][0]
             A = members_cross_section_props[m_index][0]
@@ -87,10 +87,10 @@ def segment_member(members: np.ndarray, members_L: np.ndarray, members_cross_sec
             seg_EIy = []
             seg_EA = []
 
-            for index in range(len(disconts)-1):
+            for index in range(len(discontinuities) - 1):
 
-                seg_x1.append(disconts[index])
-                seg_x2.append(disconts[index+1])
+                seg_x1.append(discontinuities[index])
+                seg_x2.append(discontinuities[index + 1])
                 seg_EIz.append(E * Iz)
                 seg_EIy.append(E * Iy)
                 seg_EA.append(E * A)
@@ -268,48 +268,48 @@ def segment_member(members: np.ndarray, members_L: np.ndarray, members_cross_sec
             seg_sub.append([seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
             seg_sub_internal_loads.append([seg_internal_load_x, seg_internal_load_y, seg_internal_load_z]) # [P1, T1], [Vy1, My1], [Vz1, Mz1]
             seg_sub_dist_loads.append([seg_dist_load_x, seg_dist_load_y, seg_dist_load_z]) # [wx1, wx2], [wy1, wy2], [wz1, wz2]
-            seg_sub_thata.append([seg_thetaY1, seg_thetaZ1])
+            seg_sub_theta.append([seg_thetaY1, seg_thetaZ1])
             seg_sub_delta.append([seg_deltaX1, seg_deltaY1, seg_deltaZ1])
 
         seg.append(seg_sub)
         seg_internal_loads.append(seg_sub_internal_loads)
         seg_dist_loads.append(seg_sub_dist_loads)
-        seg_thata.append(seg_sub_thata)
+        seg_theta.append(seg_sub_theta)
         seg_delta.append(seg_sub_delta)
 
-    return seg, seg_internal_loads, seg_dist_loads, seg_thata, seg_delta
+    return seg, seg_internal_loads, seg_dist_loads, seg_theta, seg_delta
 
-def _extrem_finder(casses: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
+def _extreme_finder(Cases: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
                    abs_function: callable, abs_function_direction: str, poi_function: callable, direction: int,
-                   sign: int | None = None, combo_indexs: list | None = None):
+                   sign: int | None = None, combo_indices: list | None = None):
     """
-    Finds the most extrem value and governing load case for the given member and direction.
+    Finds the most extreme value and governing load case for the given member and direction.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                               shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                               shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                           shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
+                           shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
     :param abs_function: callable. Finds the min or max of a list.
     :param abs_function_direction: String. Is the min or the max being found. ("min", "max")
     :param poi_function: callable. Returns a list of values that could be the maximum or minimum.
-    :param direction: int. Direction to find the extrem for. (0=x, 1=y, 2=z)
-    :param sign: int. Some function require subtractions insted of additions for cirten directions
+    :param direction: int. Direction to find the extreme for. (0=x, 1=y, 2=z)
+    :param sign: int. Some function require subtractions instead of additions for certain directions
                  so passing a -1 converts them to subtraction.
-    :param combo_indexs: list. Indeces of combos to be checked.
+    :param combo_indices: list. Indices of combos to be checked.
     :return: Extreme Value, Governing Load Case
     """
 
-    if combo_indexs is None: combo_indexs = casses
+    if combo_indices is None: combo_indices = Cases
 
     global_, governing_combo = None, None
 
     seg, seg_internal_loads, seg_dist_loads = seg[m_index], seg_internal_loads[m_index], seg_dist_loads[m_index]
 
-    for combo_index in combo_indexs:
+    for combo_index in combo_indices:
         combo_index = int(combo_index)
         abs_ = []
 
@@ -340,18 +340,18 @@ def _extrem_finder(casses: list, m_index: int, seg: list, seg_internal_loads: li
 def shear(x: float, m_index: int, combo_index: int, members_L: np.ndarray,
           seg: list, seg_internal_loads: list, seg_dist_loads: list):
     """
-    Findes the shear at location x.
+    Finds the shear at location x.
 
-    :param x: float. Loaction to find the shear at.
+    :param x: float. Location to find the shear at.
     :param m_index: int. Index of the member to find values for.
     :param combo_index: int. Load case to find the shear for.
     :param members_L: ndarray. length of each member.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                               shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                               shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                           shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
+                           shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
     :return: Shear Y, Shear X
     """
 
@@ -388,14 +388,14 @@ def shear(x: float, m_index: int, combo_index: int, members_L: np.ndarray,
 
     return 0, 0
 
-def _shear_loc_of_intrest(w1: float, w2: float, L: float):
+def _shear_loc_of_interest(w1: float, w2: float, L: float):
     """
-    Returns the shear location of intrest for the segment.
+    Returns the shear location of interest for the segment.
 
     :param w1: float. Distributed load at the start of the segment.
     :param w2: float. Distributed load at the end of the segment.
     :param L: float. Length of the segment.
-    :return: x: float. Posible location of extreme shear.
+    :return: x: float. possible location of extreme shear.
     """
 
     if w1 - w2 == 0: x1 = 0
@@ -413,58 +413,58 @@ def _seg_V_POI(w1: float, w2: float, V1: float, M_1: float, L: float, sign):
     :param M_1: float. Moment at the start of the segment.
     :param L: float. Length of the segment.
     :param sign: NOT USED
-    :return: list of posible extreme shears.
+    :return: list of possible extreme shears.
     """
 
-    x = _shear_loc_of_intrest(w1, w2, L)
+    x = _shear_loc_of_interest(w1, w2, L)
     shear1 = V1 + w1 * x + x ** 2 * (-w1 + w2) / (2 * L)
     shear2 = V1
     shear3 = V1 + w1 * L + L ** 2 * (-w1 + w2) / (2 * L)
     return [shear1, shear2, shear3]
 
-def max_shear(casses, m_index, seg, seg_internal_loads, seg_dist_loads, combo_indexs = None):
+def max_shear(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, combo_indices = None):
     """
     Finds the maximum shear for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                               shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                               shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                           shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param combo_indexs: int. Load case to find the shear for. OPTIONAL
+                           shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param combo_indices: int. Load case to find the shear for. OPTIONAL
     :return: Shear Y, Shear Z, Governing Case Y, Governing Case Z
     """
 
-    Y, yC = _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max",
-                           _seg_V_POI, 1, combo_indexs=combo_indexs)
-    Z, zC = _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max",
-                           _seg_V_POI, 2, combo_indexs=combo_indexs)
+    Y, yC = _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max", _seg_V_POI, 1,
+                            combo_indices=combo_indices)
+    Z, zC = _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max", _seg_V_POI, 2,
+                            combo_indices=combo_indices)
 
     return Y, Z, yC, zC
 
-def min_shear(casses, m_index, seg, seg_internal_loads, seg_dist_loads, combo_indexs = None):
+def min_shear(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, combo_indices = None):
     """
     Finds the minimum shear for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param combo_indexs: int. Load case to find the shear for. OPTIONAL
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param combo_indices: int. Load case to find the shear for. OPTIONAL
     :return: Shear Y, Shear Z, Governing Case Y, Governing Case Z
     """
 
-    Y, yC = _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min",
-                           _seg_V_POI, 1, combo_indexs=combo_indexs)
-    Z, zC = _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min",
-                           _seg_V_POI, 2, combo_indexs=combo_indexs)
+    Y, yC = _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min", _seg_V_POI, 1,
+                            combo_indices=combo_indices)
+    Z, zC = _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min", _seg_V_POI, 2,
+                            combo_indices=combo_indices)
 
     return Y, Z, yC, zC
 
@@ -498,11 +498,11 @@ def moment(x: float, m_index: int, combo_index: int, members_L: np.ndarray,
     :param combo_index: int. Index of the load case.
     :param members_L: ndarray. length of each member.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                               shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                               shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                           shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
+                           shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
     :return: Moment Y, Moment Z
     """
 
@@ -531,7 +531,7 @@ def moment(x: float, m_index: int, combo_index: int, members_L: np.ndarray,
         return MY, MZ
     return 0, 0
 
-def _moment_loc_of_interist(w1: float, w2: float, V1: float, L: float):
+def _moment_loc_of_interest(w1: float, w2: float, V1: float, L: float):
     """
     Finds points where the moment could be at its maximum or minimum.
 
@@ -573,61 +573,61 @@ def _seg_M_POI(w1: float, w2: float, V1: float, M_1: float, L: float, sign: int)
     :param M_1: float. Moment at the start of the segment.
     :param L: float. Length of the segment.
     :param sign: int. Used for converting values to negative.
-    :return: list of posible extreme moments.
+    :return: list of possible extreme moments.
     """
 
-    x1, x2 = _moment_loc_of_interist(w1, w2, V1, L)
+    x1, x2 = _moment_loc_of_interest(w1, w2, V1, L)
     M1 = _moment_calc(M_1, V1, w1, w2, L, x1, sign)
     M2 = _moment_calc(M_1, V1, w1, w2, L, x2, sign)
     M3 = _moment_calc(M_1, V1, w1, w2, L, 0, sign)
     M4 = _moment_calc(M_1, V1, w1, w2, L, L, sign)
     return [M1, M2, M3, M4]
 
-def max_moment(casses: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
-               combo_indexs: int | None = None):
+def max_moment(Cases: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
+               combo_indices: int | None = None):
     """
     Finds the maximum moment for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param combo_indexs: int. Load case to find the moment for. OPTIONAL
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param combo_indices: int. Load case to find the moment for. OPTIONAL
     :return: Moment Y, Moment Z, Governing Case Y, Governing Case Z
     """
 
-    Y, yC = _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max",
-                           _seg_M_POI, 1, sign=-1, combo_indexs= combo_indexs)
-    Z, zC = _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max",
-                           _seg_M_POI, 2, sign=1, combo_indexs=combo_indexs)
+    Y, yC = _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max", _seg_M_POI, 1, sign=-1,
+                            combo_indices=combo_indices)
+    Z, zC = _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max", _seg_M_POI, 2, sign=1,
+                            combo_indices=combo_indices)
 
     return Y, Z, yC, zC
 
-def min_moment(casses: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
-               combo_indexs: int | None = None):
+def min_moment(Cases: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
+               combo_indices: int | None = None):
     """
     Finds the minimum moment for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param combo_indexs: int. Load case to find the moment for. OPTIONAL
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param combo_indices: int. Load case to find the moment for. OPTIONAL
     :return: Moment Y, Moment Z, Governing Case Y, Governing Case Z
     """
 
-    Y, yC = _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min",
-                           _seg_M_POI, 1, sign=-1, combo_indexs=combo_indexs)
-    Z, zC = _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min",
-                           _seg_M_POI, 2, sign=1, combo_indexs=combo_indexs)
+    Y, yC = _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min", _seg_M_POI, 1, sign=-1,
+                            combo_indices=combo_indices)
+    Z, zC = _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min", _seg_M_POI, 2, sign=1,
+                            combo_indices=combo_indices)
 
     return Y, Z, yC, zC
 
@@ -644,9 +644,9 @@ def torque(x: float, m_index: int, combo_index: int, members_L: np.ndarray, seg:
     :param combo_index: int. Index of the load case.
     :param members_L: ndarray. length of each member.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                               shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                               shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :return: Torque
     """
 
@@ -673,48 +673,48 @@ def _seg_T_POI(w1, w2, P1, M1, L, sign):
     :param M1: Moment at the start of the member.
     :param L: Not Used
     :param sign: Not Used
-    :return: List of posible max or min torques
+    :return: List of possible max or min torques
     """
 
     return [M1]
 
-def max_tourque(casses, m_index, seg, seg_internal_loads, seg_dist_loads, combo_indexs = None):
+def max_torque(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, combo_indices = None):
     """
     Finds the maximum torque for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                               shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                               shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                           shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param combo_indexs: int. Load case to find the torque for. OPTIONAL
+                           shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param combo_indices: int. Load case to find the torque for. OPTIONAL
     :return: Torque, Governing Case
     """
 
-    return _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max",
-                          _seg_T_POI, 0, combo_indexs=combo_indexs)
+    return _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max", _seg_T_POI, 0,
+                           combo_indices=combo_indices)
 
-def min_tourque(casses, m_index, seg, seg_internal_loads, seg_dist_loads, combo_indexs = None):
+def min_torque(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, combo_indices = None):
     """
     Finds the minimum torque for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param combo_indexs: int. Load case to find the torque for. OPTIONAL
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param combo_indices: int. Load case to find the torque for. OPTIONAL
     :return: Torque, Governing Case
     """
 
-    return _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min",
-                          _seg_T_POI, 0, combo_indexs=combo_indexs)
+    return _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min", _seg_T_POI, 0,
+                           combo_indices=combo_indices)
 
 
 """ --------------- AXIAL --------------- """
@@ -743,11 +743,11 @@ def axial(x: float, m_index: int, combo_index: int, members_L: np.ndarray,
     :param combo_index: int. Index of the load case.
     :param members_L: ndarray. length of each member.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
     :return: Axial Force
     """
 
@@ -768,7 +768,7 @@ def axial(x: float, m_index: int, combo_index: int, members_L: np.ndarray,
                            (seg[1][i] - seg[0][i]), (x - seg[0][i]))
     return 0
 
-def _axial_loc_of_interist(p1: float, p2: float, L: float):
+def _axial_loc_of_interest(p1: float, p2: float, L: float):
     """
     Finds points where the axial force could be at its maximum or minimum.
 
@@ -796,54 +796,54 @@ def _seg_P_POI(w1: float, w2: float, P1: float, M1: float, L: float, sign: int):
     :param M1: float. Moment at the start of the segment.
     :param L: float. Length of the segment.
     :param sign: int. Used for converting values to negative.
-    :return: list of posible extreme axial forces.
+    :return: list of possible extreme axial forces.
     """
 
-    x1 = _axial_loc_of_interist(w1, w2, L)
+    x1 = _axial_loc_of_interest(w1, w2, L)
     P_1 = _axial_calc(w1, w2, P1, L, x1)
     P_2 = _axial_calc(w1, w2, P1, L, 0)
     P_3 = _axial_calc(w1, w2, P1, L, L)
     return [P_1, P_2, P_3]
 
-def max_axial(casses: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
-              combo_indexs: int | None = None):
+def max_axial(Cases: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
+              combo_indices: int | None = None):
     """
     Finds the maximum axial force for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param combo_indexs: int. Load case to find the axial force for. OPTIONAL
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param combo_indices: int. Load case to find the axial force for. OPTIONAL
     :return: Axial Force, Governing Case
     """
 
-    return _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max",
-                          _seg_P_POI, 0, combo_indexs)
+    return _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, max, "max", _seg_P_POI, 0,
+                           combo_indices)
 
-def min_axial(casses: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
-              combo_indexs: int | None = None):
+def min_axial(Cases: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
+              combo_indices: int | None = None):
     """
     Finds the minimum axial force for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param combo_indexs: int. Load case to find the axial force for. OPTIONAL
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param combo_indices: int. Load case to find the axial force for. OPTIONAL
     :return: Axial Force, Governing Case
     """
 
-    return _extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min",
-                          _seg_P_POI, 0, combo_indexs)
+    return _extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, min, "min", _seg_P_POI, 0,
+                           combo_indices)
 
 
 """ --------------- DEFLECTION --------------- """
@@ -854,13 +854,13 @@ def _axial_deflection_calc(delta_x1: float, EA: float, P1: float, w1: float, w2:
     Calculates the axial deflection at location x.
 
     :param delta_x1: float. X direction deflection at the start of the segment.
-    :param EA: float. Youngs Modulus times Area for the segment.
+    :param EA: float. Young's Modulus times Area for the segment.
     :param P1: float. Axial force at the start of the segment.
     :param w1: float. Distributed axial force at the start of the segment.
-    :param w2: float. Fistributed axial force at the end of the segment.
+    :param w2: float. Distributed axial force at the end of the segment.
     :param L: float. Length of the segment.
     :param x: float. Location to find the axial deflection for.
-    :return: deflction X
+    :return: deflection X
     """
 
     return delta_x1 - 1/EA*(P1 * x + w1 * x ** 2 / 2 + (w2 - w1) * x ** 3 / (6 * L))
@@ -873,7 +873,7 @@ def _deflection_calc(delta1: float, theta1: float, V1: float, EI: float, w1: flo
     :param delta1: float. Deflection at the start of the segment.
     :param theta1: float. Slope at the start of the segment.
     :param V1: float. Shear at the start of the segment.
-    :param EI: float. Youngs Modulus times Moment of Ineta for the segment.
+    :param EI: float. Young's Modulus times Moment of Ineta for the segment.
     :param w1: float. Distributed load at the start of the segment.
     :param w2: float. Distributed load at the end of the segment.
     :param M1: float. Moment at the start of the segment.
@@ -887,7 +887,7 @@ def _deflection_calc(delta1: float, theta1: float, V1: float, EI: float, w1: flo
             + sign*x**5*(sign* (-w1) + sign*w2)/(120 * EI * L))
 
 def deflection(x: float, m_index: int, combo_index: int, members_L: np.ndarray, seg: list, seg_internal_loads: list,
-               seg_dist_loads: list, seg_thata: list, seg_delta: list):
+               seg_dist_loads: list, seg_theta: list, seg_delta: list):
     """
     Finds the deflection of the member at location x.
 
@@ -896,22 +896,22 @@ def deflection(x: float, m_index: int, combo_index: int, members_L: np.ndarray, 
     :param combo_index: int. Load case to find the deflection for.
     :param members_L: ndarray. length of each member.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param seg_thata: list. Holds the slope at the start of the segment.
-               shape: (# Members, # Casses, # Segments: varys, 3)
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param seg_theta: list. Holds the slope at the start of the segment.
+               shape: (# Members, # Cases, # Segments: varys, 3)
     :param seg_delta: list. Holds the deflection at the start of the segment.
-               shape: (# Members, # Casses, # Segments: varys, 3)
+               shape: (# Members, # Cases, # Segments: varys, 3)
     :return: Deflection X, Deflection Y, Deflection Z
     """
 
     seg = seg[m_index][combo_index]
     seg_internal_loads = seg_internal_loads[m_index][combo_index]
     seg_dist_loads = seg_dist_loads[m_index][combo_index]
-    seg_thata = seg_thata[m_index][combo_index]
+    seg_theta = seg_theta[m_index][combo_index]
     seg_delta = seg_delta[m_index][combo_index]
 
     for i in range(len(seg[0])):
@@ -921,11 +921,11 @@ def deflection(x: float, m_index: int, combo_index: int, members_L: np.ndarray, 
                                         seg_dist_loads[0][i][0], seg_dist_loads[0][i][1],
                                         (seg[1][i] - seg[0][i]), (x - seg[0][i]))
 
-            DY = _deflection_calc(seg_delta[1][i], seg_thata[0][i], seg_internal_loads[1][i][0], seg[3][i],
+            DY = _deflection_calc(seg_delta[1][i], seg_theta[0][i], seg_internal_loads[1][i][0], seg[3][i],
                                   seg_dist_loads[1][i][0], seg_dist_loads[1][i][1], seg_internal_loads[1][i][1],
                                   (seg[1][i] - seg[0][i]), -1, (x - seg[0][i]))
 
-            DZ = _deflection_calc(seg_delta[2][i], seg_thata[1][i], seg_internal_loads[2][i][0], seg[2][i],
+            DZ = _deflection_calc(seg_delta[2][i], seg_theta[1][i], seg_internal_loads[2][i][0], seg[2][i],
                                   seg_dist_loads[2][i][0], seg_dist_loads[2][i][1], seg_internal_loads[2][i][1],
                                   (seg[1][i] - seg[0][i]), 1, (x - seg[0][i]))
             return [DX, DY, DZ]
@@ -936,56 +936,56 @@ def deflection(x: float, m_index: int, combo_index: int, members_L: np.ndarray, 
         DX = _axial_deflection_calc(seg_delta[0][i], seg[4][i], seg_internal_loads[0][i][0], seg_dist_loads[0][i][0],
                                     seg_dist_loads[0][i][1], (seg[1][i] - seg[0][i]), (x - seg[0][i]))
 
-        DY = _deflection_calc(seg_delta[1][i], seg_thata[0][i], seg_internal_loads[1][i][0], seg[3][i],
+        DY = _deflection_calc(seg_delta[1][i], seg_theta[0][i], seg_internal_loads[1][i][0], seg[3][i],
                               seg_dist_loads[1][i][0], seg_dist_loads[1][i][1], seg_internal_loads[1][i][1],
                               (seg[1][i] - seg[0][i]), -1, (x - seg[0][i]))
 
-        DZ = _deflection_calc(seg_delta[2][i], seg_thata[1][i], seg_internal_loads[2][i][0], seg[2][i],
+        DZ = _deflection_calc(seg_delta[2][i], seg_theta[1][i], seg_internal_loads[2][i][0], seg[2][i],
                               seg_dist_loads[2][i][0], seg_dist_loads[2][i][1], seg_internal_loads[2][i][1],
                               (seg[1][i] - seg[0][i]), 1, (x - seg[0][i]))
         return [DX, DY, DZ]
 
     return [0,0,0]
 
-def _difflection_extrem_finder(casses: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
-                               seg_thata: list, seg_delta: list, abs_function_direction: str,
-                               members_L: np.ndarray, combo_indexs: list | None = None):
+def _deflection_extreme_finder(Cases: list, m_index: int, seg: list, seg_internal_loads: list, seg_dist_loads: list,
+                               seg_theta: list, seg_delta: list, abs_function_direction: str,
+                               members_L: np.ndarray, combo_indices: list | None = None):
     """
-    Finds the most extrem value and governing load case for the given member and direction.
+    Finds the most extreme value and governing load case for the given member and direction.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                               shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                               shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                           shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param seg_thata: list. Holds the slope at the start of the segment.
-                      shape: (# Members, # Casses, # Segments: varys, 3)
+                           shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param seg_theta: list. Holds the slope at the start of the segment.
+                      shape: (# Members, # Cases, # Segments: varys, 3)
     :param seg_delta: list. Holds the deflection at the start of the segment.
-                      shape: (# Members, # Casses, # Segments: varys, 3)
+                      shape: (# Members, # Cases, # Segments: varys, 3)
     :param abs_function_direction: String. Is the min or the max being found. ("min", "max")
     :param members_L: ndarray. Length of each member.
-    :param combo_indexs: list. Indeces of combos to be checked.
+    :param combo_indices: list. Indices of combos to be checked.
     :return: Deflection, Governing Casse
     """
 
-    if combo_indexs is None: combo_indexs = casses
+    if combo_indices is None: combo_indices = Cases
 
     global_, governing_combo = [None, None, None], [None, None, None]
 
     L = float(members_L[m_index])
 
-    for comboINDEX in combo_indexs:
+    for comboINDEX in combo_indices:
 
         dmax = deflection(0, m_index, comboINDEX, members_L, seg, seg_internal_loads, seg_dist_loads,
-                          seg_thata, seg_delta)
+                          seg_theta, seg_delta)
 
         for i in range(100):
 
             d = deflection(L * i / 99, m_index, comboINDEX, members_L, seg, seg_internal_loads,
-                           seg_dist_loads, seg_thata, seg_delta)
+                           seg_dist_loads, seg_theta, seg_delta)
 
             for j in range(3):
 
@@ -1021,52 +1021,52 @@ def _difflection_extrem_finder(casses: list, m_index: int, seg: list, seg_intern
 
     return global_, governing_combo
 
-def max_difflection(casses: list, members_L: np.ndarray, m_index: int, seg: list, seg_internal_loads: list,
-                    seg_dist_loads: list, seg_thata: list, seg_delta: list, combo_indexs: list | None = None):
+def max_deflection(Cases: list, members_L: np.ndarray, m_index: int, seg: list, seg_internal_loads: list,
+                    seg_dist_loads: list, seg_theta: list, seg_delta: list, combo_indices: list | None = None):
     """
     Finds the maximum deflection for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param members_L: ndarray. Length of each member.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                               shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                               shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                           shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param seg_thata: list. Holds the slope at the start of the segment.
-                      shape: (# Members, # Casses, # Segments: varys, 3)
+                           shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param seg_theta: list. Holds the slope at the start of the segment.
+                      shape: (# Members, # Cases, # Segments: varys, 3)
     :param seg_delta: list. Holds the deflection at the start of the segment.
-                      shape: (# Members, # Casses, # Segments: varys, 3)
-    :param combo_indexs: list. Load case to find the axial force for. OPTIONAL
+                      shape: (# Members, # Cases, # Segments: varys, 3)
+    :param combo_indices: list. Load case to find the axial force for. OPTIONAL
     :return: Deflection, Governing Casse
     """
 
-    return _difflection_extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, seg_thata,
-                                      seg_delta, "max", members_L, combo_indexs)
+    return _deflection_extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, seg_theta, seg_delta,
+                                      "max", members_L, combo_indices)
 
-def min_difflection(casses: list, members_L: np.ndarray, m_index: int, seg: list, seg_internal_loads: list,
-                    seg_dist_loads: list, seg_thata: list, seg_delta: list, combo_indexs: list | None = None):
+def min_deflection(Cases: list, members_L: np.ndarray, m_index: int, seg: list, seg_internal_loads: list,
+                    seg_dist_loads: list, seg_theta: list, seg_delta: list, combo_indices: list | None = None):
     """
     Finds the minimum deflection for the member and its governing load case.
 
-    :param casses: list. Load Case Indexes.
+    :param Cases: list. Load Case Indexes.
     :param members_L: ndarray. Length of each member.
     :param m_index: int. Index of the member to find values for.
     :param seg: list. Holds basic data to do with the segment.
-                shape: (# Members, # Casses, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
+                shape: (# Members, # Cases, # segments: varys, 5: [seg_x1, seg_x2, seg_EIz, seg_EIy, seg_EA])
     :param seg_internal_loads: list. Holds the end reaction forces of each segment.
-                                shape: (# Members, # Casses, # Segments: varys, 3, 2: [P, M])
+                                shape: (# Members, # Cases, # Segments: varys, 3, 2: [P, M])
     :param seg_dist_loads: list. Holds the distributed loads on the segment.
-                            shape: (# Members, # Casses, # segments: varys, 3, 2: (w1, w2))
-    :param seg_thata: list. Holds the slope at the start of the segment.
-                        shape: (# Members, # Casses, # Segments: varys, 3)
+                            shape: (# Members, # Cases, # segments: varys, 3, 2: (w1, w2))
+    :param seg_theta: list. Holds the slope at the start of the segment.
+                        shape: (# Members, # Cases, # Segments: varys, 3)
     :param seg_delta: list. Holds the deflection at the start of the segment.
-                        shape: (# Members, # Casses, # Segments: varys, 3)
-    :param combo_indexs: list. Load case to find the axial force for. OPTIONAL
+                        shape: (# Members, # Cases, # Segments: varys, 3)
+    :param combo_indices: list. Load case to find the axial force for. OPTIONAL
     :return: Deflection, Governing Casse
     """
 
-    return _difflection_extrem_finder(casses, m_index, seg, seg_internal_loads, seg_dist_loads, seg_thata, seg_delta,
-                                     "min", members_L, combo_indexs)
+    return _deflection_extreme_finder(Cases, m_index, seg, seg_internal_loads, seg_dist_loads, seg_theta, seg_delta,
+                                      "min", members_L, combo_indices)

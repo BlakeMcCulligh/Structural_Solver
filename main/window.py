@@ -43,7 +43,7 @@ class MainWindow(tk.Frame):
 
     def _center_window(self):
         """
-        Centers the window on the screen and sets its dimentions.
+        Centers the window on the screen and sets its dimensions.
         """
 
         WIDTH = 1000
@@ -62,7 +62,7 @@ class MainWindow(tk.Frame):
 
     def _create_top_menu(self):
         """
-        Creates the top menu with all the dropdowns for the window and handels all of thair buttons
+        Creates the top menu with all the dropdowns for the window and handles all of their buttons
         """
 
         menubar = tk.Menu(self.Root)
@@ -129,7 +129,7 @@ def select_file_gui(file_types):
     """
     Lets the user select a file of the type: file_types.
 
-    :param file_types: List of file types that can be opend.
+    :param file_types: List of file types that can be opened.
     """
 
     file_path = filedialog.askopenfilename(title="Select a file", filetypes= file_types)

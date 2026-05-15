@@ -88,7 +88,7 @@ class Frame2D:
 
     def applyRelecesTOLocalStiffnessMatrices(self):
         """
-        Applies the releces to the local stiffness matrices.
+        Applies the releases to the local stiffness matrices.
         """
         for MemberReleases in self.releases:
             index = MemberReleases[0]

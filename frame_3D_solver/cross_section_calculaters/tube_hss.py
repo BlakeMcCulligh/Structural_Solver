@@ -1,5 +1,5 @@
 """
-Holds functiones to calculate properties of tube-HSS cross-sections.
+Holds functions to calculate properties of tube-HSS cross-sections.
 """
 
 from math import pi
@@ -27,11 +27,11 @@ def get_A(d: float, t: float) -> float:
 
 def get_I(d: float, t: float) -> float:
     """
-    Calculates the moment of inerta of a tube-HSS cross-section.
+    Calculates the moment of inertia of a tube-HSS cross-section.
 
     :param d: float. Diameter
     :param t: float. Thickness
-    :return: float. Moment of Inerta
+    :return: float. Moment of Inertia
     """
 
     return pi*(d**4-(d-2*t)**4)/64

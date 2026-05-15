@@ -1,5 +1,5 @@
 """
-Holds the 3D frame solver object and handels everything to do with the solving of 3D frames.
+Holds the 3D frame solver object and handles everything to do with the solving of 3D frames.
 """
 
 import frame_3D_solver.helper_functions as hf
@@ -18,19 +18,19 @@ __status__ = ""
 
 class Frame3D:
     """
-    Object that handels the solving of a 3D frame.
+    Object that handles the solving of a 3D frame.
     """
     def __init__(self) -> None:
         """
-        Initialises the 3D frame solver object.
+        Initializes the 3D frame solver object.
         """
 
         # general Lists
-        self.casses: np.ndarray | list = []
+        self.cases: np.ndarray | list = []
 
         # Node Lists
         self.nodes_cord: np.ndarray | list = [] # shape: (# Nodes, 3)
-        self.nodes_loads: np.ndarray | list = [] # shape: (# Nodes, # Casses, 6: [Px, Py, Pz, Mx, My, Mz])
+        self.nodes_loads: np.ndarray | list = [] # shape: (# Nodes, # Cases, 6: [Px, Py, Pz, Mx, My, Mz])
         self.nodes_support: np.ndarray | list = [] # shape: (# Nodes, 6)
         self.nodes_dof_unknown: np.ndarray | list = None
         self.nodes_dof_known: np.ndarray | list = None
@@ -44,16 +44,16 @@ class Frame3D:
         self.members_releases = [] # shape: (# Members, 12)
         self.members_dof = [] # shape: (# Members, 12)
         self.members_L: list or np.ndarray = [] # shape: (# Members)
-        self.members_dof_unreleced: list or np.ndarray = []
-        self.members_dof_releced: list or np.ndarray = []
+        self.members_dof_unreleased: list or np.ndarray = []
+        self.members_dof_released: list or np.ndarray = []
         self.members_T: list or np.ndarray = []
 
-        # shape: (# Members, # Casses, 2: [Case Index, 2: [# loads: locations, # loads: [6]]])
+        # shape: (# Members, # Cases, 2: [Case Index, 2: [# loads: locations, # loads: [6]]])
         self.members_point_loads = []
-        # shape: (# Members, # Casses, 2: [Case Index, # Loads:[2: locations,6:loads]])
+        # shape: (# Members, # Cases, 2: [Case Index, # Loads:[2: locations,6:loads]])
         self.members_dist_loads = []
 
-        # preped lists
+        # prepped lists
         self.point_loads = None
         self.dist_loads = None
 
@@ -61,9 +61,9 @@ class Frame3D:
         """
         Adds a node to the frame.
 
-        :param X: float. x coordanite
-        :param Y: float. y coordanite
-        :param Z: float. z coordanite
+        :param X: float. x coordinate
+        :param Y: float. y coordinate
+        :param Z: float. z coordinate
         """
 
         self.nodes_cord.append([X, Y, Z])
@@ -74,11 +74,11 @@ class Frame3D:
         """
         Adds a material to the frame.
 
-        :param E: float. Youngs Modulus
+        :param E: float. Young's Modulus
         :param G: float. Shear Modulus
         :param nu: float. Poisson's Ratio
         :param rho: float. Density
-        :param fy: float. Yeald Strangth
+        :param fy: float. Yield Strength
         """
 
         self.materials.append([E, G, nu, rho, fy])
@@ -94,9 +94,9 @@ class Frame3D:
         :param set_cross_section_props: bool. Whether the member's cross-sections properties should be optimized when
                                         a cross-section optimizer is run.
         :param A: float. Cross-section area.
-        :param Iy: float. Moment of Inerta in the y direction.
-        :param Iz: float. Moment of Inerta in the z direction.
-        :param J: float. Moment of Inerta in the z direction.
+        :param Iy: float. Moment of Inertia in the y direction.
+        :param Iz: float. Moment of Inertia in the z direction.
+        :param J: float. Moment of Inertia in the z direction.
         """
 
         self.members.append([i_node, j_node, material_index, set_cross_section_props])
@@ -105,8 +105,8 @@ class Frame3D:
                                       False, False, False, False, False, False])
         self.members_dof.append([])
         self.members_L.append([])
-        self.members_dof_unreleced.append([])
-        self.members_dof_releced.append([])
+        self.members_dof_unreleased.append([])
+        self.members_dof_released.append([])
         self.members_T.append([])
 
         self.members_point_loads.append([])
@@ -272,9 +272,9 @@ class Frame3D:
 
     def PreAnalysisLinear(self, log: bool = False) -> None:
         """
-        Runs all analysises that can be run befor the optimizer.
+        Runs all analyses that can be run before the optimizer.
 
-        :param log: bool. If sub calculations should be printed to the consel. Used for debuging.
+        :param log: bool. If sub calculations should be printed to the console. Used for debugging.
         """
 
         if log:
@@ -290,7 +290,7 @@ class Frame3D:
 
         self.nodes_dof_unknown, self.nodes_dof_known = hf.part_D(self.nodes_support)
 
-        (self.members_dof, self.members_L, self.members_dof_unreleced, self.members_dof_releced, self.members_T,
+        (self.members_dof, self.members_L, self.members_dof_unreleased, self.members_dof_released, self.members_T,
          self.point_loads, self.dist_loads) = hf.prep_members(self.nodes_cord, self.members, self.members_releases,
                                                               self.members_point_loads, self.members_dist_loads,
                                                               len(self.casses))
@@ -302,8 +302,8 @@ class Frame3D:
             print("nodes_dof_known: ", self.nodes_dof_known)
             print("members-DOF: ", self.members_dof)
             print("members_L: ", self.members_L)
-            print("members_dof_unreleced: ", self.members_dof_unreleced)
-            print("members_dof_releced: ", self.members_dof_releced)
+            print("members_dof_unreleased: ", self.members_dof_unreleased)
+            print("members_dof_released: ", self.members_dof_released)
             print("members_T: ", self.members_T)
             print("point_loads: ", self.point_loads)
             print("dist_loads: ", self.dist_loads)
@@ -312,12 +312,12 @@ class Frame3D:
                        log: bool = False) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
                                               np.ndarray, np.ndarray | None, np.ndarray | None, np.ndarray | None):
         """
-        Runs a linear analysis of the frame. PreAnalysisLinear needs to be run befor this.
+        Runs a linear analysis of the frame. PreAnalysisLinear needs to be run before this.
 
         :param get_weight: bool. If the weight of the members should be calculated
         :param get_reactions: bool. If the reaction should be calculated
         :param get_internal_forces: bool. If the internal forces should be calculated
-        :param log: bool. If sub calculations should be printed to the consel. Used for debuging.
+        :param log: bool. If sub calculations should be printed to the console. Used for debugging.
         :return:
             D: ndarray. Main node deflection array.
             DX: ndarray. Node deflection in the X direction.
@@ -339,14 +339,14 @@ class Frame3D:
         if isinstance(self.members_L, np.ndarray) and isinstance(self.members_T, np.ndarray):
             num_n = len(self.nodes_cord)
             num_m = len(self.members)
-            num_c = len(self.casses)
+            num_c = len(self.cases)
 
             self.members_cross_section_props = np.array(self.members_cross_section_props)
 
             k_local = hf.get_k_local_array(self.materials, self.members, self.members_cross_section_props,
                                            self.members_L, log)
 
-            k11, k12, k21, k22 = hf.member_part_k_array(k_local, self.members_dof_unreleced, self.members_dof_releced,
+            k11, k12, k21, k22 = hf.member_part_k_array(k_local, self.members_dof_unreleased, self.members_dof_released,
                                                         num_m)
             if log:
                 print("k11: ", k11)
@@ -358,8 +358,8 @@ class Frame3D:
             if log:
                 print("fer_unc_ARRAY: ", fer_unc_ARRAY)
 
-            fer1, fer2 = hf.member_part_fer(fer_unc_ARRAY, self.members_dof_unreleced, self.members_dof_releced,
-                                            num_m, num_c)
+            fer1, fer2 = hf.member_part_fer(fer_unc_ARRAY, self.members_dof_unreleased, self.members_dof_released, num_m,
+                                            num_c)
             if log:
                 print("fer1 dim: ", np.shape(fer1))
                 print("fer1: ", fer1)
@@ -388,7 +388,7 @@ class Frame3D:
             K_global = hf.get_K_global(self.members_dof, k_global_members, num_n, num_m)
             if log: print("K_global: ", K_global)
 
-            K11, K12, K21, K22 = hf.partition_K_gloabl(K_global, self.nodes_dof_unknown, self.nodes_dof_known)
+            K11, K12, K21, K22 = hf.partition_K_global(K_global, self.nodes_dof_unknown, self.nodes_dof_known)
             if log:
                 print("K11: ", K11)
                 print("K12: ", K12)
@@ -436,13 +436,13 @@ class Frame3D:
         :param memberGroup: list. list of indices of member groups for non set members to be assigned to.
                             Must be length of non set members.
         :param memberGroupType: list. List of cross-section types for each member group to be assigned.
-                                Must be length of number of member gorups.
+                                Must be length of number of member groups.
         :param lowerBound: list or float. Lower bound on the optimization variables.
                            If list must be length of number of variables.
         :param upperBound: list or float. Upper bound on the optimization variables.
                            If list must be length of number of variables.
         :param costFunction: String. Cost function for optimization stored in a string.
-        :param getWeight: bool. Weather the weighht of all the members is needed for the cost function.
+        :param getWeight: bool. Weather the weight of all the members is needed for the cost function.
         :param getReactions: bool. Weather the reactions are needed for the cost function.
         :param getInternalForces: bool. Weather the internal forces are needed for the cost function.
         :return: scipi optimization_results class: results of the optimization.
@@ -455,14 +455,14 @@ class Frame3D:
 
         hf.chack_inputs(self.members, memberGroup, memberGroupType)
 
-        numVarables = hf.get_num_varables(memberGroupType)
-        if log: print("num_varables: ", numVarables)
+        numVariables = hf.get_num_variables(memberGroupType)
+        if log: print("num_variables: ", numVariables)
 
         self.PreAnalysisLinear(log=log)
 
         constants = [self, costFunction, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
 
-        bounds = hf.get_bounds(lowerBound, upperBound, numVarables)
+        bounds = hf.get_bounds(lowerBound, upperBound, numVariables)
 
         optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants])
 

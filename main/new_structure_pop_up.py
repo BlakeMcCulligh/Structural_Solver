@@ -70,7 +70,7 @@ class NewStructurePopUp:
 
     def _center_window(self, width, height):
         """
-        Centers the window on the screen and its dimentions.
+        Centers the window on the screen and its dimensions.
 
         :param width: Width to make the window.
         :param height: Height to make the window.

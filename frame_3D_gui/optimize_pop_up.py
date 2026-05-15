@@ -1,5 +1,5 @@
 """
-Holds the object that handels everything to do with the optimization pop-up.
+Holds the object that handles everything to do with the optimization pop-up.
 """
 
 import tkinter as tk
@@ -22,7 +22,7 @@ class OptimizationPopUp:
 
     def __init__(self, MainWindow, MainWindowRoot, Data):
         """
-        Initalizes the optimization pop-up object.
+        Initializes the optimization pop-up object.
 
         :param MainWindow: Object storing the main window.
         :param MainWindowRoot: Root of the main window.
@@ -82,10 +82,10 @@ class OptimizationPopUp:
 
     def _set_member_group_input(self, h_title):
         """
-        Initalizes the tables that alows the input of values used to define what member group is applied to each
+        Initializes the tables that allows the input of values used to define what member group is applied to each
         non-cross-section set member.
 
-        :param h_title:  Highet of the title of the window.
+        :param h_title: Highest of the title of the window.
         """
 
         num_not_set_members, indices_not_set_members = get_non_set_members_data(self._data)
@@ -120,7 +120,7 @@ class OptimizationPopUp:
 
     def _edit_cell_member_group_input_table(self, event):
         """
-        Handels the cell editing of the member assignment to groups table.
+        Handles the cell editing of the member assignment to groups table.
 
         :param event: Event object from the double click of a cell.
         """
@@ -175,9 +175,9 @@ class OptimizationPopUp:
 
     def _group_settings_input(self, h_title):
         """
-        Initalizes the tables that alows the input of values used to define the cross-section groups.
+        Initializes the tables that allows the input of values used to define the cross-section groups.
 
-        :param h_title: Highet of the title of the window.
+        :param h_title: Highest of the title of the window.
         """
 
         groups = sorted(set(self._get_data_from_member_group_input()))
@@ -230,7 +230,7 @@ class OptimizationPopUp:
 
     def _edit_cell_group_settings_table(self, event):
         """
-        Handels the cell editing of the member group settings table.
+        Handles the cell editing of the member group settings table.
 
         :param event: Event object from the duble click of a cell.
         """
@@ -307,9 +307,9 @@ class OptimizationPopUp:
 
     def _cost_function_input(self, hTitle):
         """
-        Initalizes and runs everything related to the input of the cost function.
+        Initializes and runs everything related to the input of the cost function.
 
-        :param hTitle: Highet of the title of the window.
+        :param hTitle: Highest of the title of the window.
         """
 
         d_label = tk.Label(self._root_pop_up, text="Cost Function: ", font=('Helvetica', 11))
@@ -320,7 +320,7 @@ class OptimizationPopUp:
             Restricts what can be input into the cost function text box. Ran every time a character is changed.
 
             :param p: Updated string of what is typed in the cross-section text box.
-            :return: Whether the new string is alowed or not (True or False).
+            :return: Whether the new string is allowed or not (True or False).
             """
 
             if p == "":
@@ -400,13 +400,13 @@ class OptimizationPopUp:
         text_area.place(x=0,y=0 )
         text_area.pack()
 
-        string = (" Cost Function Info\n ----- Vaiables -----\n 'DX': Node Deflection in the x direction.\n "
+        string = (" Cost Function Info\n ----- Variables -----\n 'DX': Node Deflection in the x direction.\n "
                   "'DY': Node Deflection in the y direction.\n 'DZ': Node Deflection in the z direction.\n "
                   "'RX': Node Rotation Deflection in the x direction.\n "
                   "'RY': Node Rotation Deflection in the y direction.\n "
                   "'RZ': Node Rotation Deflection in the z direction.\n  "
-                  "All Deflections: Index 1: Load Casses, Index 2: Node.\n \n 'Weight': Weight of the structure.\n "
-                  "'Reactions': Index 1: Load Casses,\n"
+                  "All Deflections: Index 1: Load Cases, Index 2: Node.\n \n 'Weight': Weight of the structure.\n "
+                  "'Reactions': Index 1: Load Cases,\n"
                   "                     Index 2: Node,\n"
                   "                     Index 3: Direction (X, Y, Z, RX, RY, RZ).\n"
                   " 'InternalForces': Index 1: Direction Type (Forces, Moments),\n"
@@ -423,7 +423,7 @@ class OptimizationPopUp:
 
     def _end_pop_up(self):
         """
-        Gets input table, closes the pop-up, and starts the ccross-section optimization.
+        Gets input table, closes the pop-up, and starts the cross-section optimization.
         """
 
         self._root_pop_up.destroy()
@@ -473,10 +473,10 @@ class OptimizationPopUp:
 
 def get_non_set_members_data(d):
     """
-    Gets the number and indeces of what member cross-sections are not set and need to be optimized.
+    Gets the number and indexes of what member cross-sections are not set and need to be optimized.
 
     :param d: Info that defines the frame.
-    :return: Number of non-set members. Indeces of what member are not set.
+    :return: Number of non-set members. Indices of what member are not set.
     """
 
     num = 0

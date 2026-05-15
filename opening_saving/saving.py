@@ -1,5 +1,5 @@
 """
-Saves the results from the Excel import analysises.
+Saves the results from the Excel import analyses.
 """
 
 import numpy as np
@@ -15,15 +15,15 @@ __maintainer__ = "Blake McCulligh"
 __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
-def save_truss_cross_section_optimization_excel(file_path, nodes, members, load_casses, supports, areas, deflections,
+def save_truss_cross_section_optimization_excel(file_path, nodes, members, load_cases, supports, areas, deflections,
                                                 forces, volume):
     """
     Saves the results form a truss cross-section optimization to the provided Excel file.
 
     :param file_path: File path to the Excel file to save to.
     :param nodes: Locations of the nodes of the truss. Shape: (# Nodes, 2)
-    :param members: Indeces of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
-    :param load_casses: Load casses applyed to the truss. Shape: (# Load Cases, # Loads per Case, 4: [x,y,fx,fy] )
+    :param members: Indices of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
+    :param load_cases: Load cases applied to the truss. Shape: (# Load Cases, # Loads per Case, 4: [x,y,fx,fy] )
     :param supports: Nodes that are supported and in what directions. Shape: (# Supported Nodes, 4: [x,y,sx,sy])
     :param areas: Areas of each member. Shape: (# Members)
     :param deflections: Deflections at each node. Shape: (2 * # Nodes * # Load Cases)
@@ -35,18 +35,18 @@ def save_truss_cross_section_optimization_excel(file_path, nodes, members, load_
     members_df = _convert_members_to_df(members, areas, forces)
     supports_df = _convert_supports_to_df(supports)
     volume_df = pd.DataFrame({"Volume": [volume]})
-    load_cases_df = _convert_load_casses_to_df(load_casses)
+    load_cases_df = _convert_load_cases_to_df(load_cases)
     _write_to_excel(file_path, nodes_df, members_df, supports_df, load_cases_df, volume_df)
 
-def save_truss_topology_optimization_excel(file_path, nodes, members, load_casses, supports, areas, deflections,
+def save_truss_topology_optimization_excel(file_path, nodes, members, load_cases, supports, areas, deflections,
                                            forces, volume):
     """
     Saves the results form a truss topology optimization to the provided Excel file.
 
     :param file_path: File path to the Excel file to save to.
     :param nodes: Locations of the nodes of the truss. shape: (# Nodes, 2)
-    :param members: Indeces of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
-    :param load_casses: Load casses applyed to the truss. Shape: (# Load Cases, # Loads per Case, 4: [x1,y1,fx1,fy1] )
+    :param members: Indices of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
+    :param load_cases: Load cases applied to the truss. Shape: (# Load Cases, # Loads per Case, 4: [x1,y1,fx1,fy1] )
     :param supports: Nodes that are supported and in what directions. Shape: (# Supported Nodes, 4: [x,y,sx,sy])
     :param areas: Areas of each member. Shape: (# Members)
     :param deflections: Deflections at each node. Shape: (2 * # Nodes * # Load Cases)
@@ -58,7 +58,7 @@ def save_truss_topology_optimization_excel(file_path, nodes, members, load_casse
     members_df = _convert_members_to_df(members, areas, forces, remove_small_members=True)
     supports_df = _convert_supports_to_df(supports)
     volume_df = pd.DataFrame({"Volume": [volume]})
-    load_cases_df = _convert_load_casses_to_df(load_casses)
+    load_cases_df = _convert_load_cases_to_df(load_cases)
     _write_to_excel(file_path, nodes_df, members_df, supports_df, load_cases_df, volume_df)
 
 
@@ -84,7 +84,7 @@ def _convert_members_to_df(members, areas, forces, remove_small_members=False):
     """
     Gets the data frame for the members sheet to be printed to the Excel.
 
-    :param members: Indeces of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
+    :param members: Indices of the Nodes that the members run between. Shape: (# members, 3: [node i, node j, length])
     :param areas: Areas of each member. Shape: (# Members)
     :param forces: Axial forces within each member. Shape: (# Members * # Load Cases)
     :param remove_small_members: If members under 0.001 times the cross-section area of the largest member should be
@@ -127,19 +127,19 @@ def _convert_supports_to_df(supports):
     supports_df = pd.DataFrame(supports_df)
     return supports_df
 
-def _convert_load_casses_to_df(load_casses):
+def _convert_load_cases_to_df(load_cases):
     """
-    Gets the data frame for the load casses sheet to be printed to the Excel.
+    Gets the data frame for the load cases sheet to be printed to the Excel.
 
-    :param load_casses: Load casses applyed to the truss. Shape: (# Load Cases, # Loads per Case, 4: [x,y,fx,fy] )
-    :return: Load Casses Data Frame
+    :param load_cases: Load cases applied to the truss. Shape: (# Load Cases, # Loads per Case, 4: [x,y,fx,fy] )
+    :return: Load cases Data Frame
     """
 
     # TODO only works if all load cases have the same number of loads
 
-    num_load_cases = len(load_casses)
-    load_cases_df = {"Number Load Casses": [num_load_cases] * len(load_casses[0])}
-    for i, load_case in enumerate(load_casses):
+    num_load_cases = len(load_cases)
+    load_cases_df = {"Number Load cases": [num_load_cases] * len(load_cases[0])}
+    for i, load_case in enumerate(load_cases):
         load_case = np.array(load_case).T.tolist()
         load = {f"LoadCase{i + 1} location": load_case[0],
                 f"LoadCase{i + 1} y": load_case[1],
@@ -159,7 +159,7 @@ def _write_to_excel(file_path, nodes_df, members_df, supports_df, load_cases_df,
     :param nodes_df: Nodes Data Frame
     :param members_df: Members Data Frame
     :param supports_df: Supports Data Frame
-    :param load_cases_df:  Load Casses Data Frame
+    :param load_cases_df:  Load cases Data Frame
     :param volume_df: Volume Data Frame
     """
 
