@@ -1005,7 +1005,7 @@ class MainWindow(tk.Frame):
         change_cords = [cords[0] - self._scroll_cords_last[0], cords[1] - self._scroll_cords_last[1]]
         self.Camera = self.Camera - self.Up * change_cords[1] * 0.01
         self.Camera = self.Camera + np.cross(self.LookDir, self.Up) * change_cords[0] * 0.01
-        self.update_canvas()
+        self.UpdateCanves()
         self._scroll_cords_last = cords
 
     def _rot_start(self, event):
@@ -1047,7 +1047,7 @@ class MainWindow(tk.Frame):
         change_cords = [cords[0] - self._scroll_cords_last[0], cords[1] - self._scroll_cords_last[1]]
         self.CamYRot = self.CamYRot + change_cords[0] * 0.005
         self.CamXRot = self.CamXRot + change_cords[1] * 0.005
-        self.update_canvas()
+        self.UpdateCanves()
         self._scroll_cords_last = cords
 
     def update_canvas(self):

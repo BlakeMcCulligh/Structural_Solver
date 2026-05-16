@@ -15,6 +15,9 @@ __maintainer__ = "Blake McCulligh"
 __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
+from frame_3D_gui.display import get_loc_on_member, get_member_t
+
+
 class Data:
     """
     Frame Object holding all the data needed to define the frame.
@@ -236,9 +239,8 @@ class Data:
                 sup = []
                 for j in range(7):
                     sup.append(Supports[j][i])
-                print(sup)
-                Window.DisplayData.add_supports(self.Nodes, sup)
-            Window.update_canvas()
+                Window.DisplayData.AddSupports(self.Nodes, sup)
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -297,7 +299,13 @@ class Data:
                                                            Releases[11][i], Releases[12][i]])
 
         if AddToDisplay:
-            pass #TODO
+            for i in range(len(Releases[0])):
+                release = []
+                for j in range(13): release.append(self.Releases[j][i])
+                Window.DisplayData.AddReleces([self.Members[0],self.Members[1]], self.Nodes, release)
+
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -321,7 +329,17 @@ class Data:
             for i in range(12): Window.Tables[4].set(RowID, col_ids[i + 1], NewReleases[i])
 
         if EditDisplay:
-            pass # todo
+            n1 = [self.Nodes[0][self.Members[0][NewReleases[0]]],
+                  self.Nodes[1][self.Members[0][NewReleases[0]]],
+                  self.Nodes[2][self.Members[0][NewReleases[0]]]]
+            n2 = [self.Nodes[0][self.Members[1][NewReleases[0]]],
+                  self.Nodes[1][self.Members[1][NewReleases[0]]],
+                  self.Nodes[2][self.Members[1][NewReleases[0]]]]
+            locations = n1 + n2
+            direction = NewReleases[1:]
+            Window.DisplayData.releces[Index] = [locations, direction]
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -347,7 +365,13 @@ class Data:
                                                            NodeLoad[5][i], NodeLoad[6][i], NodeLoad[7][i]])
 
         if AddToDisplay:
-            pass #TODO
+            for i in range(len(NodeLoad[0])):
+                load = []
+                for j in range(8): load.append(self.NodeLoad[j][i])
+                Window.DisplayData.AddNodeLoads(self.Nodes, load)
+
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -371,7 +395,11 @@ class Data:
             for i in range(8): Window.Tables[5].set(RowID, col_ids[i + 1], NewNodeLoad[i])
 
         if EditDisplay:
-            pass # todo
+            location = [self.Nodes[0][Index],self.Nodes[1][Index],self.Nodes[2][Index]]
+            load = NewNodeLoad[1:]
+            Window.DisplayData.point_loads[Index] = [location, load]
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -399,7 +427,13 @@ class Data:
                                                           MemberPointLoad[8][i]])
 
         if AddToDisplay:
-           pass #TODO
+            for i in range(len(MemberPointLoad[0])):
+               load = []
+               for j in range(9): load.append(self.MemberPointLoad[j][i])
+               Window.DisplayData.AddMemberPointLoads([self.Members[0],self.Members[1]], self.Nodes, load)
+
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -423,7 +457,13 @@ class Data:
             for i in range(9): Window.Tables[6].set(RowID, col_ids[i + 1], NewMemberPointLoad[i])
 
         if EditDisplay:
-            pass # todo
+            location = get_loc_on_member(int(NewMemberPointLoad[0]), int(NewMemberPointLoad[1]), self.Members, self.Nodes)
+            Trans = get_member_t(int(NewMemberPointLoad[0]), self.Members, self.Nodes)[:3, :3]
+            P_global = Trans.T @ np.array([NewMemberPointLoad[2], NewMemberPointLoad[3], NewMemberPointLoad[4]]) @ Trans
+            M_global = Trans.T @ np.array([NewMemberPointLoad[5], NewMemberPointLoad[6], NewMemberPointLoad[7]]) @ Trans
+            Window.DisplayData.point_loads = [location, np.concatenate((P_global,M_global))]
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -451,7 +491,13 @@ class Data:
                                                            MemberDistLoad[8][i], MemberDistLoad[9][i]])
 
         if AddToDisplay:
-            pass #TODO
+            for i in range(len(MemberDistLoad[0])):
+                load = []
+                for j in range(10): load.append(self.MemberDistLoad[j][i])
+                Window.DisplayData.AddMemberDistLoads([self.Members[0],self.Members[1]], self.Nodes, load)
+
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
@@ -475,7 +521,16 @@ class Data:
             for i in range(10): Window.Tables[7].set(RowID, col_ids[i + 1], NewMemberDistLoad[i])
 
         if EditDisplay:
-            pass # todo
+            location1 = get_loc_on_member(NewMemberDistLoad[0], NewMemberDistLoad[1], self.Members, self.Nodes)
+            location2 = get_loc_on_member(NewMemberDistLoad[0], NewMemberDistLoad[2], self.Members, self.Nodes)
+            location = location1 + location2
+            Trans = get_member_t(NewMemberDistLoad[0], self.Members, self.Nodes)[:3, :3]
+            P1_global = Trans.T @ np.array([NewMemberDistLoad[3], NewMemberDistLoad[5], NewMemberDistLoad[7]]) @ Trans
+            P2_global = Trans.T @ np.array([NewMemberDistLoad[4], NewMemberDistLoad[6], NewMemberDistLoad[8]]) @ Trans
+            load = [P1_global[0], P2_global[0], P1_global[1], P2_global[1], P1_global[2], P2_global[2]]
+            Window.DisplayData.dist_loads[Index] = [location, load]
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
