@@ -5,3 +5,5 @@
 /httpRequests/
 /idea.misc.xml/
 /idea.Structural_Solver.iml/
+/*.pyc/
+/.venv/
