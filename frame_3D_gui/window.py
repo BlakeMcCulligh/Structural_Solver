@@ -964,7 +964,7 @@ class MainWindow(tk.Frame):
             self.Camera = self.Camera + self.LookDir * 0.1
         else:
             self.Camera = self.Camera - self.LookDir * 0.1
-        self.UpdateCanves()
+        self.update_canvas()
 
     def _pan_start(self, event):
         """
@@ -1050,7 +1050,7 @@ class MainWindow(tk.Frame):
         self.UpdateCanves()
         self._scroll_cords_last = cords
 
-    def UpdateCanves(self):
+    def update_canvas(self):
         """
         Updates the 3D rendering.
         """
