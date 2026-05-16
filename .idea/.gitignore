@@ -3,10 +3,6 @@
 /workspace.xml
 # Editor-based HTTP Client requests
 /httpRequests/
-# Python bytecode directories
-__pycache__/
-# Python bytecode files
-*.pyc
 # 2 files with Python interpreter location
 /misc.xml
 /Structural_Solver.iml
