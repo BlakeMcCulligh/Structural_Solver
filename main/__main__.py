@@ -1,7 +1,7 @@
 """
 Starts the program.
 """
-
+#test
 import tkinter as tk
 
 from main.window import MainWindow
