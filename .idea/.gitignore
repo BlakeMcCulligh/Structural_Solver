@@ -7,8 +7,6 @@
 __pycache__/
 # Python bytecode files
 *.pyc
-# Python virtual environment
-/.venv/
 # 2 files with Python interpreter location
-/.idea/misc.xml
-/.idea/Structural_Solver.iml
+/misc.xml
+/Structural_Solver.iml
