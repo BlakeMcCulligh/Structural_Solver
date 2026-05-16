@@ -43,8 +43,8 @@ class Member:
 
     def addRelece(self, relece: list):
         """
-        Updates the member's releces to the paramiter. Only for Frames.
-        :param relece: the new member's releces.
+        Updates the member's releases to the paramiter. Only for Frames.
+        :param relece: the new member's releases.
         """
         if not self.isTruss:
             if self.is3D:
@@ -58,7 +58,7 @@ class Member:
                 else:
                     raise WrongNumberOfDegressOfFredomGivenError("Number of degres given must be 6 for a 2D frame Releces")
         else:
-            print("releces can not be set for trusses")
+            print("releases can not be set for trusses")
 
     def addPointLoad(self, magnatude: list, location: float):
         if not self.isTruss:

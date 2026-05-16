@@ -1,5 +1,5 @@
 """
-Holds functiones to calculate properties of square-HSS cross-sections.
+Holds functions to calculate properties of square-HSS cross-sections.
 """
 
 __author__ = "Blake McCulligh"
@@ -25,11 +25,11 @@ def get_A(d: float, t: float) -> float:
 
 def get_I(d: float, t: float) -> float:
     """
-    Calculates the moment of inerta of a square-HSS cross-section.
+    Calculates the moment of inertia of a square-HSS cross-section.
 
     :param d: float. Depth
     :param t: float. Thickness
-    :return: float. Moment of Inerta
+    :return: float. Moment of Inertia
     """
 
     return 1/12*(d**4-(d-2*t)**4)

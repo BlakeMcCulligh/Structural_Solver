@@ -18,7 +18,7 @@ def point_load_x(F: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
     """
     Calculates the reactions of a member from x direction point loads.
 
-    :param F: ndarray. Force applyed to the member.
+    :param F: ndarray. Force applied to the member.
     :param x: ndarray. Location of the force applied to the member.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
@@ -38,7 +38,7 @@ def point_load_y(F: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
     """
     Calculates the reactions of a member from y direction point loads.
 
-    :param F: ndarray. Force applyed to the member.
+    :param F: ndarray. Force applied to the member.
     :param x: ndarray. Location of the force applied to the member.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
@@ -60,7 +60,7 @@ def point_load_z(F: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
     """
     Calculates the reactions of a member from z direction point loads.
 
-    :param F: ndarray. Force applyed to the member.
+    :param F: ndarray. Force applied to the member.
     :param x: ndarray. Location of the force applied to the member.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
@@ -82,7 +82,7 @@ def moment_x(M: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
     """
     Calculates the reactions of a member from x direction moments.
 
-    :param M: ndarray. Moment applyed to the member.
+    :param M: ndarray. Moment applied to the member.
     :param x: ndarray. Location of the force applied to the member.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
@@ -102,7 +102,7 @@ def moment_y(M: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
     """
     Calculates the reactions of a member from y direction moments.
 
-    :param M: ndarray. Moment applyed to the member.
+    :param M: ndarray. Moment applied to the member.
     :param x: ndarray. Location of the force applied to the member.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
@@ -124,7 +124,7 @@ def moment_z(M: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
     """
     Calculates the reactions of a member from z direction moments.
 
-    :param M: ndarray. Moment applyed to the member.
+    :param M: ndarray. Moment applied to the member.
     :param x: ndarray. Location of the force applied to the member.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
@@ -147,7 +147,7 @@ def distributed_load_x(w: list, loc: list, L: float) -> np.ndarray:
     Calculates the reactions of a member from an x direction distributed load.
 
     :param w: list. Distributed load represented by the magnitude at both ends of it.
-    :param loc: list. Start and end points of the dirstributed load.
+    :param loc: list. Start and end points of the distributed load.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
     """
@@ -167,7 +167,7 @@ def distributed_load_y(w: list, loc: list, L: float) -> np.ndarray:
     Calculates the reactions of a member from a y direction distributed load.
 
     :param w: list. Distributed load represented by the magnitude at both ends of it.
-    :param loc: list. Start and end points of the dirstributed load.
+    :param loc: list. Start and end points of the distributed load.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
     """
@@ -207,10 +207,10 @@ def distributed_load_y(w: list, loc: list, L: float) -> np.ndarray:
 
 def distributed_load_z(w: list, loc: list, L: float) -> np.ndarray:
     """
-    Calculates the reactions of a member from a x direction distributed load.
+    Calculates the reactions of a member from an x direction distributed load.
 
     :param w: list. Distributed load represented by the magnitude at both ends of it.
-    :param loc: list. Start and end points of the dirstributed load.
+    :param loc: list. Start and end points of the distributed load.
     :param L: float. Length of the member.
     :return: ndarray, Reactions of the member.
     """

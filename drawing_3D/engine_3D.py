@@ -1,5 +1,5 @@
 """
-Handels the calculations of converting the 3D space to be printed on the screen. Credit to onelonecoder/javidx9 for
+Handles the calculations of converting the 3D space to be printed on the screen. Credit to onelonecoder/javidx9 for
 tutorial that can be found at https://youtu.be/ih20l3pJoeU.
 """
 
@@ -17,9 +17,9 @@ __maintainer__ = "Blake McCulligh"
 __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
-def triangalize_surface(window, surface, flip_normal):
+def surface_to_triangles(window, surface, flip_normal):
     """
-    Splits a sirface into multiple triangular surfaces.
+    Splits a surface into multiple triangular surfaces.
 
     :param window: Object storing the main window.
     :param surface: List of nodes that form the surface to be split up.
@@ -42,7 +42,7 @@ def get_rotation_y_matrix(angle_rad):
     """
     Gets the Y rotation matrix for the given angle in radians.
 
-    :param angle_rad: Angle in radians to get the rotaton matrix for.
+    :param angle_rad: Angle in radians to get the rotation matrix for.
     :return: Y rotation matrix.
     """
 
@@ -59,7 +59,7 @@ def get_rotation_x_matrix(angle_rad):
     """
     Gets the X rotation matrix for the given angle in radians.
 
-    :param angle_rad: Angle in radians to get the rotaton matrix for.
+    :param angle_rad: Angle in radians to get the rotation matrix for.
     :return: X rotation matrix.
     """
 
@@ -92,7 +92,7 @@ def get_normals(tri):
     tri_normals = np.array(tri_normals)
     return tri_normals
 
-def remove_tri_faceing_away(window, tri, tri_normals):
+def remove_tri_facing_away(window, tri, tri_normals):
     """
     Removes all triangular surfaces that are facing away from the camera.
 
@@ -102,10 +102,10 @@ def remove_tri_faceing_away(window, tri, tri_normals):
     :return: List of nodes that forms the triangular surfaces, List of vectors normal to the triangular surfaces.
     """
 
-    veiwing_vector = tri[:,0] - window.Camera
-    l_veiwing_vector = np.linalg.norm(veiwing_vector)
-    veiwing_vector = veiwing_vector/l_veiwing_vector
-    result = np.array([np.dot(a, b) for a, b in zip(tri_normals, veiwing_vector)])
+    viewing_vector = tri[:,0] - window.Camera
+    l_viewing_vector = np.linalg.norm(viewing_vector)
+    viewing_vector = viewing_vector / l_viewing_vector
+    result = np.array([np.dot(a, b) for a, b in zip(tri_normals, viewing_vector)])
     tri = tri[result < 0]
     tri_normals = tri_normals[result < 0]
     return tri, tri_normals
@@ -139,7 +139,7 @@ def transform_to_local(window, node, line, tri):
     :param window: Object storing the main window.
     :param node: List of nodes. Shape: (# Nodes, 3)
     :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
-    :param tri: List of nodes that forms triagular surfaces. Shape: (# Triangular Surfaces, 3, 3)
+    :param tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
     :return: Nodes, Lines, Surfaces.
     """
 
@@ -165,24 +165,24 @@ def transform_to_local(window, node, line, tri):
     tri_move = np.array(tri_move)
     return node_move, line_move, tri_move
 
-def get_look_at_matrix(postion, target, up):
+def get_look_at_matrix(position, target, up):
     """
-    Gets the look at matrix for the given position, toarget, and up direction of the camera.
+    Gets the look at matrix for the given position, target, and up direction of the camera.
 
-    :param postion: Position vector of the camera.
-    :param target: Position vector of the coameras target.
+    :param position: Position vector of the camera.
+    :param target: Position vector of the camera's target.
     :param up: Vector pointing in the up direction of the camera.
     :return: Look at matrix for the camera.
     """
 
-    new_forward = target - postion
+    new_forward = target - position
     new_forward = new_forward / np.linalg.norm(new_forward)
     new_up = up - (new_forward * np.dot(up, new_forward.T))
     new_up = new_up / np.linalg.norm(new_forward)
     new_right = np.cross(new_up, new_forward)
-    TA = np.dot(postion,new_right)
-    TB = np.dot(postion,new_up)
-    TC = np.dot(postion,new_forward)
+    TA = np.dot(position, new_right)
+    TB = np.dot(position, new_up)
+    TC = np.dot(position, new_forward)
     look_at_matrix = np.array([[new_right[0],new_up[0],new_forward[0],0],
                              [new_right[1],new_up[1],new_forward[1],0],
                              [new_right[2],new_up[2],new_forward[2],0],
@@ -196,7 +196,7 @@ def project(window, node, line, tri):
     :param window: Object storing the main window.
     :param node: List of nodes. Shape: (# Nodes, 3)
     :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
-    :param tri: List of nodes that forms triagular surfaces. Shape: (# Triangular Surfaces, 3, 3)
+    :param tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
     :return: Nodes, Lines, Surfaces.
     """
 
@@ -262,11 +262,11 @@ def get_projection_matrix(window):
 
 def clip_close(node, line, tri, tri_color):
     """
-    Cuts nodes, lines, and surfaces that are to close or behined the camera.
+    Cuts nodes, lines, and surfaces that are to close or behind the camera.
 
     :param node: List of nodes. Shape: (# Nodes, 3)
     :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
-    :param tri: List of nodes that forms triagular surfaces. Shape: (# Triangular Surfaces, 3, 3)
+    :param tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
     :param tri_color: Color Variable between 0 and 255.
     :return: Nodes, Lines, Triangles, Triangle Colors.
     """
@@ -296,13 +296,13 @@ def clip_close(node, line, tri, tri_color):
     clipped_triangles, tri_color = np.array(clipped_triangles), np.array(new_color)
     return clipped_nodes, clipped_lines, clipped_triangles, tri_color
 
-def clip_eadges(node, line, old_tri, old_tri_color, h, w):
+def clip_edges(node, line, old_tri, old_tri_color, h, w):
     """
-    Cuts nodes, lines, and surfaces that are ouside the eadges of the camera.
+    Cuts nodes, lines, and surfaces that are outside the edges of the camera.
 
     :param node:  List of nodes. Shape: (# Nodes, 3)
     :param line:  List of nodes that forms lines. Shape: (# Lines, 2, 3)
-    :param old_tri:  List of nodes that forms triagular surfaces. Shape: (# Triangular Surfaces, 3, 3)
+    :param old_tri:  List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
     :param old_tri_color:  Color Variable between 0 and 255.
     :param h: Height of window.
     :param w: Width of window.
@@ -312,11 +312,11 @@ def clip_eadges(node, line, old_tri, old_tri_color, h, w):
     clip_plane_point = np.array([[0, 0, 0], [0, h, 0], [0, 0, 0], [w, 0, 0]])
     clip_plane_normal = np.array([[0, 1, 0], [0, -1, 0], [1, 0, 0], [-1, 0, 0]])
 
-    cliped_nodes = []
+    clipped_nodes = []
     for i in range(len(node)):
         if 0 < node[i][0] < w and 0 < node[i][1] < h:
-            cliped_nodes.append(node[i])
-    cliped_nodes = np.array(cliped_nodes)
+            clipped_nodes.append(node[i])
+    clipped_nodes = np.array(clipped_nodes)
 
     for j in range(4):
         new_line = []
@@ -338,11 +338,11 @@ def clip_eadges(node, line, old_tri, old_tri_color, h, w):
                 new_tri.append(tri_out2)
                 new_tri_color.append(old_tri_color[i])
         old_tri, old_tri_color = new_tri, new_tri_color
-    return cliped_nodes, clipped_lines, old_tri, old_tri_color
+    return clipped_nodes, clipped_lines, old_tri, old_tri_color
 
 def vector_intersect_plane(plane_point, plane_normal, line_start, line_end):
     """
-    Fineds the location of where a line and a plane intersect.
+    Finds the location of where a line and a plane intersect.
 
     :param plane_point: Node on the plane.
     :param plane_normal: Normal vector of the plane.

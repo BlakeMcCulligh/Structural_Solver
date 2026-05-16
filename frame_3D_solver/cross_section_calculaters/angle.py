@@ -1,5 +1,5 @@
 """
-Holds functiones to calculate properties of angle cross-sections.
+Holds functions to calculate properties of angle cross-sections.
 """
 
 __author__ = "Blake McCulligh"
@@ -50,12 +50,12 @@ def get_A(d: float, b: float, t: float) -> float:
 
 def get_Ix(d: float, b: float, t: float) -> float:
     """
-    Calculates the moment of inerta around the strong axis of an angle cross-section.
+    Calculates the moment of inertia around the strong axis of an angle cross-section.
 
     :param d: float. Depth
     :param b: float. Width
     :param t: float. Thickness
-    :return: float. Moment of Inerta X
+    :return: float. Moment of Inertia X
     """
 
     y = _get_y(d, b, t)
@@ -63,12 +63,12 @@ def get_Ix(d: float, b: float, t: float) -> float:
 
 def get_Iy(d: float, b: float, t: float) -> float:
     """
-    Calculates the moment of inerta around the weak axis of an angle cross-section.
+    Calculates the moment of inertia around the weak axis of an angle cross-section.
 
     :param d: float. Depth
     :param b: float. Width
     :param t: float. Thickness
-    :return: float. Moment of Inerta Y
+    :return: float. Moment of Inertia Y
     """
 
     x = _get_x(d, b, t)

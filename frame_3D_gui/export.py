@@ -1,5 +1,5 @@
 """
-Handels the exporting of 3D frame analysis results and optimization results to Excel files.
+Handles the exporting of 3D frame analysis results and optimization results to Excel files.
 """
 
 from tkinter import filedialog
@@ -42,7 +42,7 @@ def export_results(results):
     """
     Exports structural analysis results to the specified Excel file.
 
-    :param results: Strucural analysis results object to be exported.
+    :param results: Structural analysis results object to be exported.
     """
 
     file_path = _get_excel_save_path()

@@ -1,5 +1,5 @@
 """
-Handels the opening of 3D frames, and results.
+Handles the opening of 3D frames, and results.
 """
 
 from tkinter import filedialog
@@ -23,7 +23,7 @@ def open_frame(window, file_path = None):
     Opens a .structframe file eather from the provided file path or the selected one and reads in all the frame data.
 
     :param window: Object storing the main window.
-    :param file_path: Potental file Path to get the frame from.
+    :param file_path: Potential file Path to get the frame from.
     """
 
     if file_path is None:
@@ -201,7 +201,7 @@ def _select_file_gui(window, file_types):
     Opens a file explorer dialog using Tkinter and returns the selected file path.
 
     :param window:  Object storing the main window.
-    :param file_types: What type of file is being opend.
+    :param file_types: What type of file is being opened.
     :return: Selected file path or None.
     """
 
@@ -227,11 +227,11 @@ def open_results(window, file_path):
                 lines = f.readlines()
                 f.close()
 
-            num_casses = int(lines[0])
+            num_cases = int(lines[0])
             num_nodes = int(lines[1])
 
             d = [[],[],[],[],[],[]]
-            for i in range(num_casses):
+            for i in range(num_cases):
                 deflection_sub = [[],[],[],[],[],[]]
                 for j in range(num_nodes):
                     deflection_line = lines[i*num_nodes+j+2].replace(" ","")
@@ -244,21 +244,21 @@ def open_results(window, file_path):
                             if x != ",": print("Error Reading Deflections: ", x)
                 for k in range(6): d[k].append(deflection_sub[k])
             window.Results.AddNodalDeflections(d[0], d[1], d[2], d[3], d[4], d[5])
-            index = num_casses * num_nodes + 2
+            index = num_cases * num_nodes + 2
 
             num_members = int(lines[index])
 
             weight = []
             for i in range(num_members):
                 weight.append(float(lines[index+i+1].replace(" ","")))
-            window.Results.AddWeight(weight)
+            window.Results.add_weight(weight)
             index += num_members + 2
 
-            num_casses = int(lines[index])
+            num_cases = int(lines[index])
             num_nodes = int(lines[index + 1])
 
             reactions = []
-            for i in range(num_casses):
+            for i in range(num_cases):
                 sub_reactions = []
                 for j in range(num_nodes):
                     reaction_line = lines[index + 2 + i * num_nodes + j].replace(" ","")
@@ -271,7 +271,7 @@ def open_results(window, file_path):
                     sub_reactions.append(n)
                 reactions.append(sub_reactions)
             window.Results.AddReactions(reactions)
-            index += num_casses * num_nodes + 2
+            index += num_cases * num_nodes + 2
 
             F = []
             for i in range(6):

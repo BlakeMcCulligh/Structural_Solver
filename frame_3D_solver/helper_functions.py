@@ -50,42 +50,42 @@ def part_D(nodes_support):
 
 def prep_members(nodes_cord, members, members_releases, members_point_loads, members_dist_loads, num_c):
     """
-    Prepars the members for an analysis. This function can be run at the start of an optimization and
+    Prepares the members for an analysis. This function can be run at the start of an optimization and
     does not need to be rerun is only cross-sections are changed.
 
 
-    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
+    :param nodes_cord: ndarray. Coordinates of the nodes [X, Y, Z]
     :param members:  list. [i_node, j_node, material_index, set_cross_section_props]
-    :param members_releases: list. What directions are relesed Bool.
+    :param members_releases: list. What directions are released Bool.
                              [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
-    :param members_point_loads: list. Point loads applyed to members.
+    :param members_point_loads: list. Point loads applied to members.
                                 [case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]]
-    :param members_dist_loads: list. Distributed loads applyed to members.
+    :param members_dist_loads: list. Distributed loads applied to members.
                                [case, [[[x1, x2], [wx1, wx2, wy1, wy2, wz1, wz2]]]]
-    :param num_c: int. Number of casses.
+    :param num_c: int. Number of cases.
     :return:
         DOFs: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# members, 12)
         L: ndarray. A ndarray of the lengths of the members. shape: (# members)
-        member_unrelesed_DOFs: list: 3D list of unreleased DOFs for each member.
-                            shape: (# members, varys: # unrelesed DOFs)
-        member_relesed_DOFs: list: 3D list of released DOFs for each member. shape: (# members, varys: # released DOFs)
+        member_unreleased_DOFs: list: 3D list of unreleased DOFs for each member.
+                            shape: (# members, varys: # unreleased DOFs)
+        member_released_DOFs: list: 3D list of released DOFs for each member. shape: (# members, varys: # released DOFs)
         T: ndarray: 4D ndarray of the transformation matrices for each member. shape: (# members, 12, 12)
     """
 
     L = _get_L(nodes_cord, members)
     members = members[:, :2]
     DOFs = _build_dof_vector(members)
-    member_unrelesed_DOFs, member_relesed_DOFs = _member_part_D(members_releases)
+    member_unreleased_DOFs, member_released_DOFs = _member_part_D(members_releases)
     T = _get_member_t(nodes_cord, members, L)
     point_loads = _assemble_point_loads(members_point_loads, num_c)
     dist_loads = _assemble_dist_loads(members_dist_loads, num_c)
-    return DOFs, L, member_unrelesed_DOFs, member_relesed_DOFs, T, point_loads, dist_loads
+    return DOFs, L, member_unreleased_DOFs, member_released_DOFs, T, point_loads, dist_loads
 
 def _get_L(nodes_cord: np.ndarray, members: np.ndarray):
     """
     Builds an array of the lengths of the members.
 
-    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
+    :param nodes_cord: ndarray. Coordinates of the nodes [X, Y, Z]
     :param members: ndarray. [i_node, j_node, material_index, set_cross_section_props]
     :return:
         L: ndarray. A ndarray of the lengths of the members.
@@ -110,10 +110,10 @@ def _member_part_D(releases: np.ndarray):
     """
     Builds lists of unreleased and released degree of freedom indices for each member.
 
-    :param releases: ndarray. 3D ndarray of booleans of wether a DOF is released. true = released, false = unreleased.
+    :param releases: ndarray. 3D ndarray of booleans of whether a DOF is released. true = released, false = unreleased.
                      shape: (# members, 12)
     :return:
-        unreleased: list: 3D list of unreleased DOFs for each member. shape: (# members, varys: # unrelesed DOFs)
+        unreleased: list: 3D list of unreleased DOFs for each member. shape: (# members, varys: # unreleased DOFs)
         released: list: 3D list of released DOFs for each member. shape: (# members, varys: # released DOFs)
     """
 
@@ -126,7 +126,7 @@ def _get_member_t(nodes_cord, members, L: np.ndarray):
     """
     Builds an array of the transformation matrices for each member.
 
-    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
+    :param nodes_cord: ndarray. Coordinates of the nodes [X, Y, Z]
     :param members: list. [i_node, j_node, material_index, set_cross_section_props]
     :param L: ndarray. A ndarray of the lengths of the members. shape: (# members)
     :return: ndarray: 4D array of the transformation matrices for each member. shape: (# members, 12, 12)
@@ -177,22 +177,22 @@ def get_global_fixed_end_reaction_vector(nodes_cord, members_dof, T: np.ndarray,
     """
     Builds array of the global fixed end reaction vector for both fixed and released DOFs.
 
-    :param nodes_cord: ndarray. Cordinates of the nodes [X, Y, Z]
+    :param nodes_cord: ndarray. Coordinates of the nodes [X, Y, Z]
     :param members_dof: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# members, 12)
     :param T: ndarray. 4D array of the transformation matrices for each member. shape: (# members, 12, 12)
     :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
     :param D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
-    :param fer_condensed_array: ndarray. Condensed local fixed end reaction vector. shape: (# members, # Casses, 12, 1)
+    :param fer_condensed_array: ndarray. Condensed local fixed end reaction vector. shape: (# members, # Cases, 12, 1)
     :param num_m: int. Number of members.
     :param num_c: int. Number of cases.
     :return:
         FER1: ndarray. An array of the released DOFs fixed end reactions.
-        FER2: ndarray. An array of the unreased DOFs fixed end reactions.
+        FER2: ndarray. An array of the unreleased DOFs fixed end reactions.
     """
 
     FER_array = _get_FER(fer_condensed_array, T)
     FER_stack = np.array([[np.asarray(FER_array[i][j], dtype=float).reshape(12)
-                           for j in range(num_c)] for i in range(num_m)])  # shape: (# members, # Casses, 12)
+                           for j in range(num_c)] for i in range(num_m)])  # shape: (# members, # Cases, 12)
     members_dof = np.asarray(members_dof)  # (num_m, 12)
     nDOF = len(nodes_cord) * 6
     FER_val = np.zeros((num_c, nDOF))
@@ -204,14 +204,14 @@ def get_global_fixed_end_reaction_vector(nodes_cord, members_dof, T: np.ndarray,
 
 def _part_force_vector(FER_val: np.ndarray, D_unknown: np.ndarray, D_known: np.ndarray):
     """
-    Partitions force vectors into 2 vectors one of releced and one unrelesed DOFs.
+    Partitions force vectors into 2 vectors one of released and one unreleased DOFs.
 
-    :param FER_val: ndarray. A ndarray of forces to be partioned.
+    :param FER_val: ndarray. A ndarray of forces to be partitioned.
     :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
     :param D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
     :return:
         FER1: ndarray. An array of the released DOFs forces.
-        FER2: ndarray. An array of the unreased DOFs forces.
+        FER2: ndarray. An array of the unreleased DOFs forces.
     """
 
     FER_val = np.asarray(FER_val)  # shape: (num_c, nDOF, 1)
@@ -303,17 +303,17 @@ def get_k_local_array(materials, members, members_CrossSectionProps, L: np.ndarr
         print("local k: ", k)
     return k
 
-def member_part_k_array(k_array: np.ndarray, R_unrelesed_array: list or np.ndarray,
-                        R_relesed_array: list or np.ndarray, numM: int):
+def member_part_k_array(k_array: np.ndarray, R_unreleased_array: list or np.ndarray,
+                        R_released_array: list or np.ndarray, numM: int):
     """
     Partitions the stiffness matrices into sub-matrices based on unreleased and released degree of freedom indices.
 
     :param k_array: ndarray. 4D array of the stiffness matrices for each member. shape: (# members, 12, 12)
-    :param R_unrelesed_array: list. 3D list of unreleased DOFs for each member.
-                              shape: (# members, varys: # unrelesed DOFs)
-    :param R_relesed_array: list. 3D list of released DOFs for each member. shape: (# members, varys: # released DOFs)
+    :param R_unreleased_array: list. 3D list of unreleased DOFs for each member.
+                              shape: (# members, varys: # unreleased DOFs)
+    :param R_released_array: list. 3D list of released DOFs for each member. shape: (# members, varys: # released DOFs)
     :param numM: int. Number of members.
-    :return:  4 lists of sub-matrices based on the degrese of freedom.
+    :return:  4 lists of sub-matrices based on the degrees of freedom.
               general shape: (# members, ndarray(varys, varys))
     """
 
@@ -323,21 +323,21 @@ def member_part_k_array(k_array: np.ndarray, R_unrelesed_array: list or np.ndarr
     k22_array = []
     for i in range(numM):
         k = np.array(k_array[i])
-        R_unrelesed = np.array(R_unrelesed_array[i], dtype=int)
-        R_relesed = np.array(R_relesed_array[i], dtype=int)
-        k11_array.append(k[R_unrelesed, :][:, R_unrelesed])
-        k12_array.append(k[R_unrelesed, :][:, R_relesed])
-        k21_array.append(k[R_relesed, :][:, R_unrelesed])
-        k22_array.append(k[R_relesed, :][:, R_relesed])
+        R_unreleased = np.array(R_unreleased_array[i], dtype=int)
+        R_released = np.array(R_released_array[i], dtype=int)
+        k11_array.append(k[R_unreleased, :][:, R_unreleased])
+        k12_array.append(k[R_unreleased, :][:, R_released])
+        k21_array.append(k[R_released, :][:, R_unreleased])
+        k22_array.append(k[R_released, :][:, R_released])
     return k11_array, k12_array, k21_array, k22_array
 
 def _get_FER(fer: np.ndarray, T: np.ndarray):
     """
-    Returns the global fixed end reaction vectors for all members and casses
+    Returns the global fixed end reaction vectors for all members and cases
 
-    :param fer: ndarry. The array of local fer vectors to be transformed. shape: (# members, # Casses, 12, 1)
+    :param fer: ndarray. The array of local fer vectors to be transformed. shape: (# members, # cases, 12, 1)
     :param T: ndarray. 4D array of the transformation matrices for each member. shape: (# members, 12, 12)
-    :return: global fixed end reaction vectors for all members and casses
+    :return: global fixed end reaction vectors for all members and cases
     """
     invT = T.transpose(0, 2, 1) # T⁻¹ = Tᵀ for orthogonal transformation matrices
     FER = invT[:, None] @ fer
@@ -345,18 +345,18 @@ def _get_FER(fer: np.ndarray, T: np.ndarray):
 
 def _assemble_point_loads(members_point_loads, num_c):
     """
-    Assembles the point load vectors for all members and casses
+    Assembles the point load vectors for all members and cases
 
-    :param members_point_loads:  list. Point loads applyed to members. [case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]]
-    :param num_c: int. Number of casses
+    :param members_point_loads:  list. Point loads applied to members. [case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]]
+    :param num_c: int. Number of cases
     :return: list. Point loads applied to each member.
-             shape: (# members, # Casses, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
+             shape: (# members, # cases, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
     """
 
     new_point_loads = []
-    for i, load_casses in enumerate(members_point_loads):
+    for i, load_cases in enumerate(members_point_loads):
         new_loads  = [None] * num_c
-        for loads in load_casses:
+        for loads in load_cases:
             new_load  = []
             for j in range(len(loads[1][0])):
                 new_load.append([loads[1][0][j]] + loads[1][1][j])
@@ -370,19 +370,19 @@ def _assemble_point_loads(members_point_loads, num_c):
 
 def _assemble_dist_loads(members_dist_loads, num_c):
     """
-    Assembles the distributed load vectors for all members and casses
+    Assembles the distributed load vectors for all members and cases
 
-    :param members_dist_loads: list. Distributed loads applyed to members.
+    :param members_dist_loads: list. Distributed loads applied to members.
                               [case, [[[x1, x2], [wx1, wx2, wy1, wy2, wz1, wz2]]]]
-    :param num_c: int. Number of casses
+    :param num_c: int. Number of cases
     :return: list. Distributed loads applied to each member.
-             shape: (# members, # Casses, varys, # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
+             shape: (# members, # cases, varys, # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
     """
 
     new_dist_loads = []
-    for i, load_casses in enumerate(members_dist_loads):
+    for i, load_cases in enumerate(members_dist_loads):
         new_loads = [None] * num_c
-        for loads in load_casses:
+        for loads in load_cases:
             new_load = []
             for j in range(len(loads[1])):
                 new_load.append(loads[1][j][0] + loads[1][j][1])
@@ -400,13 +400,13 @@ def get_member_fer_unc(members_L, point_loads: list, dist_loads: list, num_m: in
 
     :param members_L: ndarray. length of each member.
     :param point_loads: list. Point loads applied to each member.
-                         shape: (# members, # Casses, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
+                         shape: (# members, # cases, # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
     :param dist_loads: list. Distributed loads applied to each member.
-                       shape: (# members, # Casses, varys,
+                       shape: (# members, # cases, varys,
                        # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
     :param num_m: int. Number of members.
-    :param num_c: int. Number of Casses.
-    :return: ndarray. local fixed end reaction vector for the members. shape: (# members, # Casses, 12, 1)
+    :param num_c: int. Number of cases.
+    :return: ndarray. local fixed end reaction vector for the members. shape: (# members, # cases, 12, 1)
     """
     fer_unc = np.zeros((num_m, num_c, 12, 1))
     fer_unc = np.add(fer_unc, _get_fixed_end_reactions_point_load_array(members_L, point_loads))
@@ -415,12 +415,12 @@ def get_member_fer_unc(members_L, point_loads: list, dist_loads: list, num_m: in
 
 def _get_fixed_end_reactions_point_load_array(members_L, point_loads: list):
     """
-    Builds an array of the fixed end reacctions for point loads.
+    Builds an array of the fixed end reactions for point loads.
 
     :param members_L: ndarray. length of each member.
     :param point_loads: list. Point loads applied to each member.
-                        shape: (# members, # Casses, varys: # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
-    :return: ndarray. fixed end reactions for point loads. shape: (# members, # Casses, 12, 1)
+                        shape: (# members, # cases, varys: # loads in case on member, 7: (x, Px, Py, Pz, Mx, My, Mz))
+    :return: ndarray. fixed end reactions for point loads. shape: (# members, # cases, 12, 1)
     """
 
     members_L = np.asarray(members_L)
@@ -453,20 +453,20 @@ def _get_fixed_end_reactions_point_load_array(members_L, point_loads: list):
 
 def _get_fixed_end_reactions_dist_load_array(members_L, dist_loads):
     """
-    Builds an array of the fixed end reacctions for distributed loads.
+    Builds an array of the fixed end reactions for distributed loads.
 
     :param members_L: ndarray. length of each member.
     :param dist_loads: list. Distributed loads applied to each member.
-                       shape: (# members, # Casses, varys,
+                       shape: (# members, # cases, varys,
                        varys: # loads in case on member: (x1, x2, wx1, wx2, wy1, wy2, wz1, wz2))
-    :return: ndarray. fixed end reactions for distributed loads. shape: (# members, # Casses, 12, 1)
+    :return: ndarray. fixed end reactions for distributed loads. shape: (# members, # cases, 12, 1)
     """
 
     reactions_array = []
-    for i, load_casses in enumerate(dist_loads):
+    for i, load_cases in enumerate(dist_loads):
         L = members_L[i]
         reactions_member = []
-        for j, loads in enumerate(load_casses):
+        for j, loads in enumerate(load_cases):
             reactions = np.zeros((12, 1))
             for k, load in enumerate(loads):
                 if not (load[2] == 0 and load[3] == 0):
@@ -479,23 +479,23 @@ def _get_fixed_end_reactions_dist_load_array(members_L, dist_loads):
         reactions_array.append(reactions_member)
     return reactions_array
 
-def member_part_fer(fer: np.ndarray, R_unrelesed: np.ndarray or list, R_relesed: np.ndarray or list,
+def member_part_fer(fer: np.ndarray, R_unreleased: np.ndarray or list, R_released: np.ndarray or list,
                     num_m: int, num_c: int):
     """
     Partition fer into 2 sub matrices based on unreleased and released degree of freedom.
 
-    :param fer: ndarray. local fixed end reaction vector for the members. shape: (# members, # Casses, 12, 1)
-    :param R_unrelesed: ndarray or list. list: 3D list of unreleased DOFs for each member.
-                        shape: (# members, varys: # unrelesed DOFs)
-    :param R_relesed: ndarray or list. list: 3D list of released DOFs for each member.
+    :param fer: ndarray. local fixed end reaction vector for the members. shape: (# members, # cases, 12, 1)
+    :param R_unreleased: ndarray or list. list: 3D list of unreleased DOFs for each member.
+                        shape: (# members, varys: # unreleased DOFs)
+    :param R_released: ndarray or list. list: 3D list of released DOFs for each member.
                       shape: (# members, varys: # released DOFs)
     :param num_m: int. Number of members.
-    :param num_c: int. Number of Casses.
+    :param num_c: int. Number of cases.
     :return:
-        fer1: list. fixed end reactions for each member for the unrelesed DOFs.
-              shape: (# members, # Casses, varys: # unrelesed DOFs, 1)
-        fer2: list. fixed end reactions for eacch member for the released FODs.
-              shape: (# members, # Casses, varys: # relesed DOFs, 1)
+        fer1: list. fixed end reactions for each member for the unreleased DOFs.
+              shape: (# members, # cases, varys: # unreleased DOFs, 1)
+        fer2: list. fixed end reactions for each member for the released FODs.
+              shape: (# members, # cases, varys: # released DOFs, 1)
     """
 
     fer1_array = []
@@ -504,8 +504,8 @@ def member_part_fer(fer: np.ndarray, R_unrelesed: np.ndarray or list, R_relesed:
         fer1_sub_array = []
         fer2_sub_array = []
         for j in range(num_c):
-            fer1 = fer[i,j,R_unrelesed[i]]
-            fer2 = fer[i,j,R_relesed[i]]
+            fer1 = fer[i,j,R_unreleased[i]]
+            fer2 = fer[i,j,R_released[i]]
             fer1_sub_array.append(fer1)
             fer2_sub_array.append(fer2)
         fer1_array.append(fer1_sub_array)
@@ -514,22 +514,22 @@ def member_part_fer(fer: np.ndarray, R_unrelesed: np.ndarray or list, R_relesed:
 
 def get_fer(members_releases, k12: list, k22: list, fer1: np.ndarray, fer2: np.ndarray, num_m: int, num_c: int):
     """
-    Returns the condensed local fixed end reaction vector for all members and casses.
+    Returns the condensed local fixed end reaction vector for all members and cases.
 
-    :param members_releases: list. What directions are relesed Bool.
+    :param members_releases: list. What directions are released Bool.
                              [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
     :param k12: list. sub-matrix of the member local stiffness matrix. shape: (# members, varys)
     :param k22: list. sub-matrix of the member local stiffness matrix. shape: (# members, varys)
-    :param fer1: ndarray. fixed end reactions for each member for the unrelesed DOFs.
-                 shape: (# members, # Casses, varys: # unrelesed DOFs, 1)
-    :param fer2: ndarray. fixed end reactions for eacch member for the released FODs.
-                 shape: (# members, # Casses, varys: # relesed DOFs, 1)
+    :param fer1: ndarray. fixed end reactions for each member for the unreleased DOFs.
+                 shape: (# members, # cases, varys: # unreleased DOFs, 1)
+    :param fer2: ndarray. fixed end reactions for each member for the released FODs.
+                 shape: (# members, # cases, varys: # released DOFs, 1)
     :param num_m: int. Number of members.
-    :param num_c: int. Number of casses.
-    :return: ndarray. Condensed local fixed end reaction vector. shape: (# members, # Casses, 12, 1)
+    :param num_c: int. Number of cases.
+    :return: ndarray. Condensed local fixed end reaction vector. shape: (# members, # cases, 12, 1)
     """
 
-    fer_condenced_array = []
+    fer_condensed_array = []
     for i in range(num_m):
         fer_condensed_sub_array = []
         for j in range(num_c):
@@ -544,15 +544,15 @@ def get_fer(members_releases, k12: list, k22: list, fer1: np.ndarray, fer2: np.n
                     fer_condensed = np.insert(fer_condensed, a, 0, axis=0)
                 a += 1
             fer_condensed_sub_array.append(fer_condensed)
-        fer_condenced_array.append(fer_condensed_sub_array)
-    return fer_condenced_array
+        fer_condensed_array.append(fer_condensed_sub_array)
+    return fer_condensed_array
 
-def get_parted_global_nodal_force_vector(nodes_loads, casses, D_unknown, D_known, num_n: int):
+def get_parted_global_nodal_force_vector(nodes_loads, cases, D_unknown, D_known, num_n: int):
     """
-    Builds the pertitioned global nodal force vector.
+    Builds the partitioned global nodal force vector.
 
     :param nodes_loads: list. [case, [Px, Py, Pz, Mx, My, Mz]]
-    :param casses: list. Load Case Indexes.
+    :param cases: list. Load Case Indexes.
     :param D_unknown: ndarray. A ndarray of the indices for the released DOFs.
     :param D_known: ndarray. A ndarray of the indices for the unreleased DOFs.
     :param num_n: int. Number of nodes
@@ -560,7 +560,7 @@ def get_parted_global_nodal_force_vector(nodes_loads, casses, D_unknown, D_known
     """
 
     p_array = []
-    for load_case_i in casses:
+    for load_case_i in cases:
         p = np.zeros((num_n * 6, 1))
         for i in range(num_n):
             if np.size(nodes_loads[int(load_case_i)]) != 0:
@@ -578,7 +578,7 @@ def get_parted_global_nodal_force_vector(nodes_loads, casses, D_unknown, D_known
 
 def k_member_make_global(k_local_array, T_array):
     """
-    Converts member stiffness matrices from the local cordinate system to the global cordinate system.
+    Converts member stiffness matrices from the local coordinate system to the global coordinate system.
 
     :param k_local_array: ndarray. 4D array of the local stiffness matrices for each member. shape: (# members, 12, 12)
     :param T_array: ndarray: 4D array of the transformation matrices for each member. shape: (# members, 12, 12)
@@ -597,7 +597,7 @@ def get_K_global(members_dof, k_global: np.ndarray, num_n: int, num_m:int):
     :param members_dof: ndarray. A 3D ndarray of the DOF indices for each member. shape: (# members, 12)
     :param k_global: ndarray. 4D array of the global stiffness matrices for each member. shape: (# members, 12, 12)
     :param num_n: int. Number of nodes.
-    :param num_m: int. Number of casses.
+    :param num_m: int. Number of cases.
     :return: ndarray. Global stiffness matrix. shape: (# nodes * 6, # nodes * 6)
     """
 
@@ -606,20 +606,20 @@ def get_K_global(members_dof, k_global: np.ndarray, num_n: int, num_m:int):
         K[np.ix_(members_dof[i].astype(int), members_dof[i].astype(int))] += np.asarray(k_global[i], dtype=float)
     return K
 
-def partition_K_gloabl(K_global: np.ndarray, R_unrelesed: np.ndarray, R_relesed: np.ndarray):
+def partition_K_global(K_global: np.ndarray, R_unreleased: np.ndarray, R_released: np.ndarray):
     """
-    Partitiones the global stiffness matrix with respect to the frames supports.
+    Partitions the global stiffness matrix with respect to the frames supports.
 
     :param K_global: ndarray. Global stiffness matrix. shape: (# nodes * 6, # nodes * 6)
-    :param R_unrelesed: ndarray. A ndarray of the indices for the unreleased DOFs. (not supported)
-    :param R_relesed: ndarray. A ndarray of the indices for the unreleased DOFs. (supported)
+    :param R_unreleased: ndarray. A ndarray of the indices for the unreleased DOFs. (not supported)
+    :param R_released: ndarray. A ndarray of the indices for the unreleased DOFs. (supported)
     :return: ndarray. 4 sub-matrices of the global stiffness matrix with respect to the frames supports.
     """
 
-    K11 = (K_global[R_unrelesed.astype(int), :][:, R_unrelesed.astype(int)])
-    K12 = (K_global[R_unrelesed.astype(int), :][:, R_relesed.astype(int)])
-    K21 = (K_global[R_relesed.astype(int), :][:, R_unrelesed.astype(int)])
-    K22 = (K_global[R_relesed.astype(int), :][:, R_relesed.astype(int)])
+    K11 = (K_global[R_unreleased.astype(int), :][:, R_unreleased.astype(int)])
+    K12 = (K_global[R_unreleased.astype(int), :][:, R_released.astype(int)])
+    K21 = (K_global[R_released.astype(int), :][:, R_unreleased.astype(int)])
+    K22 = (K_global[R_released.astype(int), :][:, R_released.astype(int)])
     return K11, K12, K21, K22
 
 def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.ndarray, index_unsupported:np.ndarray,
@@ -631,10 +631,10 @@ def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.nd
     :param K12: ndarray. Sub-matrices of the global stiffness matrix.
     :param P1_array: ndarray. Vector of the nodel loads.
     :param FER1_array: ndarray. An array of the released DOFs fixed end reactions.
-    :param index_unsupported: ndarray. Indeces of the unsupported DOFs.
-    :param index_supported: ndarray. Indeces of the supported DOFs.
+    :param index_unsupported: ndarray. Indices of the unsupported DOFs.
+    :param index_supported: ndarray. Indices of the supported DOFs.
     :param num_n: int. Number of nodes.
-    :param num_c: int. Number of casses.
+    :param num_c: int. Number of cases.
     :return:
         D: ndarray. Array of the nodal displacements.
         DX: ndarray. Array of the nodel displacements in the X direction.
@@ -678,12 +678,12 @@ def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.nd
 def _assemble_D_array(D1_array, D2, index_supported, index_unsupported, num_n: int, num_c: int):
     """
 
-    :param D1_array: ndarray. Array of displecements for all unspported DOFs.
+    :param D1_array: ndarray. Array of displacements for all unsupported DOFs.
     :param D2: ndarray. Array of displacements for all supported DOFs.
-    :param index_supported: ndarray. Indeces of the supported DOFs.
-    :param index_unsupported: ndarray. Indeces of the unsupported DOFs.
+    :param index_supported: ndarray. Indices of the supported DOFs.
+    :param index_unsupported: ndarray. Indices of the unsupported DOFs.
     :param num_n: int: Number of nodes.
-    :param num_c: intL Number of casses.
+    :param num_c: int: Number of cases.
     :return: ndarray. Array of the nodal displacements.
     """
 
@@ -706,7 +706,7 @@ def _get_node_direction_deflections(D_array, num_n: int, num_c: int):
 
     :param D_array: ndarray. Array of the nodal displacements.
     :param num_n: int: Number of nodes.
-    :param num_c: int: Number of casses.
+    :param num_c: int: Number of cases.
     :return:
         DX: ndarray. Array of the nodel displacements in the X direction.
         DY: ndarray. Array of the nodel displacements in the Y direction.
@@ -759,8 +759,8 @@ def get_member_direction_deflections(members, DX_array: np.ndarray, DY_array: np
     :param RY_array: ndarray. Array of the nodel rotation displacements in the Y direction.
     :param RZ_array: ndarray. Array of the nodel rotation displacements in the Z direction.
     :param num_m: int. Number of members.
-    :param num_c: int. Number of casses.
-    :return: ndarray. Array of the global end deflections for each member. shape: (# casses, # members, 12)
+    :param num_c: int. Number of cases.
+    :return: ndarray. Array of the global end deflections for each member. shape: (# cases, # members, 12)
     """
 
     D_member_array = []
@@ -785,14 +785,14 @@ def get_member_direction_deflections(members, DX_array: np.ndarray, DY_array: np
 
 def get_d(T_array: np.ndarray, D_array: np.ndarray, num_m: int, num_c: int):
     """
-    Transforms the end deflection array for each member from the global cordinate system into the local
-    cordinate system.
+    Transforms the end deflection array for each member from the global coordinate system into the local
+    coordinate system.
 
     :param T_array: ndarray. 4D ndarray of the transformation matrices for each member. shape: (# members, 12, 12)
-    :param D_array: ndarray. Array of the global end deflections for each member. shape: (# casses, # members, 12)
+    :param D_array: ndarray. Array of the global end deflections for each member. shape: (# cases, # members, 12)
     :param num_m: int. Number of members.
-    :param num_c: int. Number of casses.
-    :return: ndarray. Array of the local end deflections for each member. shape: (# casses, # members, 12)
+    :param num_c: int. Number of cases.
+    :return: ndarray. Array of the local end deflections for each member. shape: (# cases, # members, 12)
     """
 
     d = []
@@ -809,10 +809,10 @@ def get_F(T_array: np.ndarray, f_array: np.ndarray, num_m: int, num_c:int):
 
     :param T_array: ndarray. 4D ndarray of the transformation matrices for each member. shape: (# members, 12, 12)
     :param f_array: ndarray. Array of the local forces acting at the ends of the members.
-                    shape: (# casses, # members, 12)
+                    shape: (# cases, # members, 12)
     :param num_m: int. Number of members.
-    :param num_c: int. Number of casses.
-    :return: ndarray. Array of the global forces acting at the ends of the members. shape: (# casses, # members, 12)
+    :param num_c: int. Number of cases.
+    :return: ndarray. Array of the global forces acting at the ends of the members. shape: (# cases, # members, 12)
     """
 
     F = []
@@ -828,11 +828,11 @@ def get_f(k_array: np.ndarray, d_array: np.ndarray, fer_array: list, num_m: int,
     Gets the local forces acting at each end of the members.
 
     :param k_array: ndarray. 4D array of the local stiffness matrices for each member. shape: (# members, 12, 12)
-    :param d_array: ndarray. Array of the local end deflections for each member. shape: (# casses, # members, 12)
-    :param fer_array: list. Condensed local fixed end reaction vector. shape: (# members, # Casses, 12, 1)
+    :param d_array: ndarray. Array of the local end deflections for each member. shape: (# cases, # members, 12)
+    :param fer_array: list. Condensed local fixed end reaction vector. shape: (# members, # cases, 12, 1)
     :param num_m: int: Number of members.
-    :param num_c: int: Number of casses.
-    :return: ndarray. Array of the local forces acting at the ends of the members. shape: (# casses, # members, 12)
+    :param num_c: int: Number of cases.
+    :return: ndarray. Array of the local forces acting at the ends of the members. shape: (# cases, # members, 12)
     """
 
     f = []
@@ -851,7 +851,7 @@ def get_weight(materials, members, members_L, members_cross_section_props):
     :param members: list. [i_node, j_node, material_index, set_cross_section_props]
     :param members_L: ndarray. length of each member.
     :param members_cross_section_props: ndarray. [A, Iy, Iz, J]
-    :return: ndarry. Array of the weights of each member of the frame.
+    :return: ndarray. Array of the weights of each member of the frame.
     """
 
     return materials[members[:,2].astype(int),3] * members_cross_section_props[:, 0] * members_L
@@ -863,14 +863,14 @@ def get_reactions(nodes_support, nodes_loads, members, members_releases, F_array
     :param nodes_support: list. [support_DX, support_DY, support_DZ, support_RX, support_RY, support_RZ]
     :param nodes_loads:  list. [case, [Px, Py, Pz, Mx, My, Mz]]
     :param members: list. [i_node, j_node, material_index, set_cross_section_props]
-    :param members_releases: list. What directions are relesed Bool.
+    :param members_releases: list. What directions are released Bool.
                              [Dxi, Dyi, Dzi, Rxi, Ryi, Rzi, Dxj, Dyj, Dzj, Rxj, Ryj, Rzj]
     :param F_array: ndarray. Array of the global forces acting at the ends of the members.
-                    shape: (# casses, # members, 12)
-    :param num_c: int: Number of casses.
+                    shape: (# cases, # members, 12)
+    :param num_c: int: Number of cases.
     :param num_m: int: Number of members.
     :param num_n: int: Number of nodes.
-    :return: ndarray. Array of the reactions at the supports of the frame. shape: (# casses, # nodes, 6)
+    :return: ndarray. Array of the reactions at the supports of the frame. shape: (# cases, # nodes, 6)
     """
 
     reactions = []
@@ -893,12 +893,12 @@ def get_reactions(nodes_support, nodes_loads, members, members_releases, F_array
     return reactions
 
 #todo
-def solve_internal_forces(members, members_L, members_cross_section_props, materials, casses, point_loads, dist_loads,
+def solve_internal_forces(members, members_L, members_cross_section_props, materials, cases, point_loads, dist_loads,
                           f_array, fer_array, d_array, num_m, num_c):
     segments = ms.segment_member(members, members_L, members_cross_section_props, materials, point_loads,
                                  dist_loads, f_array, fer_array, d_array, num_m, num_c)
 
-    seg, seg_internal_loads, seg_dist_loads, seg_thata, seg_delta = segments
+    seg, seg_internal_loads, seg_dist_loads, seg_theta, seg_delta = segments
     abs_F = []
     abs_M = []
     for mINDEX in range(num_m):
@@ -906,17 +906,17 @@ def solve_internal_forces(members, members_L, members_cross_section_props, mater
         max_val = [0, 0, 0, 0, 0, 0]
         min_case = [0,0,0,0,0,0]
         max_case = [0,0,0,0,0,0]
-        min_val[0], min_case[0] = ms.min_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        max_val[0], max_case[0] = ms.max_axial(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        min_val[1], min_val[2], min_case[1], min_case[2] = ms.min_shear(casses, mINDEX, seg, seg_internal_loads,
+        min_val[0], min_case[0] = ms.min_axial(cases, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        max_val[0], max_case[0] = ms.max_axial(cases, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        min_val[1], min_val[2], min_case[1], min_case[2] = ms.min_shear(cases, mINDEX, seg, seg_internal_loads,
                                                                         seg_dist_loads)
-        max_val[1], max_val[2], max_case[1], max_case[2] = ms.max_shear(casses, mINDEX, seg, seg_internal_loads,
+        max_val[1], max_val[2], max_case[1], max_case[2] = ms.max_shear(cases, mINDEX, seg, seg_internal_loads,
                                                                         seg_dist_loads)
-        min_val[3], min_case[3] = ms.min_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        max_val[3], max_case[3] = ms.max_tourque(casses, mINDEX, seg, seg_internal_loads, seg_dist_loads)
-        min_val[4], min_val[5], min_case[4], min_case[5] = ms.min_moment(casses, mINDEX, seg, seg_internal_loads,
+        min_val[3], min_case[3] = ms.min_torque(cases, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        max_val[3], max_case[3] = ms.max_torque(cases, mINDEX, seg, seg_internal_loads, seg_dist_loads)
+        min_val[4], min_val[5], min_case[4], min_case[5] = ms.min_moment(cases, mINDEX, seg, seg_internal_loads,
                                                                          seg_dist_loads)
-        max_val[4], max_val[5], max_case[4], max_case[5] = ms.max_moment(casses, mINDEX, seg, seg_internal_loads,
+        max_val[4], max_val[5], max_case[4], max_case[5] = ms.max_moment(cases, mINDEX, seg, seg_internal_loads,
                                                                          seg_dist_loads)
 
         val = []
@@ -962,7 +962,7 @@ def get_cost(X, constants):
         if not frame.members[i][3]:
             frame.members_cross_section_props[i] = cross_section_props[j]
             j += 1
-    if log: print("Cross Seciton Properites: ", frame.members_cross_section_props)
+    if log: print("Cross Section Properties: ", frame.members_cross_section_props)
 
     D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = (
         frame.AnalysisLinear(weight_needed, reactions_needed, internal_forces_needed, log))
@@ -987,7 +987,7 @@ def chack_inputs(members, member_group: list, member_group_type: list):
     if max(member_group) + 1 != len(member_group_type):
         raise Exception('Number of member groups does not equal number of groups members are assigned to')
 
-def get_num_varables(member_group_type: list):
+def get_num_variables(member_group_type: list):
     """
     Gets the number of variables to be in the optimization problem.
 
@@ -996,22 +996,22 @@ def get_num_varables(member_group_type: list):
         numVariables: int, number of variables in the optimization.
     """
 
-    num_varables = 0
+    num_variables = 0
     for t in member_group_type:
         if t == "Angle":
-            num_varables += 3
+            num_variables += 3
         elif t == "RectHSS":
-            num_varables += 3
+            num_variables += 3
         elif t == "SquareHSS":
-            num_varables += 2
+            num_variables += 2
         elif t == "TubeHSS":
-            num_varables += 2
+            num_variables += 2
         else:
-            raise Exception('member groupe type is not a valid cross section type. '
+            raise Exception('member group type is not a valid cross section type. '
                             'Chose one of the following: Angle, RectHSS, SquareHSS, TubeHSS')
-    return num_varables
+    return num_variables
 
-def get_bounds(lower_bound: list or float, upper_bound: list or float, num_varables: int):
+def get_bounds(lower_bound: list or float, upper_bound: list or float, num_variables: int):
     """
     Sets up the scipy optimization bounds.
 
@@ -1019,14 +1019,14 @@ def get_bounds(lower_bound: list or float, upper_bound: list or float, num_varab
                         if list must be length of number of variables.
     :param upper_bound: list or float. Upper bound on the optimization variables.
                         if list must be length of number of variables.
-    :param num_varables: int, Number of variables to be in the optimization problem.
+    :param num_variables: int, Number of variables to be in the optimization problem.
     :return: Scipy optimization bounds.
     """
 
     if isinstance(lower_bound, float):
-        lower_bound = [lower_bound] * num_varables
+        lower_bound = [lower_bound] * num_variables
     if isinstance (upper_bound, float):
-        upper_bound = [upper_bound] * num_varables
+        upper_bound = [upper_bound] * num_variables
     return opt.Bounds(lower_bound, upper_bound)
 
 def get_cross_section_props(X, member_groups, member_group_type):

@@ -1,5 +1,5 @@
 """
-Holds the object the stores all the results, incuding sub objects.
+Holds the object the stores all the results, including sub objects.
 """
 
 import numpy as np
@@ -21,7 +21,7 @@ class NodeDeflections:
 
     def __init__(self, DX, DY, DZ, RX, RY, RZ):
         """
-        Node deflection object constructer.
+        Node deflection object constructor.
 
         :param DX: X direction deflections. Shape: (# nodes)
         :param DY: Y direction deflections. Shape: (# nodes)
@@ -45,9 +45,9 @@ class Reactions:
 
     def __init__(self, reactions):
         """
-        Reactions object constructer.
+        Reactions object constructor.
 
-        :param reactions: Node ractions. Shape: (# Nodes, 6)
+        :param reactions: Node reactions. Shape: (# Nodes, 6)
         """
         reactions = np.array(reactions)
         self.RX = reactions[:,0]
@@ -108,21 +108,21 @@ class Results:
         """
         Adds node deflections to the results object.
 
-        :param DX: X direction deflections. Shape: (# casses, # nodes)
-        :param DY: Y direction deflections. Shape: (# casses, # nodes)
-        :param DZ: Z direction deflections. Shape: (# casses, # nodes)
-        :param RX: X direction rotation deflections. Shape: (# casses, # nodes)
-        :param RY: Y direction rotation deflections. Shape: (# casses, # nodes)
-        :param RZ: Z direction rotation deflections. Shape: (# casses, # nodes)
+        :param DX: X direction deflections. Shape: (# cases, # nodes)
+        :param DY: Y direction deflections. Shape: (# cases, # nodes)
+        :param DZ: Z direction deflections. Shape: (# cases, # nodes)
+        :param RX: X direction rotation deflections. Shape: (# cases, # nodes)
+        :param RY: Y direction rotation deflections. Shape: (# cases, # nodes)
+        :param RZ: Z direction rotation deflections. Shape: (# cases, # nodes)
         """
 
         for case_id in range(len(DX)):
             self.NodalDeflections.append(NodeDeflections(DX[case_id], DY[case_id], DZ[case_id],
                                                          RX[case_id], RY[case_id], RZ[case_id]))
 
-    def AddWeight(self, weight):
+    def add_weight(self, weight):
         """
-        Adds weigits to the results object.
+        Adds weights to the results object.
 
         :param weight: List of wights of each member.
         """
@@ -134,7 +134,7 @@ class Results:
         """
         Adds reactions to the results object.
 
-        :param reactions: Node ractions. Shape: (# cases, # Nodes, 6)
+        :param reactions: Node reactions. Shape: (# cases, # Nodes, 6)
         """
 
         for case_id in range(len(reactions)):
@@ -142,7 +142,7 @@ class Results:
 
     def AddInternalForces(self, internalForces):
         """
-        Adds the maximum forces in each momber to the results object.
+        Adds the maximum forces in each member to the results object.
 
         :param internalForces: Maximum forces in each member. Shape: (2,3,2)
         """
