@@ -3,8 +3,13 @@ Handles the storage of things to be printed and the converting of said objects t
 printable type: (node, line, and tris)
 """
 
-from typing import List, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Union
 import numpy as np
+
+if TYPE_CHECKING:
+    from window import MainWindow
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -21,12 +26,14 @@ class Display:
     Holds all things that are to be printed.
     """
 
-    def __init__(self):
+    def __init__(self, window: MainWindow):
         """
         Display Object Constructor.
         """
 
-        self.scale = [0.1]
+        self.window = window
+
+        self.scale = [0.1,0.1]
         self.res = [8]
 
         self.Nodes: List[List[float]] = [] # shape: (# nodes, 3)
@@ -121,7 +128,9 @@ class Display:
         :param node_loads: list. Node load. shape: [i Node, PX, PY, PZ, MX, MY, MZ]
         """
 
-        locations = [list_nodes[0][node_loads[0]],list_nodes[1][node_loads[0]],list_nodes[2][node_loads[0]]]
+        locations = [list_nodes[0][int(node_loads[0])],
+                     list_nodes[1][int(node_loads[0])],
+                     list_nodes[2][int(node_loads[0])]]
         load = node_loads[1:]
         self.point_loads.append([locations, load])
 
@@ -134,8 +143,7 @@ class Display:
         :param list_nodes: list. List of all nodes in the frame. shape: (3, # nodes)
         :param member_point_loads: list. Local member point load. shape: [i Member, x, PX, PY, PZ, MX, MY, MZ]
         """
-
-        location = get_loc_on_member(int(member_point_loads[0]), int(member_point_loads[1]), list_members, list_nodes)
+        location = get_loc_on_member(int(member_point_loads[0]), member_point_loads[1], list_members, list_nodes)
         Trans = get_member_t(int(member_point_loads[0]), list_members, list_nodes)[:3, :3]
         P_global = Trans.T @ np.array([member_point_loads[2],member_point_loads[3],member_point_loads[4]]) @ Trans
         M_global = Trans.T @ np.array([member_point_loads[5],member_point_loads[6],member_point_loads[7]]) @ Trans
@@ -183,6 +191,15 @@ class Display:
 
         # supports
         self._convert_supports()
+
+        # releces
+        self._convert_releces()
+
+        # point loads
+        self._convert_point_loads(self.window.LookDir)
+
+        # distributed loads
+        self._convert_dist_loads()
 
     def _convert_supports(self):
         s = self.scale[0]
@@ -440,6 +457,69 @@ class Display:
                         self.PrintLines = np.vstack((self.PrintLines, [[n2, n3]]))
                         self.PrintLines = np.vstack((self.PrintLines, [[n3, n4]]))
                         self.PrintLines = np.vstack((self.PrintLines, [[n4, n1]]))
+
+    def _convert_releces(self) -> None:
+        # shape: (# releces, 2: [[x1,y1,z1,x2,y2,z2],12])
+        pass  # TODO
+
+    def _convert_point_loads(self, look_dir: np.ndarray) -> None:
+        largest: float = 0
+
+        for i in range(len(self.point_loads)):
+            for j in range(6):
+                if abs(self.point_loads[i][1][j]) > largest:
+                    largest = self.point_loads[i][1][j]
+
+        if largest != 0:
+            scaler: float  = self.scale[1] / largest
+
+            for i in range(len(self.point_loads)):
+                for j in range(6):
+                    if not np.isclose(self.point_loads[i][1][j],0):
+                        a=1
+                        p1 = np.array(self.point_loads[i][0])
+
+                        # point load
+                        if j <= 2:
+                            v = np.zeros(3)
+                            v[j] = self.point_loads[i][1][j]
+                            p2 = p1 + v  * scaler
+
+                            p3 = p1 + v * scaler / 10
+
+                            unit_v = v / np.linalg.norm(v)
+
+                            side_v = np.cross(unit_v, look_dir)
+                            side_v /= np.linalg.norm(side_v)
+
+                            side_v *= scaler / 10
+
+                            p4 = p3 + side_v
+                            p3 -= side_v
+
+                            self.PrintLines = np.vstack((self.PrintLines, [[p1, p2]]))
+                            self.PrintLines = np.vstack((self.PrintLines, [[p1, p3]]))
+                            self.PrintLines = np.vstack((self.PrintLines, [[p1, p4]]))
+
+                            # todo add text label
+
+                        # moment load
+                        else:
+                            v = np.zeros(3)
+                            v[j-3] = self.point_loads[i][1][j] * scaler
+                            p2 = p1 + v
+
+                            # TODO
+
+
+
+
+        # shape: (# loads, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
+        pass  # TODO
+
+    def _convert_dist_loads(self) -> None:
+        # shape: (# loads x directions, 2:[[x1,y1,z2,x2,y2,z2], [wx1, wx2, wy1, wy2, wz1, wz2]])
+        pass  # TODO
 
     # todo add converter to convert everything to the print arrays
     # todo rework all the adders

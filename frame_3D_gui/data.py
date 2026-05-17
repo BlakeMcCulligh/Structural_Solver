@@ -2,6 +2,7 @@
 Holds the object that stores all the 3D frame's data
 and handles distributing data when a new part of the frame is added or edited.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Union
@@ -447,7 +448,7 @@ class Data:
         if AddToDisplay:
             for i in range(len(MemberPointLoad[0])):
                load = []
-               for j in range(9): load.append(self.MemberPointLoad[j][i])
+               for j in range(9): load.append(MemberPointLoad[j][i])
                Window.DisplayData.AddMemberPointLoads([self.Members[0],self.Members[1]], self.Nodes, load)
 
             Window.DisplayData.ConvertToPrint()

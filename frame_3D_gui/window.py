@@ -79,7 +79,7 @@ class MainWindow(tk.Frame):
         self.LIGHT_DIR: np.ndarray = np.array([0, 0, -1]) # 3D rendering lighting direction unit vector
 
         # arrays of geometry being displayed in the 3D rendering
-        self.DisplayData: Display = Display()
+        self.DisplayData: Display = Display(self)
 
         # binding 3D rendering movement inputs
         self.Root.bind("<MouseWheel>", self._zoom)
