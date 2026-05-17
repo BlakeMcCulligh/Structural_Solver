@@ -473,6 +473,9 @@ class Display:
         if largest != 0:
             scaler: float  = self.scale[1] / largest
 
+            X_circle = [scaler / 2 * np.cos(2 * np.pi * i / self.res[0]) for i in range(self.res[0])]
+            Y_circle = [scaler / 2 * np.sin(2 * np.pi * i / self.res[0]) for i in range(self.res[0])]
+
             for i in range(len(self.point_loads)):
                 for j in range(6):
                     if not np.isclose(self.point_loads[i][1][j],0):
@@ -507,15 +510,56 @@ class Display:
                         else:
                             v = np.zeros(3)
                             v[j-3] = self.point_loads[i][1][j] * scaler
-                            p2 = p1 + v
+                            unit_v = v / np.linalg.norm(v)
 
-                            # TODO
+                            center = p1 + unit_v * self.scale[1] / 4
 
+                            if unit_v[0] == 1 or unit_v[0] == -1:
+                                X = [center[0]] * int(self.res[0] * 0.75)
+                                Y = [center[1] + X_circle[i] for i in range(int(self.res[0] * 0.75))]
+                                Z = [center[2] + Y_circle[i] for i in range(int(self.res[0] * 0.75))]
 
+                            elif unit_v[1] == 1 or unit_v[1] == -1:
+                                X = [center[0] + X_circle[i] for i in range(int(self.res[0] * 0.75))]
+                                Y = [center[1]] * int(self.res[0] * 0.75)
+                                Z = [center[2] + Y_circle[i] for i in range(int(self.res[0] * 0.75))]
 
+                            elif unit_v[2] == 1 or unit_v[2] == -1:
+                                X = [center[0] + X_circle[i] for i in range(int(self.res[0] * 0.75))]
+                                Y = [center[1] + Y_circle[i] for i in range(int(self.res[0] * 0.75))]
+                                Z = [center[2]] * int(self.res[0] * 0.75)
 
-        # shape: (# loads, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
-        pass  # TODO
+                            else:
+                                raise Exception('Error. Moment load printing invalid moment.')
+
+                            for k in range(int(self.res[0] * 0.75) - 1):
+                                self.PrintLines = np.vstack((self.PrintLines, [[[X[k], Y[k], Z[k]],
+                                                                                [X[k + 1], Y[k + 1], Z[k + 1]]]]))
+
+                            if unit_v[0] == -1 or unit_v[1] == -1 or unit_v[2] == -1:
+                                n1 = np.array([X[0], Y[0], Z[0]])
+                                n2 = np.array([X[1], Y[1], Z[1]])
+                            else:
+                                n1 = np.array([X[len(X) - 1], Y[len(X) - 1], Z[len(X) - 1]])
+                                n2 = np.array([X[len(X) - 2], Y[len(X) - 2], Z[len(X) - 2]])
+
+                            v_curve = n2 - n1
+                            unit_v_curve = v_curve / np.linalg.norm(v_curve)
+
+                            side_v = np.cross(unit_v,unit_v_curve)
+
+                            n3 = n1 + unit_v_curve * scaler / 10
+                            side_v /= np.linalg.norm(side_v)
+
+                            side_v *= scaler / 10
+
+                            n4 = n3 + side_v
+                            n3 -= side_v
+
+                            self.PrintLines = np.vstack((self.PrintLines, [[n1, n3]]))
+                            self.PrintLines = np.vstack((self.PrintLines, [[n1, n4]]))
+
+                            # todo add text label
 
     def _convert_dist_loads(self) -> None:
         # shape: (# loads x directions, 2:[[x1,y1,z2,x2,y2,z2], [wx1, wx2, wy1, wy2, wz1, wz2]])
