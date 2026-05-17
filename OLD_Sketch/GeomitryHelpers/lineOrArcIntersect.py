@@ -49,7 +49,7 @@ def line_line_intersect(l1, l2):
     return False
 
 def point_on_arc_strict(p, arc):
-    # Distance from Center must equal radius
+    # Distance from Centre must equal radius
     d = math.hypot(p.x - arc.Center.x, p.y - arc.Center.y)
     if not almost_equal(d, arc.radius):
         return False

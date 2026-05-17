@@ -584,7 +584,7 @@ class GUI(tk.Frame):
 
                 angle = math.degrees(math.atan2(-d[1], d[0]))
                 center = (p1_up + p2_up) / 2 + DISTANCE_CONSTRAINTS_TEXT_SIZE / 2 + 1
-                # canvas_parts.append(self.canvas.create_text(center[0], center[1],text=l, angle=angle, fill=color, anchor = "center"))
+                # canvas_parts.append(self.canvas.create_text(centre[0], centre[1],text=l, angle=angle, fill=colour, anchor = "centre"))
                 self.canvas.coords(constraint.canvas_parts[3], center[0], center[1])
                 self.canvas.itemconfig(constraint.canvas_parts[3], fill=color, angle=angle)
 

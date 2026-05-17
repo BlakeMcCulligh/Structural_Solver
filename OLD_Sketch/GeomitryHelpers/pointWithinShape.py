@@ -93,7 +93,7 @@ def point_on_line_segment(p, a, b):
 
 
 def point_on_arc(p, arc):
-    # Check distance to center equals radius
+    # Check distance to centre equals radius
     d = math.hypot(p.x - arc.Center.x, p.y - arc.Center.y)
     if not almost_equal(d, arc.radius):
         return False

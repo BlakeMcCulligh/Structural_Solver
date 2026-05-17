@@ -198,14 +198,14 @@ def open_frame(window, file_path = None):
 
 def _select_file_gui(window, file_types):
     """
-    Opens a file explorer dialog using Tkinter and returns the selected file path.
+    Opens a file explorer dialogue using Tkinter and returns the selected file path.
 
     :param window:  Object storing the main window.
     :param file_types: What type of file is being opened.
     :return: Selected file path or None.
     """
 
-    # Open the file dialog
+    # Open the file dialogue
     file_path = filedialog.askopenfilename(title="Select a file", filetypes= file_types)
 
     if file_path:return file_path

@@ -14,24 +14,24 @@ __status__ = ""
 
 def _get_x(d: float, b: float, t: float) -> float:
     """
-    Calculates the horizontal distance form the outside of the corner to the center of the angle.
+    Calculates the horizontal distance form the outside of the corner to the centre of the angle.
 
     :param d: float. Depth
     :param b: float. Width
     :param t: float. Thickness
-    :return: float. Horizontal distance form the outside of the corner to the center of the angle.
+    :return: float. Horizontal distance form the outside of the corner to the centre of the angle.
     """
 
     return (b**2+(d-t)*t)/(2*(b+d-t))
 
 def _get_y(d: float, b: float, t: float) -> float:
     """
-    Calculates the vertical distance form the outside of the corner to the center of the angle.
+    Calculates the vertical distance form the outside of the corner to the centre of the angle.
 
     :param d: float. Depth
     :param b: float. Width
     :param t: float. Thickness
-    :return: float. Vertical distance form the outside of the corner to the center of the angle.
+    :return: float. Vertical distance form the outside of the corner to the centre of the angle.
     """
 
     return (d**2+(b-t)*t)/(2*(b+d-t))

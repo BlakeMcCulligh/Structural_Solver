@@ -145,7 +145,7 @@ class Frame3D:
                 y = [0, 1, 0]
                 z = np.cross(x, y)
                 z = np.divide(z, (z[0] ** 2 + z[1] ** 2 + z[2] ** 2) ** 0.5)
-            # members neither vertical or horizontal
+            # members neither vertical nor horizontal
             else:
                 proj = [Xj - Xi, 0, Zj - Zi]
                 if Yj > Yi:

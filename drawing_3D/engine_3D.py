@@ -112,13 +112,13 @@ def remove_tri_facing_away(window, tri, tri_normals):
 
 def illumination(window, solid_tri_normals, num_surf_tri):
     """
-    Gets the color variable for each triangular surface. The color variable is an int
+    Gets the colour variable for each triangular surface. The colour variable is an int
     between 0 and 255 and is used for all 3 values in rgb.
 
     :param window: Object storing the main window.
     :param solid_tri_normals: List of vectors normal to the solid's triangular surfaces.
     :param num_surf_tri: Number of surface triangular surfaces.
-    :return: Color Variable between 0 and 255.
+    :return: Colour Variable between 0 and 255.
     """
 
     l_light_direction = np.linalg.norm(window.LIGHT_DIR)
@@ -267,8 +267,8 @@ def clip_close(node, line, tri, tri_color):
     :param node: List of nodes. Shape: (# Nodes, 3)
     :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
     :param tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
-    :param tri_color: Color Variable between 0 and 255.
-    :return: Nodes, Lines, Triangles, Triangle Colors.
+    :param tri_color: Colour Variable between 0 and 255.
+    :return: Nodes, Lines, Triangles, Triangle Colours.
     """
 
     clipped_nodes = []
@@ -300,13 +300,13 @@ def clip_edges(node, line, old_tri, old_tri_color, h, w):
     """
     Cuts nodes, lines, and surfaces that are outside the edges of the camera.
 
-    :param node:  List of nodes. Shape: (# Nodes, 3)
-    :param line:  List of nodes that forms lines. Shape: (# Lines, 2, 3)
-    :param old_tri:  List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
-    :param old_tri_color:  Color Variable between 0 and 255.
+    :param node: List of nodes. Shape: (# Nodes, 3)
+    :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
+    :param old_tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
+    :param old_tri_color: Colour Variable between 0 and 255.
     :param h: Height of window.
     :param w: Width of window.
-    :return: Nodes, Lines, Triangles, Triangle Colors.
+    :return: Nodes, Lines, Triangles, Triangle Colours.
     """
 
     clip_plane_point = np.array([[0, 0, 0], [0, h, 0], [0, 0, 0], [w, 0, 0]])

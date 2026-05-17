@@ -1180,7 +1180,7 @@ class MainWindow(tk.Frame):
 
 def _select_file_gui(file_types):
     """
-    Opens a file explorer dialog using Tkinter and returns the selected file path.
+    Opens a file explorer dialogue using Tkinter and returns the selected file path.
 
     :param file_types: List of file types that can be selected.
     :return: File path or None.

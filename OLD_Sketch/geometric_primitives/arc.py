@@ -116,8 +116,8 @@ def create_arc_segment(center_x, center_y, radius, start_angle_deg, end_angle_de
     """
     Generates a shapely LineString approximating an arc segment.
 
-    :param center_x: X coordinate of the center.
-    :param center_y: Y coordinate of the center.
+    :param center_x: X coordinate of the centre.
+    :param center_y: Y coordinate of the centre.
     :param radius: The radius of the arc.
     :param start_angle_deg: The start angle in degrees (e.g., 0).
     :param end_angle_deg: The end angle in degrees (e.g., 90).
@@ -145,7 +145,7 @@ def create_arc_segment(center_x, center_y, radius, start_angle_deg, end_angle_de
 
 def get_angle_of_point(center_x, center_y, point_x, point_y):
     """
-    Calculates the angle of a point on a circle relative to the center.
+    Calculates the angle of a point on a circle relative to the centre.
 
     The angle is measured counter-clockwise from the positive location-axis (3 o'clock position).
     Returns the angle in degrees in the range [-180, 180].
