@@ -2,8 +2,13 @@
 Holds the object that stores all the 3D frame's data
 and handles distributing data when a new part of the frame is added or edited.
 """
+from __future__ import annotations
 
+from typing import TYPE_CHECKING, List, Union
 import numpy as np
+
+if TYPE_CHECKING:
+    from window import MainWindow
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -17,7 +22,6 @@ __status__ = ""
 
 from frame_3D_gui.display import get_loc_on_member, get_member_t
 
-
 class Data:
     """
     Frame Object holding all the data needed to define the frame.
@@ -30,14 +34,15 @@ class Data:
 
         self.Nodes = [[], [], []]
         self.Materials = [[], [], [], [], []]
-        self.Members = [[], [], [], [], [], [], [], []]
+        self.Members: List[List[Union[int, float, bool]]] = [[], [], [], [], [], [], [], []]
         self.Supports = [[], [], [], [], [], [], []]
         self.Releases = [[], [], [], [], [], [], [], [], [], [], [], [], []]
         self.NodeLoad = [[], [], [], [], [], [], [], []]
         self.MemberPointLoad = [[], [], [], [], [], [], [], [], []]
         self.MemberDistLoad = [[], [], [], [], [], [], [], [], [], []]
 
-    def AddNodes(self, Window, Nodes, AddToTables: bool, AddToDisplay: bool):
+    def AddNodes(self, Window: MainWindow, Nodes: List[Union[float,List[float]]], AddToTables: bool,
+                 AddToDisplay: bool) -> None:
         """
         Adds nodes to the frame.
 
@@ -65,11 +70,12 @@ class Data:
             Nodes = np.array(Nodes)
             for i in range(len(Nodes[0])):
                 #Window.AddPrintNode(Nodes[:, i])
-                Window.DisplayData.add_node(Nodes[:, i])
+                Window.DisplayData.AddNode(Nodes[:, i].tolist())
 
         _reset_solutions(Window)
 
-    def EditNode(self, Window, NewNode, Index, EditTable, EditDisplay, RowID):
+    def EditNode(self, Window: MainWindow, NewNode: List[float], Index: int, EditTable: bool, EditDisplay: bool,
+                 RowID: str) -> None:
         """
         Edits the coordinates of a node in the frame.
 
@@ -80,7 +86,7 @@ class Data:
         :param EditDisplay: If the 3D display is to be edited.
         :param RowID: the row within the input table that the edited node is in.
         """
-
+        print(type(RowID))
         for i in range(3): self.Nodes[i][Index] = NewNode[i]
 
         if EditTable:
@@ -95,20 +101,21 @@ class Data:
             Window.DisplayData.Members = []
             Members = np.array(self.Members)
             for i in range(len(self.Members[0])):
-                Window.DisplayData.add_member(self.Nodes, Members[[0, 1], i].astype(int))
+                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist())
 
             # updating supports
             Window.DisplayData.supports = []
             Supports = np.array(self.Supports)
             for i in range(len(self.Supports[0])):
-                Window.DisplayData.add_supports(self.Nodes, Supports[:, i])
+                Window.DisplayData.AddSupports(self.Nodes, Supports[:, i])
 
-            Window.DisplayData.convert_to_print()
-            Window.update_canvas()
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
-    def AddMaterials(self, Window, Material, AddToTables: bool, AddToDisplay: bool):
+    def AddMaterials(self, Window: MainWindow, Material: List[Union[float,List[float]]], AddToTables: bool,
+                     AddToDisplay: bool) -> None:
         """
         Adds materials to the frame.
 
@@ -133,7 +140,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def EditMaterials(self, Window, NewMaterials, Index, EditTable, EditDisplay, RowID):
+    def EditMaterials(self, Window: MainWindow, NewMaterials: List[float], Index: int, EditTable: bool,
+                      EditDisplay: bool, RowID: list) -> None:
         """
         Edits a material in the frame.
 
@@ -157,7 +165,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def AddMembers(self, Window, Members, AddToTables: bool, AddToDisplay: bool):
+    def AddMembers(self, Window: MainWindow, Members: List[Union[int, bool, float, List[Union[int, bool, float]]]],
+                   AddToTables: bool, AddToDisplay: bool) -> None:
         """
         Adds members to the frame.
 
@@ -168,7 +177,8 @@ class Data:
         """
 
         for i in range(8):
-            if isinstance(Members[i], float)  or isinstance(Members[i], bool): Members[i] = [Members[i]]
+            if not isinstance(Members[i], list):
+                Members[i] = [Members[i]]
             self.Members[i] = self.Members[i] + Members[i]
 
         if AddToTables:
@@ -181,12 +191,12 @@ class Data:
         if AddToDisplay:
             Members = np.array(Members)
             for i in range(len(Members[0])):
-                #Window.AddPrintLine(Members[[0, 1], i])
-                Window.DisplayData.add_member(self.Nodes, Members[[0, 1], i].astype(int))
+                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist())
 
         _reset_solutions(Window)
 
-    def EditMembers(self, Window, NewMembers, Index, EditTable, EditDisplay, RowID):
+    def EditMembers(self, Window: MainWindow, NewMembers: List[Union[int, bool, float]], Index: int, EditTable: bool,
+                    EditDisplay: bool, RowID) -> None:
         """
         Edits a member in the frame.
 
@@ -207,13 +217,15 @@ class Data:
             for i in range(8): Window.Tables[2].set(RowID, col_ids[i + 1], NewMembers[i])
 
         if EditDisplay:
-            Window.DisplayData.Member[Index] = NewMembers[0, 1]
-            Window.DisplayData.convert_to_print()
-            Window.update_canvas()
+            NewMembers = np.array(NewMembers)
+            Window.DisplayData.Members[Index] = NewMembers[0, 1].tolist()
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
-    def AddSupports(self, Window, Supports, AddToTables: bool, AddToDisplay: bool):
+    def AddSupports(self, Window: MainWindow, Supports: List[Union[int, bool, List[Union[int, bool]]]],
+                    AddToTables: bool, AddToDisplay: bool) -> None:
         """
         Adds supports to the frame.
 
@@ -244,7 +256,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def EditSupports(self, Window, NewSupport, Index, EditTable, EditDisplay, RowID):
+    def EditSupports(self, Window: MainWindow, NewSupport: List[Union[int,bool]], Index: int, EditTable: bool,
+                     EditDisplay: bool, RowID: str) -> None:
         """
         Edits a supports in the frame.
 
@@ -270,12 +283,13 @@ class Data:
             location = [self.Nodes[0][int(sup[0])], self.Nodes[1][int(sup[0])], self.Nodes[2][int(sup[0])]]
             supports = sup[1:7]
             Window.DisplayData.supports[Index] = [location, supports]
-            Window.DisplayData.convert_to_print()
-            Window.update_canvas()
+            Window.DisplayData.ConvertToPrint()
+            Window.UpdateCanves()
 
         _reset_solutions(Window)
 
-    def AddReleases(self, Window, Releases, AddToTables: bool, AddToDisplay: bool):
+    def AddReleases(self, Window: MainWindow, Releases: List[Union[int, bool, List[Union[int, bool]]]],
+                    AddToTables: bool, AddToDisplay: bool) -> None:
         """
         Adds releases to the frame.
 
@@ -309,7 +323,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def EditReleases(self, Window, NewReleases, Index, EditTable, EditDisplay, RowID):
+    def EditReleases(self, Window: MainWindow, NewReleases: List[Union[int, bool]], Index: int, EditTable: bool,
+                     EditDisplay: bool,RowID: str) -> None:
         """
         Edits a releases in the frame.
 
@@ -343,7 +358,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def AddNodeLoads(self, Window, NodeLoad, AddToTables: bool, AddToDisplay: bool):
+    def AddNodeLoads(self, Window: MainWindow, NodeLoad: List[Union[int, float, List[Union[int, float]]]],
+                     AddToTables: bool, AddToDisplay: bool) -> None:
         """
         Adds Node point loads to the frame.
 
@@ -375,7 +391,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def EditNodeLoads(self, Window, NewNodeLoad, Index, EditTable, EditDisplay, RowID):
+    def EditNodeLoads(self, Window: MainWindow, NewNodeLoad: List[Union[int, float]], Index: int, EditTable: bool,
+                      EditDisplay: bool, RowID: str) -> None:
         """
         Edits a node point loads in the frame.
 
@@ -403,7 +420,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def AddMemberPointLoads(self, Window, MemberPointLoad, AddToTables: bool, AddToDisplay: bool):
+    def AddMemberPointLoads(self, Window: MainWindow, MemberPointLoad: List[Union[int, float, List[Union[int, float]]]],
+                            AddToTables: bool, AddToDisplay: bool) -> None:
         """
         Adds member point loads to the frame.
 
@@ -437,7 +455,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def EditMemberPointLoad(self, Window, NewMemberPointLoad, Index, EditTable, EditDisplay, RowID):
+    def EditMemberPointLoad(self, Window: MainWindow, NewMemberPointLoad: List[Union[int, float]], Index: int,
+                            EditTable: bool, EditDisplay: bool, RowID: str) -> None:
         """
         Edits a member point loads in the frame.
 
@@ -467,7 +486,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def AddMemberDistLoads(self, Window, MemberDistLoad, AddToTables: bool, AddToDisplay: bool):
+    def AddMemberDistLoads(self, Window: MainWindow, MemberDistLoad: List[Union[int, float,List[Union[int, float]]]],
+                           AddToTables: bool, AddToDisplay: bool) -> None:
         """
         Adds member distributed loads to the frame.
 
@@ -501,7 +521,8 @@ class Data:
 
         _reset_solutions(Window)
 
-    def EditMemberDistLoad(self, Window, NewMemberDistLoad, Index, EditTable, EditDisplay, RowID):
+    def EditMemberDistLoad(self, Window: MainWindow, NewMemberDistLoad: List[Union[int, float]], Index: int,
+                           EditTable: bool, EditDisplay: bool, RowID: str) -> None:
         """
         Edits a member distributed loads in the frame.
 
@@ -534,7 +555,7 @@ class Data:
 
         _reset_solutions(Window)
 
-def _reset_solutions(window):
+def _reset_solutions(window: MainWindow) -> None:
     """
     Sets all solutions to not solved, when anything is changed within the frame.
 

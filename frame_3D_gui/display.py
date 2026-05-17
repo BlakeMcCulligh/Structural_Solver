@@ -3,6 +3,7 @@ Handles the storage of things to be printed and the converting of said objects t
 printable type: (node, line, and tris)
 """
 
+from typing import List, Union
 import numpy as np
 
 __author__ = "Blake McCulligh"
@@ -28,36 +29,40 @@ class Display:
         self.scale = [0.1]
         self.res = [8]
 
-        self.Nodes = [] # shape: (# nodes, 3)
-        self.Members = [] # shape: (# members, 6)
+        self.Nodes: List[List[float]] = [] # shape: (# nodes, 3)
+        self.Members: List[List[float]] = [] # shape: (# members, 6)
 
-        self.supports = []  # shape: (# supports, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
-        self.releces = []  # shape: (# releces, 2: [[x1,y1,z1,x2,y2,z2],12])
-        self.point_loads = []  # shape: (# loads, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
-        self.dist_loads = []  # shape: (# loads x directions, 2:[[x1,y1,z2,x2,y2,z2], [wx1, wx2, wy1, wy2, wz1, wz2]])
+        # shape: (# supports, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
+        self.supports: List[List[List[Union[float, bool]]]] = []
+        # shape: (# releces, 2: [[x1,y1,z1,x2,y2,z2],12])
+        self.releces: List[List[List[Union[float, bool]]]] = []
+        # shape: (# loads, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
+        self.point_loads: List[List[List[float]]] = []
+        # shape: (# loads x directions, 2:[[x1,y1,z2,x2,y2,z2], [wx1, wx2, wy1, wy2, wz1, wz2]])
+        self.dist_loads: List[List[List[float]]] = []
 
-        self.node_deflections = []  # shape: (# deflections, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
-        self.member_deflections = []  # shape: (# members, # seg, 3: [x,y,z]])
-        self.reactions = []  # shape: (# reactions, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
-        self.internal_loads = []  # shape: (# loads x directions, 2:[[x1,y1,z2,x2,y2,z2], [# seg, val]])
+        self.node_deflections: list = []  # shape: (# deflections, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
+        self.member_deflections: list = []  # shape: (# members, # seg, 3: [x,y,z]])
+        self.reactions: list = []  # shape: (# reactions, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
+        self.internal_loads: list = []  # shape: (# loads x directions, 2:[[x1,y1,z2,x2,y2,z2], [# seg, val]])
 
-        self.text = [] # shape: (# text, 7: [string, x1,y1,z1, x2,y2,z2])
+        self.text: list = [] # shape: (# text, 7: [string, x1,y1,z1, x2,y2,z2])
 
         self.PrintNodes: np.ndarray = np.empty((0, 3))
         self.PrintLines: np.ndarray = np.empty((0, 2, 3))
         self.PrintSurfaceTri: np.ndarray = np.empty((0, 3, 3))
         self.PrintSolidTri: np.ndarray = np.empty((0, 3, 3))
 
-    def add_node(self, node):
+    def AddNode(self, node: List[float]) -> None:
         """
         Adds a node to be displayed in the 3D rendering.
 
         :param node: list. Node to be added. shape: (3)
         """
         self.Nodes.append(node)
-        self.convert_to_print()
+        self.ConvertToPrint()
 
-    def add_member(self, list_nodes, member):
+    def AddMember(self, list_nodes: List[List[float]], member: List[int]) -> None:
         """
         Adds a member to be displayed in the 3D rendering.
 
@@ -69,9 +74,9 @@ class Display:
                  list_nodes[0][member[1]], list_nodes[1][member[1]], list_nodes[2][member[1]]]
 
         self.Members.append(nodes)
-        self.convert_to_print()
+        self.ConvertToPrint()
 
-    def AddSupports(self, list_nodes, support):
+    def AddSupports(self, list_nodes: List[List[float]], support: List[Union[int,bool]] | np.ndarray) -> None:
         """
         Adds supports to be displeyed in the 3D rendering.
 
@@ -82,9 +87,10 @@ class Display:
         location = [list_nodes[0][int(support[0])], list_nodes[1][int(support[0])], list_nodes[2][int(support[0])]]
         supports = support[1:]
         self.supports.append([location, supports])
-        self.convert_to_print()
+        self.ConvertToPrint()
 
-    def AddReleces(self, list_members, list_nodes, releces):
+    def AddReleces(self, list_members: List[List[int]], list_nodes: List[List[float]],
+                   releces: List[Union[int,bool]]) -> None:
         """
         Adds releces to be displeyed in the 3D rendering.
 
@@ -107,7 +113,7 @@ class Display:
         self.releces.append([locations, direction])
         self.ConvertToPrint()
 
-    def AddNodeLoads(self, list_nodes, node_loads):
+    def AddNodeLoads(self, list_nodes: List[List[float]], node_loads: List[Union[int,float]]) -> None:
         """
         Adds node loads to be displeyed in the 3D rendering.
 
@@ -119,7 +125,8 @@ class Display:
         load = node_loads[1:]
         self.point_loads.append([locations, load])
 
-    def AddMemberPointLoads(self, list_members, list_nodes, member_point_loads):
+    def AddMemberPointLoads(self, list_members: List[List[int]], list_nodes: List[List[float]],
+                            member_point_loads: List[Union[int,float]]) -> None:
         """
         Adds member point loads to be displeyed in the 3D rendering.
 
@@ -134,7 +141,8 @@ class Display:
         M_global = Trans.T @ np.array([member_point_loads[5],member_point_loads[6],member_point_loads[7]]) @ Trans
         self.point_loads.append([location, np.concatenate((P_global,M_global))])
 
-    def AddMemberDistLoads(self, list_members, list_nodes, member_dist_loads):
+    def AddMemberDistLoads(self, list_members: List[List[int]], list_nodes: List[List[float]],
+                           member_dist_loads: List[Union[int,bool]]) -> None:
         """
         Adds member distributed loads to be displeyed in the 3D rendering.
 
@@ -437,7 +445,7 @@ class Display:
     # todo rework all the adders
     # todo popup to select what should be printed
 
-def get_loc_on_member(i_member: int, x, list_members, list_nodes):
+def get_loc_on_member(i_member: int, x, list_members: List[List[int]], list_nodes: List[List[float]]):
     """
     Finds the global coords of where x lands on a member.
 
@@ -461,7 +469,7 @@ def get_loc_on_member(i_member: int, x, list_members, list_nodes):
 
     return  n1 + unit_vector * x
 
-def get_member_t(i_member, list_members, list_nodes):
+def get_member_t(i_member: int, list_members: List[List[int]], list_nodes: List[List[float]]):
     """
     Builds an array of the transformation matrices for the member.
 

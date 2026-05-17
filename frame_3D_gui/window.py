@@ -8,6 +8,7 @@ from tkinter import ttk,  filedialog
 from copy import copy
 import pandas as pd
 import numpy as np
+from scipy.optimize import OptimizeResult
 
 from frame_3D_gui import export
 from frame_3D_gui.data import Data
@@ -45,7 +46,7 @@ class MainWindow(tk.Frame):
 
         tk.Frame.__init__(self, root)
 
-        self.FilePath = None # File path for saving.
+        self.FilePath: str | None = None # File path for saving.
 
         self.Root = root
 
@@ -53,31 +54,32 @@ class MainWindow(tk.Frame):
 
         self._create_top_menu()
 
-        self.Data = Data()
+        self.Data: Data = Data()
 
         # setting analysis objects to none.
-        self.Frame = None
-        self.Results = None
-        self.OptimizationResults = None
+        self.Frame: Frame3D | None = None
+        self.Results: Results | None = None
+        self.OptimizationResults: OptimizeResult | None = None
 
         # 3D rendering canvas
         self.graph = tk.Canvas(root, bg="white")
         self.graph.pack(fill="both", expand=True)
 
         # 3D camera Data
-        self.Camera = np.array([0.0, -2.0, 0.0])
-        self.Up = np.array([0.0, 0.0, 1.0])
-        self.LookDir = np.array([0.0, 1.0, 0.0])
-        self.CamYRot = 0
-        self.CamXRot = -np.pi/2
-        self.Target = np.array([0.0, -1.0, 0.0])
-        self.FOV = 90
-        self.Z_FAR, self.Z_NEAR = 1000, 0.1
+        self.Camera: np.ndarray = np.array([0.0, -2.0, 0.0])
+        self.Up: np.ndarray = np.array([0.0, 0.0, 1.0])
+        self.LookDir: np.ndarray = np.array([0.0, 1.0, 0.0])
+        self.CamYRot: float = 0
+        self.CamXRot: float = -np.pi/2
+        self.Target: np.ndarray = np.array([0.0, -1.0, 0.0])
+        self.FOV: float = 90
+        self.Z_FAR: float = 1000
+        self.Z_NEAR: float = 0.1
 
-        self.LIGHT_DIR = np.array([0, 0, -1]) # 3D rendering lighting direction unit vector
+        self.LIGHT_DIR: np.ndarray = np.array([0, 0, -1]) # 3D rendering lighting direction unit vector
 
         # arrays of geometry being displayed in the 3D rendering
-        self.DisplayData = Display()
+        self.DisplayData: Display = Display()
 
         # binding 3D rendering movement inputs
         self.Root.bind("<MouseWheel>", self._zoom)
@@ -964,7 +966,7 @@ class MainWindow(tk.Frame):
             self.Camera = self.Camera + self.LookDir * 0.1
         else:
             self.Camera = self.Camera - self.LookDir * 0.1
-        self.update_canvas()
+        self.UpdateCanves()
 
     def _pan_start(self, event):
         """
@@ -1050,7 +1052,7 @@ class MainWindow(tk.Frame):
         self.UpdateCanves()
         self._scroll_cords_last = cords
 
-    def update_canvas(self):
+    def UpdateCanves(self):
         """
         Updates the 3D rendering.
         """
