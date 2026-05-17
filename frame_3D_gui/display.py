@@ -41,8 +41,8 @@ class Display:
 
         # shape: (# supports, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
         self.supports: List[List[List[Union[float, bool]]]] = []
-        # shape: (# releces, 2: [[x1,y1,z1,x2,y2,z2],12])
-        self.releces: List[List[List[Union[float, bool]]]] = []
+        # shape: (# releces, 2: [[x1,y1,z1,x2,y2,z2],12,member i])
+        self.releces: List[List[Union[int,List[Union[float, bool]]]]] = []
         # shape: (# loads, 2: [[x,y,z],[dx,dy,dz,rx,ry,rz]])
         self.point_loads: List[List[List[float]]] = []
         # shape: (# loads x directions, 2:[[x1,y1,z2,x2,y2,z2], [wx1, wx2, wy1, wy2, wz1, wz2]])
@@ -107,17 +107,17 @@ class Display:
                         shape: [i member, iDX, iDY, iDZ, iRX, iRY, iRZ, jDX, jDY, jDZ, jRX, jRY, jRZ]
         """
 
-        n1 = [list_nodes[0][list_members[0][releces[0]]],
-              list_nodes[1][list_members[0][releces[0]]],
-              list_nodes[2][list_members[0][releces[0]]]]
+        n1 = [list_nodes[0][int(list_members[0][int(releces[0])])],
+              list_nodes[1][int(list_members[0][int(releces[0])])],
+              list_nodes[2][int(list_members[0][int(releces[0])])]]
 
-        n2 = [list_nodes[0][list_members[1][releces[0]]],
-              list_nodes[1][list_members[1][releces[0]]],
-              list_nodes[2][list_members[1][releces[0]]]]
+        n2 = [list_nodes[0][int(list_members[1][int(releces[0])])],
+              list_nodes[1][int(list_members[1][int(releces[0])])],
+              list_nodes[2][int(list_members[1][int(releces[0])])]]
 
         locations = n1 + n2
         direction = releces[1:]
-        self.releces.append([locations, direction])
+        self.releces.append([locations, direction, int(releces[0])])
         self.ConvertToPrint()
 
     def AddNodeLoads(self, list_nodes: List[List[float]], node_loads: List[Union[int,float]]) -> None:
@@ -183,6 +183,9 @@ class Display:
         for i in range(len(self.Nodes)):
             self.PrintNodes = np.vstack((self.PrintNodes, self.Nodes[i]))
 
+        # releces
+        self._convert_releces()
+
         # members
         for i in range(len(self.Members)):
             self.PrintLines = np.vstack((self.PrintLines,
@@ -191,9 +194,6 @@ class Display:
 
         # supports
         self._convert_supports()
-
-        # releces
-        self._convert_releces()
 
         # point loads
         self._convert_point_loads(self.window.LookDir)
@@ -459,8 +459,38 @@ class Display:
                         self.PrintLines = np.vstack((self.PrintLines, [[n4, n1]]))
 
     def _convert_releces(self) -> None:
-        # shape: (# releces, 2: [[x1,y1,z1,x2,y2,z2],12])
-        pass  # TODO
+
+        for i in range(len(self.releces)):
+            release = np.array(self.releces[i][1])
+
+            n1 = np.array(self.releces[i][0][0:3])
+            n2 = np.array(self.releces[i][0][3:6])
+            v = n2 - n1
+            v /= 10
+            r1 = release[0:5]
+            r2 = release[6:11]
+
+            if any(r1):
+                p1 = n1 + v
+                self.PrintNodes = np.vstack((self.PrintNodes, [p1]))
+
+                # noinspection PyTypeChecker
+                self.Members[self.releces[i][2]][0] = p1[0]
+                # noinspection PyTypeChecker
+                self.Members[self.releces[i][2]][1] = p1[1]
+                # noinspection PyTypeChecker
+                self.Members[self.releces[i][2]][2] = p1[2]
+
+            if any(r2):
+                p2 = n2 + v
+                self.PrintNodes = np.vstack((self.PrintNodes, [p2]))
+
+                # noinspection PyTypeChecker
+                self.Members[self.releces[i][2]][3] = p2[0]
+                # noinspection PyTypeChecker
+                self.Members[self.releces[i][2]][4] = p2[1]
+                # noinspection PyTypeChecker
+                self.Members[self.releces[i][2]][5] = p2[2]
 
     def _convert_point_loads(self, look_dir: np.ndarray) -> None:
         largest: float = 0
