@@ -3,4 +3,4 @@ A structural analysis program capable of 3D frame linear analyses, 3D frame cros
 
 This program is <ins>not to be trusted</ins> with engineering calculations, and all results shall be verified by the user.  
 
-This program is still in development, with ongoing changes.
+This program is still in development, undergoing constant changes, and has many incomplete features. Please report any errors that occur while using the program.
