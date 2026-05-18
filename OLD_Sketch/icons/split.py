@@ -19,7 +19,7 @@ icons = {
 }
 
 def box(i, j, size):
-    return (j * size, i * size, (j + 1) * size, (i + 1) * size)
+    return j * size, i * size, (j + 1) * size, (i + 1) * size
 
 def split(icons_set_filename, icon_size, grid_size, output_folder):
     image = Image.open(icons_set_filename)
@@ -30,6 +30,7 @@ def split(icons_set_filename, icon_size, grid_size, output_folder):
 
     for (i, j), icon_name in icons.items():
         icon = image.crop(box(i, j, icons_set_size))
+        # noinspection PyUnresolvedReferences
         icon.thumbnail((icon_size, icon_size), Image.BICUBIC)
 
         try:

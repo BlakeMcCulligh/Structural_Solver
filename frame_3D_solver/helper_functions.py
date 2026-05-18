@@ -229,6 +229,7 @@ def get_k_local_array(materials, members, members_CrossSectionProps, L: np.ndarr
     :param members: list. [i_node, j_node, material_index, set_cross_section_props]
     :param members_CrossSectionProps: ndarray. [A, Iy, Iz, J]
     :param L: ndarray. A ndarray of the lengths of the members. shape: (# members)
+    :param log: bool. Used for debuging. Prints values when true.
     :return: 4D array of the local stiffness matrices for each member. shape: (# members, 12, 12)
     """
 
@@ -360,6 +361,7 @@ def _assemble_point_loads(members_point_loads, num_c):
             new_load  = []
             for j in range(len(loads[1][0])):
                 new_load.append([loads[1][0][j]] + loads[1][1][j])
+            # noinspection PyTypeChecker
             new_loads[int(loads[0])] = new_load
         for j in range(len(new_loads)):
             if new_loads[j] is None:
@@ -635,6 +637,7 @@ def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.nd
     :param index_supported: ndarray. Indices of the supported DOFs.
     :param num_n: int. Number of nodes.
     :param num_c: int. Number of cases.
+    :param log: bool. Used for debuging. Prints values when true.
     :return:
         D: ndarray. Array of the nodal displacements.
         DX: ndarray. Array of the nodel displacements in the X direction.

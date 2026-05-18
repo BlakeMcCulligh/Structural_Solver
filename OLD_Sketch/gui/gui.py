@@ -3,11 +3,9 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 
 import numpy as np
-from shapely import line_merge, polygonize, get_parts
+from shapely import polygonize, get_parts
 
-from OLD_Sketch.constraints.constraint import Constraint
 from OLD_Sketch.constraints.constraints import *
-from OLD_Sketch.examples.examples import examples
 from OLD_Sketch.geometry import Geometry
 from OLD_Sketch.geometric_primitives.point import Point, distance_p2p
 from OLD_Sketch.geometric_primitives.segment import Segment, distance_p2s
@@ -15,7 +13,7 @@ from math import atan2, degrees, pi
 from OLD_Sketch.geometric_primitives.arc import Arc, distance_p2a, create_arc_segment, get_angle_of_point
 from OLD_Sketch.gui.constraint_icon import ConstraintIcon
 
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString
 
 WINDOW_SIZE = (840, 440)
 
@@ -38,6 +36,13 @@ DISTANCE_CONSTRAINTS_TEXT_SIZE = 10
 
 class GUI(tk.Frame):
     def __init__(self, root, geometry: Geometry, geometry_changed_callback, constraints, constraints_changed_callback, mainWindow, objective, nextFunction):
+
+        self.constraint_button = None
+        self.segment_icon = None
+        self.arc_icon= None
+        self.circle_icon = None
+        self.constraint_icon = {}
+
         self.mainWindow = mainWindow
         self.objective = objective
         self.nextFunction = nextFunction
@@ -106,7 +111,7 @@ class GUI(tk.Frame):
     def create_top_menu(self):
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
-        file_menu = tk.Menu(menubar, tearoff = "off")
+        file_menu = tk.Menu(menubar, tearoff =False)
         file_menu.add_command(label='Clear', command=self.clear_everything)
         menubar.add_cascade(label="File", menu=file_menu)
         # examples_menu = tk.Menu(menubar, tearoff = "off")
@@ -124,6 +129,7 @@ class GUI(tk.Frame):
         """
 
         self.notebook = ttk.Notebook()
+        # noinspection PyTypeChecker
         self.notebook.pack(side=tk.TOP, fill=tk.X)
 
         self.toolbar.append(tk.Frame(self.notebook))
@@ -136,6 +142,7 @@ class GUI(tk.Frame):
         self.toolbarFrame[0].pack(side=tk.TOP, fill=tk.X)
 
         def create_menu_Draw(column, text, command):
+            # noinspection PyTypeChecker
             tk.Button(self.toolbarFrame[0], text = text, command = command, relief = tk.SOLID, bg = "light gray", activebackground = "light gray").grid(row = 1, column = column, sticky = "n", pady = 2)
 
         create_menu_Draw(0, "Line", self.on_add_segment_button_clicked)
@@ -145,6 +152,7 @@ class GUI(tk.Frame):
         self.toolbarFrame[1].pack(side=tk.TOP, fill=tk.X)
 
         def create_menu_right_constraint_button(column, constraint_type):
+            # noinspection PyTypeChecker
             button = tk.Button(self.toolbarFrame[1], image=self.constraint_icon[BUTTON_ICON_SIZE][constraint_type],
                                command=lambda: self.on_add_constraint_button_clicked(constraint_type),
                                state=tk.DISABLED, relief=tk.SOLID, bg="light gray", activebackground="light gray")
@@ -191,7 +199,6 @@ class GUI(tk.Frame):
 
         icon_sizes = [20, 32, 64, 128]
 
-        self.constraint_icon = {}
 
         icon_file_name = {
             CONSTRAINT_TYPE.COINCIDENCE:            "coincidence",
@@ -252,7 +259,7 @@ class GUI(tk.Frame):
                 return
 
         def unselect_constraints(selected_entities):
-            constraints = set(filter(lambda entity: isinstance(entity, Constraint), selected_entities))
+            constraints = set(filter(lambda entity_: isinstance(entity_, Constraint), selected_entities))
             return selected_entities - constraints
 
         for entity in (self.geometry.segments + self.geometry.arcs):
@@ -352,9 +359,9 @@ class GUI(tk.Frame):
     def on_add_constraint_button_clicked(self, constraint_type):
 
         if constraint_type == CONSTRAINT_TYPE.LENGTH:
-            length = simpledialog.askstring(title="Test",
+            length_ = simpledialog.askstring(title="Test",
                                               prompt="Length:")
-            self.selected_entities.add(float(length))
+            self.selected_entities.add(float(length_))
             print(self.selected_entities)
             self.check_constraints_requirements()
 
@@ -388,6 +395,7 @@ class GUI(tk.Frame):
         :param segment: the segment to add
         """
 
+        # noinspection PyTypeChecker
         line = self.canvas.create_line(segment.p1.x, segment.p1.y, segment.p2.x, segment.p2.y, capstyle = tk.ROUND, joinstyle = tk.ROUND, width=LINE_TICKNESS)
         self.canvas.tag_lower(line)
         self.entity_to_drawn_entity[segment] = line
@@ -406,7 +414,8 @@ class GUI(tk.Frame):
         self.remove_drawn_entity(segment.p1)
         self.remove_drawn_entity(segment.p2)
 
-    def calculate_arc_start_and_extent(self, arc: Arc):
+    @staticmethod
+    def calculate_arc_start_and_extent(arc: Arc):
         """
         Calculates the arcs start and end nodes and midel
         :param arc: The arc to be calcululed
@@ -461,6 +470,7 @@ class GUI(tk.Frame):
         :param entity: the entity to be deleted
         """
 
+        # noinspection PyArgumentList
         {
             Arc:        self.remove_drawn_arc,
             Segment:    self.remove_drawn_segment,
@@ -474,6 +484,7 @@ class GUI(tk.Frame):
         :return: the d about the entity
         """
 
+        # noinspection PyArgumentList
         return {
             Arc:        self.add_drawn_arc,
             Segment:    self.add_drawn_segment,
@@ -496,6 +507,7 @@ class GUI(tk.Frame):
         for entity in (self.geometry.segments + self.geometry.arcs):
             self.remove_drawn_entity(entity)
 
+    # noinspection PyTypeChecker
     def redraw_geometry(self):
         """
         redraws the geometru
@@ -554,9 +566,9 @@ class GUI(tk.Frame):
                         p2 = entities[2]
                         l = entities[0]
 
-                DISTANCE_CONSTRAINTS_OFSET = 35
-                DISTANCE_CONSTRAINTS_LINE_THICKNESS = 2
-                DISTANCE_CONSTRAINTS_TEXT_SIZE = 10
+                DISTANCE_CONSTRAINTS_OFSET_ = 35
+                DISTANCE_CONSTRAINTS_LINE_THICKNESS_ = 2
+                DISTANCE_CONSTRAINTS_TEXT_SIZE_ = 10
 
                 p1 = np.array([p1.x, p1.y], dtype=float)
                 p2 = np.array([p2.x, p2.y], dtype=float)
@@ -568,8 +580,8 @@ class GUI(tk.Frame):
                 # Unit perpendicular vector
                 n = np.array([-d[1], d[0]]) / L
 
-                p1_up = p1 + DISTANCE_CONSTRAINTS_OFSET * n
-                p2_up = p2 + DISTANCE_CONSTRAINTS_OFSET * n
+                p1_up = p1 + DISTANCE_CONSTRAINTS_OFSET_ * n
+                p2_up = p2 + DISTANCE_CONSTRAINTS_OFSET_ * n
 
                 p1_offsetEnd = p1_up + 3 * n
                 p2_offsetEnd = p2_up + 3 * n
@@ -617,11 +629,11 @@ class GUI(tk.Frame):
         :param constraint: The constraint to have its iccon removed
         """
 
-        def remove_icon(entity):
-            icon = self.entity_and_constraint_to_drawn_constraint_icon.get((entity, constraint))
+        def remove_icon(entity_):
+            icon = self.entity_and_constraint_to_drawn_constraint_icon.get((entity_, constraint))
             if not icon is None:
                 icon.remove_drawn_entities()
-                self.entity_and_constraint_to_drawn_constraint_icon.pop((entity, constraint), None)
+                self.entity_and_constraint_to_drawn_constraint_icon.pop((entity_, constraint), None)
 
         for entity in (self.geometry.segments + self.geometry.arcs):
             if entity in constraint.entities:
@@ -707,14 +719,14 @@ class GUI(tk.Frame):
                 layer = 0
 
                 # number of icons in all layers from 0 to layer
-                def helper(icons_in_first_layer, layer):
-                    return (icons_in_first_layer * (layer + 2) * (layer + 1)) // 2
+                def helper(icons_in_first_layer_, layer_):
+                    return (icons_in_first_layer_ * (layer_ + 2) * (layer_ + 1)) // 2
 
                 offset = Vector(0, first_layer_radius)
                 for i, drawn_icon in enumerate(drawn_icons):
                     drawn_icon.moveto(point + offset)
                     offset = offset.rotated(2 * pi / ((layer + 1) * icons_in_first_layer))
-                    if (i > helper(icons_in_first_layer, layer) - 2):
+                    if i > helper(icons_in_first_layer, layer) - 2:
                         layer += 1
                         offset += Vector(0, first_layer_radius)
 
@@ -751,9 +763,9 @@ class GUI(tk.Frame):
                         p2 = entities[2]
                         l = entities[0]
 
-                DISTANCE_CONSTRAINTS_OFSET = 35
-                DISTANCE_CONSTRAINTS_LINE_THICKNESS = 2
-                DISTANCE_CONSTRAINTS_TEXT_SIZE = 10
+                DISTANCE_CONSTRAINTS_OFSET_ = 35
+                DISTANCE_CONSTRAINTS_LINE_THICKNESS_ = 2
+                DISTANCE_CONSTRAINTS_TEXT_SIZE_ = 10
 
                 p1 = np.array([p1.x, p1.y], dtype=float)
                 p2 = np.array([p2.x, p2.y], dtype=float)
@@ -765,12 +777,13 @@ class GUI(tk.Frame):
                 # Unit perpendicular vector
                 n = np.array([-d[1], d[0]]) / L
 
-                p1_up = p1 + DISTANCE_CONSTRAINTS_OFSET * n
-                p2_up = p2 + DISTANCE_CONSTRAINTS_OFSET * n
+                p1_up = p1 + DISTANCE_CONSTRAINTS_OFSET_ * n
+                p2_up = p2 + DISTANCE_CONSTRAINTS_OFSET_ * n
 
                 p1_offsetEnd = p1_up + 3 * n
                 p2_offsetEnd = p2_up + 3 * n
 
+                # noinspection PyTypeChecker
                 canvas_parts = [self.canvas.create_line(p1[0], p1[1], p1_offsetEnd[0], p1_offsetEnd[1], fill="pale green",
                                                         capstyle=tk.ROUND,
                                                         joinstyle=tk.ROUND, width=DISTANCE_CONSTRAINTS_LINE_THICKNESS),
@@ -783,6 +796,7 @@ class GUI(tk.Frame):
 
                 angle = math.degrees(math.atan2(-d[1], d[0]))
                 center = (p1_up + p2_up) / 2 + DISTANCE_CONSTRAINTS_TEXT_SIZE / 2 + 1
+                # noinspection PyTypeChecker
                 canvas_parts.append(
                     self.canvas.create_text(center[0], center[1], text=l, angle=angle, fill="pale green", anchor="center"))
                 constraint.canvas_parts = canvas_parts
@@ -861,7 +875,7 @@ class GUI(tk.Frame):
                 self.selected_entities.remove(entity)
 
         useless_constraints = self.constraints.get_useless_constraints(entities_to_be_removed)
-        constraints_to_be_removed = set(filter(lambda entity: isinstance(entity, Constraint), self.selected_entities))
+        constraints_to_be_removed = set(filter(lambda entity_: isinstance(entity_, Constraint), self.selected_entities))
 
         for constraint in (constraints_to_be_removed.union(useless_constraints)):
             self.remove_constraint(constraint)

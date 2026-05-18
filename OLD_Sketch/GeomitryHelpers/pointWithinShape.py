@@ -1,6 +1,5 @@
 import math
 
-from OLD_Sketch.geometric_primitives.segment import Segment
 from OLD_Sketch.geometric_primitives.point import Point
 
 

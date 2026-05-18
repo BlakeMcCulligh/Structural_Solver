@@ -877,7 +877,7 @@ class MainWindow(tk.Frame):
     #     """
     #     Adds a surface to be printed in the 3D rendering.
     #
-    #     :param Surface: Surface's corner coordinates. [X,Y,Z].
+    #     param Surface: Surface's corner coordinates. [X,Y,Z].
     #     """
     #
     #     tri = TDE.triangalize_surface(self, Surface, False)
@@ -888,7 +888,7 @@ class MainWindow(tk.Frame):
     #     """
     #     Adds a solid to be printed in the 3D rendering.
     #
-    #     :param Solid: Solid's corner coordinates. [X,Y,Z].
+    #     param Solid: Solid's corner coordinates. [X,Y,Z].
     #     :param FlipNormal: List of weather each of the solid's face's normals are to be flipped or not.
     #                        Is not needed if the solid is already transformed into triangles.
     #     """

@@ -2,8 +2,7 @@ import math
 
 import numpy as np
 
-from CrossSectionOptimization import frame3DOptimizer
-from frame3DSolver.cross_section_calculaters import square_hss, tube_hss, angle, rect_hss
+from frame_3D_solver.cross_section_calculaters import square_hss, tube_hss, angle, rect_hss
 
 
 class Frame3D:
@@ -278,29 +277,30 @@ class Frame3D:
             minBounds = minBounds + crossSection.minBounds
             maxBounds = maxBounds + crossSection.maxBounds
 
+            # noinspection PyProtectedMember
             if crossSection._type == "SquareHSS":
-                self.AFormulas.append(SquareHSS.get_A)
-                self.IxFormulas.append(SquareHSS.get_I)
-                self.IyFormulas.append(SquareHSS.get_I)
-                self.JFormulas.append(SquareHSS.get_J)
+                self.AFormulas.append(square_hss.get_A)
+                self.IxFormulas.append(square_hss.get_I)
+                self.IyFormulas.append(square_hss.get_I)
+                self.JFormulas.append(square_hss.get_J)
                 self.numVariables.append(2)
             elif crossSection._type == "RectHSS":
-                self.AFormulas.append(RectHSS.get_A)
-                self.IxFormulas.append(RectHSS.get_Ix)
-                self.IyFormulas.append(RectHSS.get_Iy)
-                self.JFormulas.append(RectHSS.get_J)
+                self.AFormulas.append(rect_hss.get_A)
+                self.IxFormulas.append(rect_hss.get_Ix)
+                self.IyFormulas.append(rect_hss.get_Iy)
+                self.JFormulas.append(rect_hss.get_J)
                 self.numVariables.append(3)
             elif crossSection._type == "TubeHSS":
-                self.AFormulas.append(TubeHSS.get_A)
-                self.IxFormulas.append(TubeHSS.get_I)
-                self.IyFormulas.append(TubeHSS.get_I)
-                self.JFormulas.append(TubeHSS.get_J)
+                self.AFormulas.append(tube_hss.get_A)
+                self.IxFormulas.append(tube_hss.get_I)
+                self.IyFormulas.append(tube_hss.get_I)
+                self.JFormulas.append(tube_hss.get_J)
                 self.numVariables.append(2)
             elif crossSection._type == "Angle":
-                self.AFormulas.append(Angle.get_A)
-                self.IxFormulas.append(Angle.get_Ix)
-                self.IyFormulas.append(Angle.get_Iy)
-                self.JFormulas.append(Angle.get_J)
+                self.AFormulas.append(angle.get_A)
+                self.IxFormulas.append(angle.get_Ix)
+                self.IyFormulas.append(angle.get_Iy)
+                self.JFormulas.append(angle.get_J)
                 self.numVariables.append(3)
 
         self.calcLengths()
@@ -310,6 +310,6 @@ class Frame3D:
 
         initalGuess = np.array(initalGuess)
 
-        areas = frame3DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
-
+        #areas = frame3DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
+        areas = [0]
         return areas

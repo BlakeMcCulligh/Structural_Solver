@@ -2,6 +2,7 @@ from OLD_Sketch.geometric_primitives.point import Point
 
 class ConstraintIcon:
     def __init__(self, canvas, icon, icon_size):
+        self.background = None
         self.canvas = canvas
         self.icon = icon
         self.icon_size = icon_size
@@ -10,7 +11,7 @@ class ConstraintIcon:
 
     def add_drawn_entities(self):
         center_point = Point(0, 0)
-        self.background = self.create_rounded_rectangle(center_point.x - self.icon_size / 2, center_point.y - self.icon_size / 2, \
+        self.background = self.create_rounded_rectangle(center_point.x - self.icon_size / 2, center_point.y - self.icon_size / 2,
             center_point.x + self.icon_size / 2, center_point.y + self.icon_size / 2, fill="pale green")
         self.icon = self.canvas.create_image((center_point.x, center_point.y), image = self.icon)
 
@@ -27,7 +28,7 @@ class ConstraintIcon:
         self.canvas.itemconfig(self.background, fill = color)
 
     def create_rounded_rectangle(self, x1, y1, x2, y2, r = 10, **kwargs):
-        points = (x1+r, y1, x1+r, y1, x2-r, y1, x2-r, y1, x2, y1, x2, y1+r, x2, y1+r, x2, y2-r, x2, y2-r, \
+        points = (x1+r, y1, x1+r, y1, x2-r, y1, x2-r, y1, x2, y1, x2, y1+r, x2, y1+r, x2, y2-r, x2, y2-r,
             x2, y2, x2-r, y2, x2-r, y2, x1+r, y2, x1+r, y2, x1, y2, x1, y2-r, x1, y2-r, x1, y1+r, x1, y1+r, x1, y1)
         return self.canvas.create_polygon(points, **kwargs, smooth=True)
 

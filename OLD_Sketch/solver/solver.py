@@ -1,5 +1,7 @@
 from enum import Enum, auto
 import itertools
+
+import numpy as np
 from scipy.optimize import minimize
 from copy import copy
 from OLD_Sketch.constraints.constraints import CONSTRAINT_FUNCTION, CONSTRAINT_TYPE, Constraints
@@ -21,6 +23,14 @@ class SPECIAL_LINK(Enum):
 
 class Solver:
     def __init__(self, geometry: Geometry, geometry_changed_callback, constraints):
+        self.active_point_copy = None
+        self.inactive_constraints = None
+        self.active_point = None
+        self.links = None
+        self.number_of_primary_varialbes = None
+        self.point_to_id = None
+        self.values = None
+        self.number_of_secondary_variables = None
         self.geometry = geometry
         self.geometry_changed_callback = geometry_changed_callback
 
@@ -30,9 +40,9 @@ class Solver:
 
         self.degrees_of_freedom = 0
 
-    def get_base_id(self, id):
-        temp = self.links[id]
-        return id if isinstance(temp, SPECIAL_LINK) else temp
+    def get_base_id(self, id_):
+        temp = self.links[id_]
+        return id_ if isinstance(temp, SPECIAL_LINK) else temp
 
     def process_constraints_that_could_be_solved_by_substitution(self):
         points = list(itertools.chain.from_iterable([entity.points() for entity in (self.geometry.segments + self.geometry.arcs)]))
@@ -46,33 +56,36 @@ class Solver:
         self.number_of_primary_varialbes = len(self.values)
         self.links = [SPECIAL_LINK.BASE] * self.number_of_primary_varialbes
 
-        def hv_helper(constraint, type):
+        def hv_helper(constraint_, type_):
             link = SPECIAL_LINK.BASE
-            for point in constraint.entities:
-                id = self.point_to_id[point] * 2 + (1 if type == CONSTRAINT_TYPE.HORIZONTALITY else 0)
-                if self.links[id] != SPECIAL_LINK.BASE:
-                    link = self.links[id]
+            for point_ in constraint_.entities:
+                id_i = self.point_to_id[point_] * 2 + (1 if type_ == CONSTRAINT_TYPE.HORIZONTALITY else 0)
+                if self.links[id_i] != SPECIAL_LINK.BASE:
+                    link = self.links[id_i]
                     break
 
             if link == SPECIAL_LINK.BASE:
                 link = len(self.links)
                 self.links.append(SPECIAL_LINK.BASE)
 
-                for entity in constraint.entities:
+                for entity in constraint_.entities:
                     if not entity is self.active_point:
-                        self.values.append(entity.y if type == CONSTRAINT_TYPE.HORIZONTALITY else entity.x)
+                        self.values.append(entity.y if type_ == CONSTRAINT_TYPE.HORIZONTALITY else entity.x)
                         break
 
-            for point in constraint.entities:
-                id = self.point_to_id[point] * 2 + (1 if type == CONSTRAINT_TYPE.HORIZONTALITY else 0)
+            for point_ in constraint_.entities:
+                id_i: int = self.point_to_id[point_] * 2 + (1 if type_ == CONSTRAINT_TYPE.HORIZONTALITY else 0)
 
-                existing_link = self.links[id]
+                existing_link = self.links[id_i]
                 if existing_link != SPECIAL_LINK.BASE:
-                    for i, _ in enumerate(self.links):
-                        if self.links[i] == existing_link:
-                            self.links[i] = link
+                    j: int
+                    for j, _ in enumerate(self.links):
+                        if self.links[j] == existing_link:
+                            # noinspection PyTypeChecker
+                            self.links[j] = link
                 else:
-                    self.links[id] = link
+                    # noinspection PyTypeChecker
+                    self.links[id_i] = link
 
         for constraint in self.constraints:
             if constraint.type == CONSTRAINT_TYPE.COINCIDENCE:
@@ -88,8 +101,8 @@ class Solver:
         for constraint in self.constraints:
             if constraint.type == CONSTRAINT_TYPE.FIXED:
                 for point in constraint.entities:
-                    id = self.point_to_id[point]
-                    id_x, id_y = id * 2, id * 2 + 1
+                    id_ = self.point_to_id[point]
+                    id_x, id_y = id_ * 2, id_ * 2 + 1
 
                     self.links[self.get_base_id(id_x)] = SPECIAL_LINK.FIXED
                     self.links[self.get_base_id(id_y)] = SPECIAL_LINK.FIXED
@@ -97,8 +110,8 @@ class Solver:
         for constraint in self.constraints:
              for point in constraint.entities:
                 if point is self.active_point:
-                    id = self.point_to_id[point]
-                    id_x, id_y = id * 2, id * 2 + 1
+                    id_ = self.point_to_id[point]
+                    id_x, id_y = id_ * 2, id_ * 2 + 1
                     base_id_x, base_id_y = self.get_base_id(id_x), self.get_base_id(id_y)
 
                     if self.links[base_id_x] == SPECIAL_LINK.BASE:
@@ -112,6 +125,7 @@ class Solver:
         orphan_vars = set(range(self.number_of_primary_varialbes, self.number_of_primary_varialbes + self.number_of_secondary_variables))
 
         for i in range(self.number_of_primary_varialbes):
+            # noinspection PyTypeChecker
             orphan_vars.discard(self.links[i])
 
         for i in orphan_vars:
@@ -120,36 +134,36 @@ class Solver:
         # print (f'links[{len(self.links)}]: {self.links}')
 
     def geometry_to_vars(self):
-        vars = []
+        vars_ = []
 
         for i, value in enumerate(self.values):
             if self.links[i] == SPECIAL_LINK.BASE:
-                vars.append(value)
+                vars_.append(value)
 
         for arc in self.geometry.arcs:
-            vars.append(arc.d)
+            vars_.append(arc.d)
 
-        return vars
+        return vars_
 
-    def geometry_from_vars(self, vars):
+    def geometry_from_vars(self, vars_):
         vars_i = 0
         for i, _ in enumerate(self.values):
             if self.links[i] == SPECIAL_LINK.BASE:
-                self.values[i] = vars[vars_i]
+                self.values[i] = vars_[vars_i]
                 vars_i += 1
 
         for entity in (self.geometry.segments + self.geometry.arcs):
             for point in entity.points():
-                id = self.point_to_id[point]
-                id_x, id_y = id * 2, id * 2 + 1
+                id_ = self.point_to_id[point]
+                id_x, id_y = id_ * 2, id_ * 2 + 1
 
                 temp = (SPECIAL_LINK.BASE, SPECIAL_LINK.FIXED)
 
-                def helper(id):
-                    if self.links[id] in temp:
-                        return self.values[id]
-                    if self.links[self.links[id]] in temp:
-                        return self.values[self.links[id]]
+                def helper(id_i):
+                    if self.links[id_i] in temp:
+                        return self.values[id_i]
+                    if self.links[self.links[id_i]] in temp:
+                        return self.values[self.links[id_i]]
                     return None
 
                 x, y = helper(id_x), helper(id_y)
@@ -157,7 +171,7 @@ class Solver:
                 point.x, point.y = point.x if x is None else x, point.y if y is None else y
 
         for arc in self.geometry.arcs:
-            arc.d = vars[vars_i]
+            arc.d = vars_[vars_i]
             vars_i += 1
 
     def f(self, x):
@@ -197,8 +211,8 @@ class Solver:
     def detect_inactive_constraints(self):
         def is_fixed_entity(entity):
             if isinstance(entity, Point):
-                id = self.point_to_id[entity]
-                id_x, id_y = id * 2, id * 2 + 1
+                id_ = self.point_to_id[entity]
+                id_x, id_y = id_ * 2, id_ * 2 + 1
                 return self.links[self.get_base_id(id_x)] == SPECIAL_LINK.FIXED and self.links[self.get_base_id(id_y)] == SPECIAL_LINK.FIXED
             elif isinstance(entity, Segment):
                 return is_fixed_entity(entity.p1) and is_fixed_entity(entity.p2)
@@ -240,7 +254,7 @@ class Solver:
         solution = None
 
         if self.solver_type == SOLVER_TYPE.SLSQP:
-            solution = minimize(self.f, initial_guess, method = 'SLSQP', constraints = {'type' : 'eq', 'fun': self.c}, options = {'eps' : 1e-05})
+            solution = minimize(self.f, np.array(initial_guess), method = 'SLSQP', constraints = {'type' : 'eq', 'fun': self.c}, options = {'eps' : 1e-05})
             # print (solution)
         elif self.solver_type == SOLVER_TYPE.IPOPT:
             pass

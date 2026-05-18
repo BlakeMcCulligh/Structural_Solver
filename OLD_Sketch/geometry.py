@@ -1,5 +1,4 @@
 from OLD_Sketch.geometric_primitives.arc import Arc
-from OLD_Sketch.geometric_primitives.point import Point
 from OLD_Sketch.geometric_primitives.segment import Segment
 
 class Geometry:

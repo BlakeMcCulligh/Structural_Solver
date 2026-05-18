@@ -1,6 +1,5 @@
 import math
 from enum import auto
-from math import atan2, degrees, pi
 
 from enum import Enum
 
@@ -37,16 +36,16 @@ class Arc:
 
         center = intersection_line_line(l1, l2)
 
-        assert center != None
+        assert center is not None
 
         center_p1 = Vector.from_two_points(center, self.p1)
         center_p = Vector.from_two_points(center, p)
 
-        dir = DIRECTION.CW if cross(center_p1, center_p) > 0 else DIRECTION.CCW
+        dir_ = DIRECTION.CW if cross(center_p1, center_p) > 0 else DIRECTION.CCW
 
-        if dir == DIRECTION.CCW:
+        if dir_ == DIRECTION.CCW:
             self.p1, self.p2 = self.p2, self.p1
-            dir = DIRECTION.CW
+            dir_ = DIRECTION.CW
 
         self.d = dot(Vector.from_two_points(p1_p2_segment_center, center), self.get_n())
 

@@ -185,7 +185,7 @@ class Frame3D:
 
             self.nodes_loads[node_index].append([case, [Px, Py, Pz, Mx, My, Mz]])
 
-            if case not in self.casses: self.casses.append(case)
+            if case not in self.cases: self.cases.append(case)
 
     def AddMemberPointLoad(self, member_index: int, x: float, Px: float = 0, Py: float = 0, Pz: float = 0,
                            Mx: float = 0, My: float = 0, Mz: float = 0, case: int = 0) -> None:
@@ -234,7 +234,7 @@ class Frame3D:
 
             self.members_point_loads[int(member_index)].append([case, [[x], [[Px, Py, Pz, Mx, My, Mz]]]])
 
-            if case not in self.casses: self.casses.append(case)
+            if case not in self.cases: self.cases.append(case)
 
     def addMemberDistLoad(self, member_index: int, x1: float, x2: float, wx1: float = 0, wx2: float = 0,
                           wy1: float = 0, wy2: float = 0, wz1: float = 0, wz2: float = 0, case: int = 0) -> None:
@@ -267,8 +267,8 @@ class Frame3D:
 
             self.members_dist_loads[member_index].append([case, [[[x1, x2], [wx1, wx2, wy1, wy2, wz1, wz2]]]])
 
-            if case not in self.casses:
-                self.casses.append(case)
+            if case not in self.cases:
+                self.cases.append(case)
 
     def PreAnalysisLinear(self, log: bool = False) -> None:
         """
@@ -293,7 +293,7 @@ class Frame3D:
         (self.members_dof, self.members_L, self.members_dof_unreleased, self.members_dof_released, self.members_T,
          self.point_loads, self.dist_loads) = hf.prep_members(self.nodes_cord, self.members, self.members_releases,
                                                               self.members_point_loads, self.members_dist_loads,
-                                                              len(self.casses))
+                                                              len(self.cases))
 
         self.members_L = np.array(self.members_L)
 
@@ -376,7 +376,7 @@ class Frame3D:
                 print("FER1: ", FER1)
                 print("FER2: ", FER2)
 
-            P1, P2 = hf.get_parted_global_nodal_force_vector(self.nodes_loads, self.casses, self.nodes_dof_unknown,
+            P1, P2 = hf.get_parted_global_nodal_force_vector(self.nodes_loads, self.cases, self.nodes_dof_unknown,
                                                              self.nodes_dof_known, num_n)
             if log:
                 print("P1: ", P1)
@@ -418,7 +418,7 @@ class Frame3D:
                 if get_internal_forces:
                     abs_F, abs_M = hf.solve_internal_forces(self.members, self.members_L,
                                                             self.members_cross_section_props, self.materials,
-                                                            self.casses, self.point_loads, self.dist_loads, f,
+                                                            self.cases, self.point_loads, self.dist_loads, f,
                                                             fer_unc_ARRAY, d, num_m, num_c)
 
                     internal_forces = [abs_F, abs_M]
@@ -445,6 +445,7 @@ class Frame3D:
         :param getWeight: bool. Weather the weight of all the members is needed for the cost function.
         :param getReactions: bool. Weather the reactions are needed for the cost function.
         :param getInternalForces: bool. Weather the internal forces are needed for the cost function.
+        :param log: bool. Used for debuging. Prints values when true.
         :return: scipi optimization_results class: results of the optimization.
         """
 

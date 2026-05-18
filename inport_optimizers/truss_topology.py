@@ -211,6 +211,7 @@ def _construct_load_cases(load_cases, max_length, nodes, supports):
         for new_loads in possibleCombinationIn:
             for new_load in new_loads:
                 p.append(new_load)
+        # noinspection PyTypeChecker
         possibleCombinationsOverall[i] = p
 
     # possibleCombinationsOverall: list of structure layouts, Structure layouts: list of loads, loads: [[x1,y1], [x2,y2], fx,fy]

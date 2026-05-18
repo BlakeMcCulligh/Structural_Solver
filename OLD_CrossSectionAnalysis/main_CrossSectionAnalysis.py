@@ -1,9 +1,9 @@
 # https://sectionproperties.readthedocs.io/en/stable/
 
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from sectionproperties.analysis import Section
-from sectionproperties.pre import Geometry, Material
-from shapely import Polygon
+from sectionproperties.pre import Geometry#, Material
+#from shapely import Polygon
 
 def getSectionProperties(poly):
     geom = Geometry(poly)

@@ -151,6 +151,7 @@ class Structure:
 
         LOADS = []
         for i, node in enumerate(self.nodes):
+            # noinspection PyTypeChecker
             if any(np.array(node.load) != 0):
                 LOADS.append([i] + node.load)
 

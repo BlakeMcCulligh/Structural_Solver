@@ -1,4 +1,3 @@
-from collections import Counter
 from enum import Enum, auto
 from OLD_Sketch.constraints.constraint import Constraint
 from OLD_Sketch.constraints.constraint_equations import *
@@ -68,24 +67,25 @@ class Constraints(list):
         self.solved_by_substitution_constraints = 0
         self.fixed_constraints = 0
 
-    def add_constraint(self, type, entities):
+    @staticmethod
+    def add_constraint(type_, entities):
         new_constraints = []
 
-        if type in SPLITTABLE_CONSTRAINTS:
-            for constraint_requirement in CONSTRAINT_REQUIREMENT.get(type, ()):
-                if Constraints.check_constraint_applicability(type, constraint_requirement, entities):
+        if type_ in SPLITTABLE_CONSTRAINTS:
+            for constraint_requirement in CONSTRAINT_REQUIREMENT.get(type_, ()):
+                if Constraints.check_constraint_applicability(type_, constraint_requirement, entities):
                     split_len = len(constraint_requirement)
                     assert split_len in (1, 2)
                     if split_len == 1:
                         for entity in entities:
-                            new_constraints.append(Constraint([entity], type))
+                            new_constraints.append(Constraint([entity], type_))
                     elif split_len == 2:
                         for pair in pairs(entities):
-                            new_constraints.append(Constraint((pair[0], pair[1]), type))
+                            new_constraints.append(Constraint((pair[0], pair[1]), type_))
         else:
-            new_constraints.append(Constraint(entities, type))
+            new_constraints.append(Constraint(entities, type_))
 
-        self += new_constraints
+        #self += new_constraints
         return new_constraints
 
     def get_useless_constraints(self, entities_to_be_removed):
@@ -104,11 +104,11 @@ class Constraints(list):
 
         if QUANTITY.MORE_THAN_ONE in constraint_requirement and len(counter_entities) == 1:
             count = len([entity for entity in entities if entity.__class__ in constraint_requirement])
-            all_entities = count == len(entities)
+            all_entities_ = count == len(entities)
 
-            if all_entities and count > 1:
+            if all_entities_ and count > 1:
                 return True
-        elif (counter_entities == counter_constraint_requirement):
+        elif counter_entities == counter_constraint_requirement:
             return True
         elif constraint_type in SPLITTABLE_CONSTRAINTS and len(counter_entities) == 1 \
             and counter_entities.keys() == counter_constraint_requirement.keys() and len(entities) >= len(constraint_requirement):

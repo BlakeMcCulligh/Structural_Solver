@@ -1,7 +1,7 @@
 import numpy as np
 
-from CrossSectionOptimization import frame2DOptimizer
-from frame3DSolver.cross_section_calculaters import square_hss, tube_hss, angle, rect_hss
+#from CrossSectionOptimization import frame2DOptimizer
+from frame_3D_solver.cross_section_calculaters import square_hss, tube_hss, angle, rect_hss
 
 
 class Frame2D:
@@ -265,21 +265,22 @@ class Frame2D:
             minBounds = minBounds + crossSection.minBounds
             maxBounds = maxBounds + crossSection.maxBounds
 
+            # noinspection PyProtectedMember
             if crossSection._type == "SquareHSS":
-                self.AFormulas.append(SquareHSS.get_A)
-                self.IFormulas.append(SquareHSS.get_I)
+                self.AFormulas.append(square_hss.get_A)
+                self.IFormulas.append(square_hss.get_I)
                 self.numVariables.append(2)
             elif crossSection._type == "RectHSS":
-                self.AFormulas.append(RectHSS.get_A)
-                self.IFormulas.append(RectHSS.get_Ix)
+                self.AFormulas.append(rect_hss.get_A)
+                self.IFormulas.append(rect_hss.get_Ix)
                 self.numVariables.append(3)
             elif crossSection._type == "TubeHSS":
-                self.AFormulas.append(TubeHSS.get_A)
-                self.IFormulas.append(TubeHSS.get_I)
+                self.AFormulas.append(tube_hss.get_A)
+                self.IFormulas.append(tube_hss.get_I)
                 self.numVariables.append(2)
             elif crossSection._type == "Angle":
-                self.AFormulas.append(Angle.get_A)
-                self.IFormulas.append(Angle.get_Ix)
+                self.AFormulas.append(angle.get_A)
+                self.IFormulas.append(angle.get_Ix)
                 self.numVariables.append(3)
 
         self.calcLengths()
@@ -289,6 +290,6 @@ class Frame2D:
 
         initalGuess = np.array(initalGuess)
 
-        results = frame2DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
-
+        #results = frame2DOptimizer.optimize(self, [minBounds, maxBounds], initalGuess)
+        results = [0]
         return results

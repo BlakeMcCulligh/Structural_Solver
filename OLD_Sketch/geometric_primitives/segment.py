@@ -16,7 +16,7 @@ class Segment:
         return [self.p1, self.p2]
 
     def __contains__(self, p: Point):
-        between = lambda a, b, x: (a <= x <= b) or (b <= x <= a)
+        between = lambda a_, b_, x: (a_ <= x <= b_) or (b_ <= x <= a_)
 
         p1_p = Vector.from_two_points(self.p1, p)
 

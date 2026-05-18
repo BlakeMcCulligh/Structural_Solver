@@ -9,16 +9,20 @@ gui = None
 
 def geometry_changed_by_GUI(active_point):
     global solver
+    # noinspection PyUnresolvedReferences
     solver.solve(active_point)
 
 def constraints_changed_by_GUI():
     global solver
+    # noinspection PyUnresolvedReferences
     solver.solve(None)
 
 def geometry_changed_by_solver():
     global gui
     global solver
+    # noinspection PyUnresolvedReferences
     gui.degrees_of_freedom = solver.degrees_of_freedom
+    # noinspection PyUnresolvedReferences
     gui.redraw_geometry()
 
 def sketch():
@@ -33,6 +37,7 @@ def sketch():
     root_widget = tk.Tk()
     root_widget.title('2D Geometric Constraint Solver')
 
+    # noinspection PyArgumentList
     gui = GUI(root_widget, geometry, geometry_changed_by_GUI, constraints, constraints_changed_by_GUI, mainWindow = None, objective = None)
     gui.pack(fill="both", expand=True)
 

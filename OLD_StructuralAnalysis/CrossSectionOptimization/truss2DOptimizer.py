@@ -21,6 +21,7 @@ def optimize(solverObject, rangeA, initalGuess):
 
     X = initalGuess
 
+    # noinspection PyRedundantParentheses
     OptimizeResult = opt.minimize(objectiveFunction, X, args=(Constants), method='SLSQP', tol=0.001, bounds=bounds)
 
     return OptimizeResult.x

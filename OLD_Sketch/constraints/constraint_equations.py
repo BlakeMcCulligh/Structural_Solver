@@ -3,7 +3,7 @@
 from collections import Counter
 from OLD_Sketch.geometric_primitives.arc import Arc
 from OLD_Sketch.geometric_primitives.line import Line, distance_p2l
-from OLD_Sketch.geometric_primitives.point import distance_p2p, Point
+from OLD_Sketch.geometric_primitives.point import distance_p2p
 from OLD_Sketch.geometric_primitives.segment import Segment
 from OLD_Sketch.geometric_primitives.vector import Vector, cross, dot
 
@@ -40,8 +40,8 @@ def length_or_radius_equal_to_Number(entity1, entity2, entity3 = None):
         else:
             return [(Vector(entity3.x - entity2.x, entity3.y - entity2.y).length() - entity1)]
 
-def length(segment: Segment, length: float):
-    return [(Vector(segment.p2.x - segment.p1.x, segment.p2.y - segment.p1.y).length() - length)]
+def length(segment: Segment, length_: float):
+    return [(Vector(segment.p2.x - segment.p1.x, segment.p2.y - segment.p1.y).length() - length_)]
 
 def tangency(entity1, entity2):
     temp = Counter((entity1.__class__, entity2.__class__))
