@@ -5,6 +5,7 @@ printable type: (node, line, and tris)
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, List, Union
 import numpy as np
 
@@ -33,7 +34,7 @@ class Display:
 
         self.window = window
 
-        self.scale = [0.1,0.1]
+        self.scale = [0.1,0.1,0.1]
         self.res = [8]
 
         self.Nodes: List[List[float]] = [] # shape: (# nodes, 3)
@@ -162,7 +163,7 @@ class Display:
 
         location1 = get_loc_on_member(member_dist_loads[0], member_dist_loads[1], list_members, list_nodes)
         location2 = get_loc_on_member(member_dist_loads[0], member_dist_loads[2], list_members, list_nodes)
-        location = location1 + location2
+        location = location1.tolist() + location2.tolist()
         Trans = get_member_t(member_dist_loads[0], list_members, list_nodes)[:3, :3]
         P1_global = Trans.T @ np.array([member_dist_loads[3], member_dist_loads[5], member_dist_loads[7]]) @ Trans
         P2_global = Trans.T @ np.array([member_dist_loads[4], member_dist_loads[6], member_dist_loads[8]]) @ Trans
@@ -199,7 +200,7 @@ class Display:
         self._convert_point_loads(self.window.LookDir)
 
         # distributed loads
-        self._convert_dist_loads()
+        self._convert_dist_loads(self.window.LookDir)
 
     def _convert_supports(self):
         s = self.scale[0]
@@ -591,9 +592,76 @@ class Display:
 
                             # todo add text label
 
-    def _convert_dist_loads(self) -> None:
-        # shape: (# loads x directions, 2:[[x1,y1,z2,x2,y2,z2], [wx1, wx2, wy1, wy2, wz1, wz2]])
-        pass  # TODO
+    def _convert_dist_loads(self, look_dir: np.ndarray) -> None:
+
+        largest: float = 0
+
+        for i in range(len(self.dist_loads)):
+            for j in range(6):
+                if abs(self.dist_loads[i][1][j]) > largest:
+                    largest = self.dist_loads[i][1][j]
+
+        if largest != 0:
+            scaler: float = self.scale[1] / largest
+
+            for i in range(len(self.dist_loads)):
+                for j in range(3):
+
+                    if not np.isclose(self.dist_loads[i][1][j*2], 0) and not np.isclose(self.dist_loads[i][1][j*2+1], 0):
+                        p1 = np.array([self.dist_loads[i][0][0],self.dist_loads[i][0][1],self.dist_loads[i][0][2]])
+                        p2 = np.array([self.dist_loads[i][0][3],self.dist_loads[i][0][4],self.dist_loads[i][0][5]])
+                        v = p2 - p1
+                        len_v = np.linalg.norm(v)
+
+                        num_inter = math.ceil(len_v / self.scale[2])
+                        dist_between = len_v / num_inter
+
+                        v_gap = v / len_v * dist_between
+
+                        v_force_1 = self.dist_loads[i][1][j*2]  * scaler
+                        v_force_2 = self.dist_loads[i][1][j*2+1]  * scaler
+
+                        p3 = np.copy(p1)
+                        p4 = np.copy(p2)
+
+                        p3[j] += v_force_1
+                        p4[j] += v_force_2
+
+                        v_top = p4 - p3
+                        len_v_top = np.linalg.norm(v_top)
+
+                        dif_v_force = v_force_2 - v_force_1
+
+                        change_v_force = dif_v_force / num_inter
+
+                        v_gap_top = np.copy(v_gap)
+                        v_gap_top[j] += change_v_force
+
+                        self.PrintLines = np.vstack((self.PrintLines, [[p3, p4]]))
+
+                        for k in range(num_inter+1):
+                            p_bot = p1 + v_gap * k
+                            p_top = p3 + v_gap_top * k
+                            v_line = p_top - p_bot
+
+                            # arow
+                            unit_v_line = v_line / np.linalg.norm(v_line)
+
+                            p_arow1 = p_bot + unit_v_line * scaler / 10
+
+                            side_v_line = np.cross(unit_v_line, look_dir)
+                            side_v_line /= np.linalg.norm(side_v_line)
+
+                            side_v_line *= scaler / 10
+
+                            p_arow2 = p_arow1 + side_v_line
+                            p_arow1 -= side_v_line
+
+                            self.PrintLines = np.vstack((self.PrintLines, [[p_bot, p_top]]))
+                            self.PrintLines = np.vstack((self.PrintLines, [[p_bot, p_arow1]]))
+                            self.PrintLines = np.vstack((self.PrintLines, [[p_bot, p_arow2]]))
+
+                        # todo add text label
 
     # todo add converter to convert everything to the print arrays
     # todo rework all the adders
@@ -610,13 +678,13 @@ def get_loc_on_member(i_member: int, x, list_members: List[List[int]], list_node
     :return: Location on member.
     """
 
-    n1 = np.array([list_nodes[0][int(list_members[0][i_member])],
-                   list_nodes[1][int(list_members[0][i_member])],
-                   list_nodes[2][int(list_members[0][i_member])]])
+    n1 = np.array([list_nodes[0][int(list_members[0][int(i_member)])],
+                   list_nodes[1][int(list_members[0][int(i_member)])],
+                   list_nodes[2][int(list_members[0][int(i_member)])]])
 
-    n2 = np.array([list_nodes[0][int(list_members[1][i_member])],
-                   list_nodes[1][int(list_members[1][i_member])],
-                   list_nodes[2][int(list_members[1][i_member])]])
+    n2 = np.array([list_nodes[0][int(list_members[1][int(i_member)])],
+                   list_nodes[1][int(list_members[1][int(i_member)])],
+                   list_nodes[2][int(list_members[1][int(i_member)])]])
 
     vector = n2 - n1
     unit_vector = vector / np.linalg.norm(vector)
@@ -634,16 +702,16 @@ def get_member_t(i_member: int, list_members: List[List[int]], list_nodes: List[
     """
 
     # Get the global coordinates for the two ends
-    n1 = np.array([list_nodes[0][int(list_members[0][i_member])],
-                   list_nodes[1][int(list_members[0][i_member])],
-                   list_nodes[2][int(list_members[0][i_member])]])
+    n1 = np.array([list_nodes[0][int(list_members[0][int(i_member)])],
+                   list_nodes[1][int(list_members[0][int(i_member)])],
+                   list_nodes[2][int(list_members[0][int(i_member)])]])
 
-    n2 = np.array([list_nodes[0][int(list_members[1][i_member])],
-                   list_nodes[1][int(list_members[1][i_member])],
-                   list_nodes[2][int(list_members[1][i_member])]])
+    n2 = np.array([list_nodes[0][int(list_members[1][int(i_member)])],
+                   list_nodes[1][int(list_members[1][int(i_member)])],
+                   list_nodes[2][int(list_members[1][int(i_member)])]])
 
-    i = list_members[0][i_member]
-    j = list_members[1][i_member]
+    i = list_members[0][int(i_member)]
+    j = list_members[1][int(i_member)]
     Xi, Yi, Zi = n1
     Xj, Yj, Zj = n2
 
