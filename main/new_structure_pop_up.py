@@ -41,22 +41,22 @@ class NewStructurePopUp:
         h_title = title.winfo_reqheight()
         title.place(x=WIDTH/2-w_title/2, y=0)
 
-        dim_label = tk.Label(self._new_struct_popup_root, text="_dim: ", font=('Helvetica', 14))
+        dim_label = tk.Label(self._new_struct_popup_root, text="Dimentions: ", font=('Helvetica', 14))
         dim_label.place(x=0, y=h_title+10)
         w_dim_label = dim_label.winfo_reqwidth()
         h_dim_label = dim_label.winfo_reqheight()
 
-        DIM_OPTIONS = ["2D", "3D"]
+        DIM_OPTIONS = ["3D"]
         self._dim = tk.StringVar(self._new_struct_popup_root)
         self._dim.set(DIM_OPTIONS[0])
         dim_menu = tk.OptionMenu(self._new_struct_popup_root, self._dim, *DIM_OPTIONS)
         dim_menu.place(x=w_dim_label+5, y=h_title+10)
 
-        type_label = tk.Label(self._new_struct_popup_root, text="_type: ", font=('Helvetica', 14))
+        type_label = tk.Label(self._new_struct_popup_root, text="Type: ", font=('Helvetica', 14))
         type_label.place(x=0, y=h_title + h_dim_label + 20)
         w_type_label = type_label.winfo_reqwidth()
 
-        TYPE_OPTIONS = ["Truss", "Frame"]
+        TYPE_OPTIONS = ["Frame"]
         self._type = tk.StringVar(self._new_struct_popup_root)
         self._type.set(TYPE_OPTIONS[0])
         type_menu = tk.OptionMenu(self._new_struct_popup_root, self._type, *TYPE_OPTIONS)

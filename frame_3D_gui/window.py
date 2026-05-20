@@ -16,6 +16,7 @@ from frame_3D_gui.opening import open_frame, open_results
 from frame_3D_gui.optimize_pop_up import OptimizationPopUp
 from frame_3D_gui.results import Results
 from frame_3D_gui.save import save_frame, save_results
+from frame_3D_gui.text_validate import validate_float, validate_index, validate_bool
 from frame_3D_solver.main import Frame3D
 # noinspection PyPep8Naming
 import drawing_3D.engine_3D as TDE
@@ -55,6 +56,10 @@ class MainWindow(tk.Frame):
         self._create_top_menu()
 
         self.Data: Data = Data()
+
+        self.val_float = (self.Root.register(validate_float), '%P')
+        self.val_index = (self.Root.register(validate_index), '%P')
+        self.val_bool = (self.Root.register(validate_bool), '#P')
 
         # setting analysis objects to none.
         self.Frame: Frame3D | None = None
@@ -463,9 +468,9 @@ class MainWindow(tk.Frame):
         self._table_tabs.add(self._node_tab, text="Nodes")
         self.Tables.append(self._create_table(self._node_tab, ("Index", "X", "Y", "Z")))
         self._boxes.append([])
-        self._boxes[0].append(tk.Entry(self._node_tab))
-        self._boxes[0].append(tk.Entry(self._node_tab))
-        self._boxes[0].append(tk.Entry(self._node_tab))
+        self._boxes[0].append(tk.Entry(self._node_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[0].append(tk.Entry(self._node_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[0].append(tk.Entry(self._node_tab, validate='key', validatecommand=self.val_float))
         label = tk.Label(self._node_tab, text="X:", font=('Helvetica', 12))
         label.place(x=325, y=297)
         self._boxes[0][0].place(x=350, y=300) # X
@@ -486,11 +491,11 @@ class MainWindow(tk.Frame):
         self._table_tabs.add(self._mat_tab, text="Materials")
         self.Tables.append(self._create_table(self._mat_tab, ("Index", "E", "G", "nu", "rho", "fy")))
         self._boxes.append([])
-        self._boxes[1].append(tk.Entry(self._mat_tab))
-        self._boxes[1].append(tk.Entry(self._mat_tab))
-        self._boxes[1].append(tk.Entry(self._mat_tab))
-        self._boxes[1].append(tk.Entry(self._mat_tab))
-        self._boxes[1].append(tk.Entry(self._mat_tab))
+        self._boxes[1].append(tk.Entry(self._mat_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[1].append(tk.Entry(self._mat_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[1].append(tk.Entry(self._mat_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[1].append(tk.Entry(self._mat_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[1].append(tk.Entry(self._mat_tab, validate='key', validatecommand=self.val_float))
         label = tk.Label(self._mat_tab, text="E:", font=('Helvetica', 12))
         label.place(x=125, y=297)
         self._boxes[1][0].place(x=150, y=300)
@@ -512,13 +517,20 @@ class MainWindow(tk.Frame):
         self._buttons[1][0].place(x=550, y=300)
         self._buttons[1][1].place(x=550, y=350)
 
-        # Members
+        # Members TODO
         self._member_tab = ttk.Frame(self._table_tabs)
         self._table_tabs.add(self._member_tab, text="Members")
         self.Tables.append(self._create_table(self._member_tab, ("Index", "i Node", "j Node", "Material Id",
                                                              "Set C.S.", "A", "Iy", "Iz", "J")))
         self._boxes.append([])
-        for i in range(8): self._boxes[2].append(tk.Entry(self._member_tab))
+        self._boxes[2].append(tk.Entry(self._member_tab, validate='key', validatecommand=self.val_index))
+        self._boxes[2].append(tk.Entry(self._member_tab, validate='key', validatecommand=self.val_index))
+        self._boxes[2].append(tk.Entry(self._member_tab, validate='key', validatecommand=self.val_index))
+        self._boxes[2].append(ttk.Combobox(self._member_tab, values=("True", "False"),state="readonly"))
+        self._boxes[2].append(tk.Entry(self._member_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[2].append(tk.Entry(self._member_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[2].append(tk.Entry(self._member_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[2].append(tk.Entry(self._member_tab, validate='key', validatecommand=self.val_float))
         label = tk.Label(self._member_tab, text="i Node:", font=('Helvetica', 12))
         label.place(x=90, y=297)
         self._boxes[2][0].place(x=150, y=300)
@@ -530,7 +542,7 @@ class MainWindow(tk.Frame):
         self._boxes[2][2].place(x=150, y=350)
         label = tk.Label(self._member_tab, text="Set C.S.:", font=('Helvetica', 12))
         label.place(x=275, y=347)
-        self._boxes[2][3].place(x=350, y=350)
+        self._boxes[2][3].place(x=350, y=350, width=125)
         label = tk.Label(self._member_tab, text="A:", font=('Helvetica', 12))
         label.place(x=125, y=397)
         self._boxes[2][4].place(x=150, y=400)
@@ -555,28 +567,34 @@ class MainWindow(tk.Frame):
         self.Tables.append(self._create_table(self._support_tab, ("Index", "i Node", "D X", "D Y", "D Z.", "R X",
                                                              "R Y", "R Z")))
         self._boxes.append([])
-        for i in range(7): self._boxes[3].append(tk.Entry(self._support_tab))
+        self._boxes[3].append(tk.Entry(self._support_tab, validate='key', validatecommand=self.val_index))
+        self._boxes[3].append(ttk.Combobox(self._support_tab, values=("True", "False"), state="readonly"))
+        self._boxes[3].append(ttk.Combobox(self._support_tab, values=("True", "False"), state="readonly"))
+        self._boxes[3].append(ttk.Combobox(self._support_tab, values=("True", "False"), state="readonly"))
+        self._boxes[3].append(ttk.Combobox(self._support_tab, values=("True", "False"), state="readonly"))
+        self._boxes[3].append(ttk.Combobox(self._support_tab, values=("True", "False"), state="readonly"))
+        self._boxes[3].append(ttk.Combobox(self._support_tab, values=("True", "False"), state="readonly"))
         label = tk.Label(self._support_tab, text="i Node:", font=('Helvetica', 12))
         label.place(x=90, y=297)
         self._boxes[3][0].place(x=150, y=300)
         label = tk.Label(self._support_tab, text="D X:", font=('Helvetica', 12))
         label.place(x=312, y=297)
-        self._boxes[3][1].place(x=350, y=300)
+        self._boxes[3][1].place(x=350, y=300, width=125)
         label = tk.Label(self._support_tab, text="D Y:", font=('Helvetica', 12))
         label.place(x=115, y=347)
-        self._boxes[3][2].place(x=150, y=350)
+        self._boxes[3][2].place(x=150, y=350, width=125)
         label = tk.Label(self._support_tab, text="D Z:", font=('Helvetica', 12))
         label.place(x=315, y=347)
-        self._boxes[3][3].place(x=350, y=350)
+        self._boxes[3][3].place(x=350, y=350, width=125)
         label = tk.Label(self._support_tab, text="R X:", font=('Helvetica', 12))
         label.place(x=112, y=397)
-        self._boxes[3][4].place(x=150, y=400)
+        self._boxes[3][4].place(x=150, y=400, width=125)
         label = tk.Label(self._support_tab, text="R Y:", font=('Helvetica', 12))
         label.place(x=315, y=397)
-        self._boxes[3][5].place(x=350, y=400)
+        self._boxes[3][5].place(x=350, y=400, width=125)
         label = tk.Label(self._support_tab, text="R Z:", font=('Helvetica', 12))
         label.place(x=115, y=447)
-        self._boxes[3][6].place(x=150, y=450)
+        self._boxes[3][6].place(x=150, y=450, width=125)
         self._buttons.append([])
         self._buttons[3].append(tk.Button(self._support_tab, text="Edit", command=self._edit_values))
         self._buttons[3].append(tk.Button(self._support_tab, text="Add", command=self._add_values))
@@ -590,46 +608,48 @@ class MainWindow(tk.Frame):
                                                              "i RX", "i RY", "i RZ", "j DX", "j DY", "j DZ", "j RX",
                                                              "j RY", "j RZ")))
         self._boxes.append([])
-        for i in range(13): self._boxes[4].append(tk.Entry(self._release_tab))
+        self._boxes[4].append(tk.Entry(self._release_tab, validate='key', validatecommand=self.val_index))
+        for i in range(12): self._boxes[4].append(ttk.Combobox(self._release_tab, values=("True", "False"),
+                                                               state="readonly"))
         label = tk.Label(self._release_tab, text="i Member:", font=('Helvetica', 12))
         label.place(x=70, y=297)
         self._boxes[4][0].place(x=150, y=300)
         label = tk.Label(self._release_tab, text="i DX:", font=('Helvetica', 12))
         label.place(x=310, y=297)
-        self._boxes[4][1].place(x=350, y=300)
+        self._boxes[4][1].place(x=350, y=300, width=125)
         label = tk.Label(self._release_tab, text="i DY:", font=('Helvetica', 12))
         label.place(x=110, y=347)
-        self._boxes[4][2].place(x=150, y=350)
+        self._boxes[4][2].place(x=150, y=350, width=125)
         label = tk.Label(self._release_tab, text="i DZ:", font=('Helvetica', 12))
         label.place(x=310, y=347)
-        self._boxes[4][3].place(x=350, y=350)
+        self._boxes[4][3].place(x=350, y=350, width=125)
         label = tk.Label(self._release_tab, text="i RX:", font=('Helvetica', 12))
         label.place(x=110, y=397)
-        self._boxes[4][4].place(x=150, y=400)
+        self._boxes[4][4].place(x=150, y=400, width=125)
         label = tk.Label(self._release_tab, text="i RY:", font=('Helvetica', 12))
         label.place(x=310, y=397)
-        self._boxes[4][5].place(x=350, y=400)
+        self._boxes[4][5].place(x=350, y=400, width=125)
         label = tk.Label(self._release_tab, text="i RZ:", font=('Helvetica', 12))
         label.place(x=110, y=447)
-        self._boxes[4][6].place(x=150, y=450)
+        self._boxes[4][6].place(x=150, y=450, width=125)
         label = tk.Label(self._release_tab, text="j DX:", font=('Helvetica', 12))
         label.place(x=310, y=447)
-        self._boxes[4][7].place(x=350, y=450)
+        self._boxes[4][7].place(x=350, y=450, width=125)
         label = tk.Label(self._release_tab, text="j DY:", font=('Helvetica', 12))
         label.place(x=110, y=497)
-        self._boxes[4][8].place(x=150, y=500)
+        self._boxes[4][8].place(x=150, y=500, width=125)
         label = tk.Label(self._release_tab, text="j DZ:", font=('Helvetica', 12))
         label.place(x=310, y=497)
-        self._boxes[4][9].place(x=350, y=500)
+        self._boxes[4][9].place(x=350, y=500, width=125)
         label = tk.Label(self._release_tab, text="j RX:", font=('Helvetica', 12))
         label.place(x=110, y=547)
-        self._boxes[4][10].place(x=150, y=550)
+        self._boxes[4][10].place(x=150, y=550, width=125)
         label = tk.Label(self._release_tab, text="j RY:", font=('Helvetica', 12))
         label.place(x=310, y=547)
-        self._boxes[4][11].place(x=350, y=550)
+        self._boxes[4][11].place(x=350, y=550, width=125)
         label = tk.Label(self._release_tab, text="j RZ:", font=('Helvetica', 12))
         label.place(x=110, y=597)
-        self._boxes[4][12].place(x=150, y=600)
+        self._boxes[4][12].place(x=150, y=600, width=125)
         self._buttons.append([])
         self._buttons[4].append(tk.Button(self._release_tab, text="Edit", command=self._edit_values))
         self._buttons[4].append(tk.Button(self._release_tab, text="Add", command=self._add_values))
@@ -642,7 +662,14 @@ class MainWindow(tk.Frame):
         self.Tables.append(self._create_table(self._node_load_tab, ("Index", "i Node", "P X", "P Y", "P Z.",
                                                                     "M X","M Y", "M Z","Cases")))
         self._boxes.append([])
-        for i in range(8): self._boxes[5].append(tk.Entry(self._node_load_tab))
+        self._boxes[5].append(tk.Entry(self._node_load_tab, validate='key', validatecommand=self.val_index))
+        self._boxes[5].append(tk.Entry(self._node_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[5].append(tk.Entry(self._node_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[5].append(tk.Entry(self._node_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[5].append(tk.Entry(self._node_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[5].append(tk.Entry(self._node_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[5].append(tk.Entry(self._node_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[5].append(tk.Entry(self._node_load_tab, validate='key', validatecommand=self.val_index))
         label = tk.Label(self._node_load_tab, text="i Node:", font=('Helvetica', 12))
         label.place(x=90, y=297)
         self._boxes[5][0].place(x=150, y=300)
@@ -679,7 +706,15 @@ class MainWindow(tk.Frame):
         self.Tables.append(self._create_table(self._member_point_load_tab, ("Index", "i Member", "x", "P X", "P Y",
                                                                       "P Z.", "M X", "M Y", "M Z", "Cases")))
         self._boxes.append([])
-        for i in range(9): self._boxes[6].append(tk.Entry(self._member_point_load_tab))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_index))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[6].append(tk.Entry(self._member_point_load_tab, validate='key', validatecommand=self.val_index))
         label = tk.Label(self._member_point_load_tab, text="i Member:", font=('Helvetica', 12))
         label.place(x=70, y=297)
         self._boxes[6][0].place(x=150, y=300)
@@ -719,7 +754,16 @@ class MainWindow(tk.Frame):
         self.Tables.append(self._create_table(self._member_dist_load_tab, ("Index", "i Member", "x 1", "x 2", "wx 1",
                                                                     "wx 2", "wy 1", "wy 2", "wz 1", "wz 2", "Case")))
         self._boxes.append([])
-        for i in range(10): self._boxes[7].append(tk.Entry(self._member_dist_load_tab))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_index))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_float))
+        self._boxes[7].append(tk.Entry(self._member_dist_load_tab, validate='key', validatecommand=self.val_index))
         label = tk.Label(self._member_dist_load_tab, text="i Member:", font=('Helvetica', 12))
         label.place(x=70, y=297)
         self._boxes[7][0].place(x=150, y=300)
@@ -815,8 +859,10 @@ class MainWindow(tk.Frame):
         # Converting strings to floats and bools
         data_new = []
         for i in range(num_col[t_id]):
-            if new_val[i + 1] == "True" or new_val[i + 1] == "False":
-                data_new.append(bool(new_val[i + 1]))
+            if new_val[i + 1] == "True":
+                data_new.append(True)
+            elif new_val[i + 1] == "False":
+                data_new.append(False)
             else:
                 data_new.append(float(new_val[i + 1]))
 
@@ -844,8 +890,10 @@ class MainWindow(tk.Frame):
         # Converting strings to floats and bools
         data_new = []
         for i in range(num_col[t_id]):
-            if new_val[i + 1] == "True" or new_val[i + 1] == "False":
-                data_new.append(bool(new_val[i + 1]))
+            if new_val[i + 1] == "True":
+                data_new.append(True)
+            elif new_val[i + 1] == "False":
+                data_new.append(False)
             else:
                 data_new.append(float(new_val[i + 1]))
 

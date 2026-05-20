@@ -5,6 +5,8 @@ Holds the object that handles everything to do with the optimization pop-up.
 import tkinter as tk
 from tkinter import ttk
 
+from frame_3D_gui.text_validate import validate_float, validate_index, validate_bool
+
 __author__ = "Blake McCulligh"
 __copyright__ = ""
 __credits__ = ["Blake McCulligh"]
@@ -43,6 +45,10 @@ class OptimizationPopUp:
         w_title = title.winfo_reqwidth()
         h_title = title.winfo_reqheight()
         title.place(x=WIDTH/2-w_title/2, y=0)
+
+        self.val_float = (self._root_pop_up.register(validate_float), '%P')
+        self.val_index = (self._root_pop_up.register(validate_index), '%P')
+        self.val_bool = (self._root_pop_up.register(validate_bool), '#P')
 
         self._member_group_input_frame = None
         self._member_group_input_table = None
@@ -138,7 +144,7 @@ class OptimizationPopUp:
         x, y, width, height = self._member_group_input_table.bbox(iid, column)
 
         # Create the Entry widget overlay
-        entry = ttk.Entry(self._member_group_input_frame)
+        entry = ttk.Entry(self._member_group_input_frame, validate='key', validatecommand=self.val_index)
         entry.insert(0, self._member_group_input_table.item(iid)['values'][column_index])
         entry.place(x=x, y=y, width=width, height=height)
         entry.focus_set()
@@ -274,7 +280,7 @@ class OptimizationPopUp:
 
         else:
             # Create the Entry widget overlay
-            entry = ttk.Entry(self._group_settings_frame)
+            entry = ttk.Entry(self._group_settings_frame, validate='key', validatecommand=self.val_float)
             entry.insert(0, self._group_settings_table.item(iid)['values'][column_index])
             entry.place(x=x, y=y, width=width, height=height)
             entry.focus_set()
