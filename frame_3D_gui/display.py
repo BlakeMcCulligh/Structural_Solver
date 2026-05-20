@@ -77,10 +77,8 @@ class Display:
         :param list_nodes: list. List of all nodes in the frame. shape: (3, # nodes)
         :param member: list. Line end Node indeces in the print Node array [i Node, j Node].
         """
-
         nodes = [list_nodes[0][member[0]], list_nodes[1][member[0]], list_nodes[2][member[0]],
                  list_nodes[0][member[1]], list_nodes[1][member[1]], list_nodes[2][member[1]]]
-
         self.Members.append(nodes)
         self.ConvertToPrint()
 

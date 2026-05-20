@@ -87,7 +87,6 @@ class Data:
         :param EditDisplay: If the 3D display is to be edited.
         :param RowID: the row within the input table that the edited node is in.
         """
-        print(type(RowID))
         for i in range(3): self.Nodes[i][Index] = NewNode[i]
 
         if EditTable:
@@ -210,7 +209,7 @@ class Data:
         """
 
         for i in range(8):
-            self.Nodes[i][Index] = NewMembers[i]
+            self.Members[i][Index] = NewMembers[i]
 
         if EditTable:
             col_ids = Window.Tables[2]["columns"]
@@ -218,8 +217,10 @@ class Data:
             for i in range(8): Window.Tables[2].set(RowID, col_ids[i + 1], NewMembers[i])
 
         if EditDisplay:
-            NewMembers = np.array(NewMembers)
-            Window.DisplayData.Members[Index] = NewMembers[0, 1].tolist()
+            NewMembers = np.array(NewMembers).astype(int)
+            Window.DisplayData.Members[Index] = [self.Nodes[0][NewMembers[0]],self.Nodes[1][NewMembers[0]],
+                                                 self.Nodes[2][NewMembers[0]],self.Nodes[0][NewMembers[1]],
+                                                 self.Nodes[1][NewMembers[1]],self.Nodes[2][NewMembers[1]]]
             Window.DisplayData.ConvertToPrint()
             Window.UpdateCanves()
 

@@ -517,7 +517,7 @@ class MainWindow(tk.Frame):
         self._buttons[1][0].place(x=550, y=300)
         self._buttons[1][1].place(x=550, y=350)
 
-        # Members TODO
+        # Members
         self._member_tab = ttk.Frame(self._table_tabs)
         self._table_tabs.add(self._member_tab, text="Members")
         self.Tables.append(self._create_table(self._member_tab, ("Index", "i Node", "j Node", "Material Id",
