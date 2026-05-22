@@ -984,11 +984,13 @@ def get_cost(X, constants):
     :return: float. _cost
     """
 
-    (cost_function, frame, member_group, member_group_type,
+    (frame, cost_function, member_group, member_group_type,
      weight_needed, reactions_needed, internal_forces_needed, log) = constants
 
+    if log: print("X in: ", X)
+
     cross_section_props = get_cross_section_props(X, member_group, member_group_type)
-    if log: print("Variable cross section properties: ", cross_section_props)
+    if log: print("A Variable cross section properties: ", cross_section_props)
 
     j = 0
     for i in range(len(frame.members_cross_section_props)):
@@ -1106,5 +1108,4 @@ def get_cross_section_props(X, member_groups, member_group_type):
     member_properties = []
     for member_g in member_groups:
         member_properties.append(group_properties[member_g])
-
     return member_properties

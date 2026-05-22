@@ -370,8 +370,9 @@ class MainWindow(tk.Frame):
 
         self.FilePath = None
         member_indices =  self._update_frame_to_optimization_results(GroupAssignments, GroupTypes)
-        self._linear_analysis() # runs an analysis of the optimized frame to get the full analysis Results
-        self._save_optimization_results(member_indices, GroupAssignments, GroupTypes)
+        if member_indices is not None:
+            self._linear_analysis() # runs an analysis of the optimized frame to get the full analysis Results
+            self._save_optimization_results(member_indices, GroupAssignments, GroupTypes)
 
     def _update_frame_to_optimization_results(self, group_assignments, group_types):
         """
@@ -383,19 +384,22 @@ class MainWindow(tk.Frame):
         """
 
         x = self.OptimizationResults.x
-        opt_cross_section_props = hf.get_cross_section_props(x, group_assignments, group_types)
-        member_indices = []
-        j = 0
-        for i in range(len(self.Data.Members[0])):
-            if not self.Data.Members[3][i]:
-                member_indices.append(i)
-                cs = opt_cross_section_props[j]
-                self.Data.Members[3][i] = True
-                self.Data.Members[4][i] = cs[0]
-                self.Data.Members[5][i] = cs[1]
-                self.Data.Members[6][i] = cs[2]
-                self.Data.Members[7][i] = cs[3]
-                j += 1
+        if x is not None:
+            opt_cross_section_props = hf.get_cross_section_props(x, group_assignments, group_types)
+            member_indices = []
+            j = 0
+            for i in range(len(self.Data.Members[0])):
+                if not self.Data.Members[3][i]:
+                    member_indices.append(i)
+                    cs = opt_cross_section_props[j]
+                    self.Data.Members[3][i] = True
+                    self.Data.Members[4][i] = cs[0]
+                    self.Data.Members[5][i] = cs[1]
+                    self.Data.Members[6][i] = cs[2]
+                    self.Data.Members[7][i] = cs[3]
+                    j += 1
+        else:
+            member_indices = None
 
         return member_indices
 

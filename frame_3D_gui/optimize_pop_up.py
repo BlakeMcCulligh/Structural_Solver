@@ -432,23 +432,21 @@ class OptimizationPopUp:
         Gets input table, closes the pop-up, and starts the cross-section optimization.
         """
 
-        self._root_pop_up.destroy()
-
         group_assignments = [self._member_group_input_table.item(item)['values'][1]
                             for item in self._member_group_input_table.get_children()]
         group_types = [self._group_settings_table.item(item)['values'][1]
                       for item in self._group_settings_table.get_children()]
-        d_high_bounds = [self._group_settings_table.item(item)['values'][2]
+        d_low_bounds = [self._group_settings_table.item(item)['values'][2]
                         for item in self._group_settings_table.get_children()]
-        d_low_bounds = [self._group_settings_table.item(item)['values'][3]
+        d_high_bounds = [self._group_settings_table.item(item)['values'][3]
                        for item in self._group_settings_table.get_children()]
-        b_high_bounds = [self._group_settings_table.item(item)['values'][4]
+        b_low_bounds = [self._group_settings_table.item(item)['values'][4]
                         for item in self._group_settings_table.get_children()]
-        b_low_bounds = [self._group_settings_table.item(item)['values'][5]
+        b_high_bounds = [self._group_settings_table.item(item)['values'][5]
                        for item in self._group_settings_table.get_children()]
-        t_high_bounds = [self._group_settings_table.item(item)['values'][6]
+        t_low_bounds = [self._group_settings_table.item(item)['values'][6]
                         for item in self._group_settings_table.get_children()]
-        t_low_bounds = [self._group_settings_table.item(item)['values'][7]
+        t_high_bounds = [self._group_settings_table.item(item)['values'][7]
                        for item in self._group_settings_table.get_children()]
 
         cost_function = self._cost_function_string_box.get()
@@ -459,15 +457,17 @@ class OptimizationPopUp:
         lower_bounds = []
         upper_bounds = []
         for i in range(len(group_types)):
-            lower_bounds.append(d_low_bounds)
-            upper_bounds.append(d_high_bounds)
+            lower_bounds.append(float(d_low_bounds[i]))
+            upper_bounds.append(float(d_high_bounds[i]))
             if group_types[i] == "Angle" or group_types[i] == "RectHSS":
-                lower_bounds.append(b_low_bounds)
-                upper_bounds.append(b_high_bounds)
-            lower_bounds.append(t_low_bounds)
-            upper_bounds.append(t_high_bounds)
+                lower_bounds.append(float(b_low_bounds[i]))
+                upper_bounds.append(float(b_high_bounds[i]))
+            lower_bounds.append(float(t_low_bounds[i]))
+            upper_bounds.append(float(t_high_bounds[i]))
 
-        self._main_window.GlobalOptimization(self, group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
+        self._root_pop_up.destroy()
+
+        self._main_window.GlobalOptimization(group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
                                              weight_run, reaction_run, internal_forces_run)
 
     def _cancel_pop_up(self):
@@ -488,8 +488,7 @@ def get_non_set_members_data(d):
     num = 0
     non_indices = []
     for i in range(len(d.Members[0])):
-        if not d.Members[3]:
+        if not d.Members[3][i]:
             num += 1
             non_indices.append(i)
-
     return num, non_indices
