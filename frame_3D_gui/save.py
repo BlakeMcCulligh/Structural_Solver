@@ -113,29 +113,50 @@ def save_results(results, file_path):
         with open(file_path, "w") as f:
 
             f.write(f"{len(results.NodalDeflections)}\n")
-            f.write(f"{len(results.NodalDeflections[0].DX)}\n")
+
+            try:
+                f.write(f"{len(results.NodalDeflections[0].DX)}\n")
+            except IndexError:
+                f.write(f"{0}\n")
+
             for i in range(len(results.NodalDeflections)):
                 for j in range(len(results.NodalDeflections[0].DX)):
                     f.write(f"{results.NodalDeflections[i].DX[j]},{results.NodalDeflections[i].DY[j]},"
                             f"{results.NodalDeflections[i].DZ[j]},{results.NodalDeflections[i].RX[j]},"
                             f"{results.NodalDeflections[i].RY[j]},{results.NodalDeflections[i].RZ[j]},\n")
 
-            f.write(f"{len(results.Weight)}\n")
-            for i in range(len(results.Weight)):
-                f.write(f"{results.Weight[i]}\n")
+            try:
+                f.write(f"{len(results.Weight)}\n")
+                for i in range(len(results.Weight)):
+                    f.write(f"{results.Weight[i]}\n")
+            except TypeError:
+                f.write(f"{0}\n")
 
             f.write(f"{results.OverallWeight}\n")
 
             f.write(f"{len(results.Reactions)}\n")
-            f.write(f"{len(results.Reactions[0].RX)}\n")
+
+            try:
+                f.write(f"{len(results.Reactions[0].RX)}\n")
+            except IndexError:
+                f.write(f"{0}\n")
+
             for i in range(len(results.Reactions)):
                 for j in range(len(results.Reactions[0].RX)):
                     f.write(f"{results.Reactions[i].RX[j]},{results.Reactions[i].RY[j]},{results.Reactions[i].RZ[j]},"
                             f"{results.Reactions[i].MX[j]},{results.Reactions[i].MY[j]},{results.Reactions[i].MZ[j]}\n")
 
-            f.write(f"{results.MaxInternalForces.FX},{results.MaxInternalForces.FX_case},\n")
-            f.write(f"{results.MaxInternalForces.FY},{results.MaxInternalForces.FY_case},\n")
-            f.write(f"{results.MaxInternalForces.FZ},{results.MaxInternalForces.FZ_case},\n")
-            f.write(f"{results.MaxInternalForces.MX},{results.MaxInternalForces.MX_case},\n")
-            f.write(f"{results.MaxInternalForces.MY},{results.MaxInternalForces.MY_case},\n")
-            f.write(f"{results.MaxInternalForces.MZ},{results.MaxInternalForces.MZ_case},\n")
+            try:
+                f.write(f"{results.MaxInternalForces.FX},{results.MaxInternalForces.FX_case},\n")
+                f.write(f"{results.MaxInternalForces.FY},{results.MaxInternalForces.FY_case},\n")
+                f.write(f"{results.MaxInternalForces.FZ},{results.MaxInternalForces.FZ_case},\n")
+                f.write(f"{results.MaxInternalForces.MX},{results.MaxInternalForces.MX_case},\n")
+                f.write(f"{results.MaxInternalForces.MY},{results.MaxInternalForces.MY_case},\n")
+                f.write(f"{results.MaxInternalForces.MZ},{results.MaxInternalForces.MZ_case},\n")
+            except AttributeError:
+                f.write(f"{0},{0},\n")
+                f.write(f"{0},{0},\n")
+                f.write(f"{0},{0},\n")
+                f.write(f"{0},{0},\n")
+                f.write(f"{0},{0},\n")
+                f.write(f"{0},{0},\n")

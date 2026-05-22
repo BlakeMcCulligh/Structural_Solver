@@ -20,10 +20,14 @@ class Frame3D:
     """
     Object that handles the solving of a 3D frame.
     """
-    def __init__(self) -> None:
+    def __init__(self, main_window_root) -> None:
         """
         Initializes the 3D frame solver object.
+
+        :param main_window_root: Root of the main window.
         """
+
+        self.main_window_root = main_window_root
 
         # general Lists
         self.cases: np.ndarray | list = []
@@ -377,7 +381,7 @@ class Frame3D:
                 print("FER2: ", FER2)
 
             P1, P2 = hf.get_parted_global_nodal_force_vector(self.nodes_loads, self.cases, self.nodes_dof_unknown,
-                                                             self.nodes_dof_known, num_n)
+                                                              self.nodes_dof_known, num_n)
             if log:
                 print("P1: ", P1)
                 print("P2: ", P2)
@@ -396,32 +400,34 @@ class Frame3D:
                 print("K22: ", K22)
 
             D, DX, DY, DZ, RX, RY, RZ = hf.get_D(K11, K12, P1, FER1, self.nodes_dof_unknown, self.nodes_dof_known,
-                                                 num_n, num_c, log)
+                                                 self.main_window_root, num_n, num_c, log)
 
             weight = None
             reactions = None
             internal_forces = None
 
-            if get_weight:
-                weight = hf.get_weight(self.materials, self.members, self.members_L, self.members_cross_section_props)
+            if D is not None:
+                if get_weight:
+                    weight = hf.get_weight(self.materials, self.members, self.members_L,
+                                           self.members_cross_section_props)
 
-            if get_reactions or get_internal_forces:
-                D_members = hf.get_member_direction_deflections(self.members, DX, DY, DZ, RX, RY, RZ, num_m, num_c)
-                d = hf.get_d(self.members_T, D_members, num_m, num_c)
-                f = hf.get_f(k_local, d, fer_condensed, num_m, num_c)
+                if get_reactions or get_internal_forces:
+                    D_members = hf.get_member_direction_deflections(self.members, DX, DY, DZ, RX, RY, RZ, num_m, num_c)
+                    d = hf.get_d(self.members_T, D_members, num_m, num_c)
+                    f = hf.get_f(k_local, d, fer_condensed, num_m, num_c)
 
-                if get_reactions:
-                    F = hf.get_F(self.members_T, f, num_m, num_c)
-                    reactions = hf.get_reactions(self.nodes_support, self.nodes_loads, self.members,
-                                                 self.members_releases, F, num_c, num_m, num_n)
+                    if get_reactions:
+                        F = hf.get_F(self.members_T, f, num_m, num_c)
+                        reactions = hf.get_reactions(self.nodes_support, self.nodes_loads, self.members,
+                                                     self.members_releases, F, num_c, num_m, num_n)
 
-                if get_internal_forces:
-                    abs_F, abs_M = hf.solve_internal_forces(self.members, self.members_L,
-                                                            self.members_cross_section_props, self.materials,
-                                                            self.cases, self.point_loads, self.dist_loads, f,
-                                                            fer_unc_ARRAY, d, num_m, num_c)
+                    if get_internal_forces:
+                        abs_F, abs_M = hf.solve_internal_forces(self.members, self.members_L,
+                                                                self.members_cross_section_props, self.materials,
+                                                                self.cases, self.point_loads, self.dist_loads, f,
+                                                                fer_unc_ARRAY, d, num_m, num_c)
 
-                    internal_forces = [abs_F, abs_M]
+                        internal_forces = [abs_F, abs_M]
 
             return D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internal_forces
         else:

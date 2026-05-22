@@ -315,7 +315,7 @@ class MainWindow(tk.Frame):
          Runs linear analysis on the defined frame, and saves the results.
         """
 
-        frame = _add_data_to_frame(self.Data)
+        frame = _add_data_to_frame(self, self.Data)
 
         frame.PreAnalysisLinear()
         D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internal_forces = frame.AnalysisLinear(get_weight= True,
@@ -323,13 +323,16 @@ class MainWindow(tk.Frame):
                                                                                              get_internal_forces= True)
         self.Frame = frame
         self.Results = Results()
-        self.Results.AddNodalDeflections(DX, DY, DZ, RX, RY, RZ)
-        self.Results.add_weight(weight)
-        self.Results.AddReactions(reactions)
-        self.Results.AddInternalForces(internal_forces)
 
-        self._save()
-        save_results(self.Results, self.FilePath)
+        if D is not None:
+            self.Results.AddNodalDeflections(DX, DY, DZ, RX, RY, RZ)
+            self.Results.add_weight(weight)
+            self.Results.AddReactions(reactions)
+            self.Results.AddInternalForces(internal_forces)
+            self._save()
+            save_results(self.Results, self.FilePath)
+        elif self.FilePath is not None:
+            save_results(self.Results, self.FilePath)
 
     def _optimization_window(self):
         """
@@ -357,7 +360,7 @@ class MainWindow(tk.Frame):
 
         save_frame(self.Data)
 
-        frame = _add_data_to_frame(self.Data)
+        frame = _add_data_to_frame(self, self.Data)
 
         frame.PreAnalysisLinear()
         results = frame.optimize(GroupAssignments, GroupTypes, LowerBound, UpperBound, CostFunction, WeightRun,
@@ -1238,15 +1241,16 @@ def _select_file_gui(file_types):
     if file_path: return file_path
     else: return None
 
-def _add_data_to_frame(d):
+def _add_data_to_frame(window, d):
     """
     Creates a 3D frame using the provided Data.
 
-    :param d: Data to be used to create the 3D frame
+    :param window: Main window.
+    :param d: Data to be used to create the 3D frame.
     :return: 3D frame object.
     """
 
-    frame = Frame3D()
+    frame = Frame3D(window.Root)
 
     for i in range(len(d.Nodes[0])):
         frame.AddNode(d.Nodes[0][i], d.Nodes[1][i], d.Nodes[2][i])
