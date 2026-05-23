@@ -90,8 +90,10 @@ def open_frame(window, file_path = None):
             n = []
             for x in member_line.split(','):
                 try:
-                    if x == "True" or x == "False":
-                        n.append(bool(x))
+                    if x == "True":
+                        n.append(True)
+                    elif x == "False":
+                        n.append(False)
                     else:
                         n.append(float(x))
                 except ValueError:
@@ -110,8 +112,10 @@ def open_frame(window, file_path = None):
             n = []
             for x in support_line.split(','):
                 try:
-                    if x == "True" or x == "False":
-                        n.append(bool(x))
+                    if x == "True":
+                        n.append(True)
+                    elif x == "False":
+                        n.append(False)
                     else:
                         n.append(float(x))
                 except ValueError:
@@ -129,8 +133,10 @@ def open_frame(window, file_path = None):
             n = []
             for x in release_line.split(','):
                 try:
-                    if x == "True" or x == "False":
-                        n.append(bool(x))
+                    if x == "True":
+                        n.append(True)
+                    elif x == "False":
+                        n.append(False)
                     else:
                         n.append(float(x))
                 except ValueError:
@@ -148,8 +154,10 @@ def open_frame(window, file_path = None):
             n = []
             for x in node_load_line.split(','):
                 try:
-                    if x == "True" or x == "False":
-                        n.append(bool(x))
+                    if x == "True":
+                        n.append(True)
+                    elif x == "False":
+                        n.append(False)
                     else:
                         n.append(float(x))
                 except ValueError:
@@ -167,8 +175,10 @@ def open_frame(window, file_path = None):
             n = []
             for x in member_point_line.split(','):
                 try:
-                    if x == "True" or x == "False":
-                        n.append(bool(x))
+                    if x == "True":
+                        n.append(True)
+                    elif x == "False":
+                        n.append(False)
                     else:
                         n.append(float(x))
                 except ValueError:
@@ -186,8 +196,10 @@ def open_frame(window, file_path = None):
             n = []
             for x in member_dist_line.split(','):
                 try:
-                    if x == "True" or x == "False":
-                        n.append(bool(x))
+                    if x == "True":
+                        n.append(True)
+                    elif x == "False":
+                        n.append(False)
                     else:
                         n.append(float(x))
                 except ValueError:
