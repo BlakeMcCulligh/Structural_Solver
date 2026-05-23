@@ -159,6 +159,10 @@ class MainWindow(tk.Frame):
         import_menu.add_command(label='Members Distributed Loads', command=self._import_member_dist_loads)
         menubar.add_cascade(label="Import", menu=import_menu)
 
+        add_menu = tk.Menu(menubar, tearoff=False)
+        add_menu.add_command(label='Open Add Tabels', command = self._open_table_window)
+        menubar.add_cascade(label="Add", menu=add_menu)
+
         analysis_menu = tk.Menu(menubar, tearoff=False)
         analysis_menu.add_command(label='Linear Analysis', command=self._linear_analysis)
         analysis_menu.add_command(label='Global Optimization', command=self._optimization_window)
@@ -453,6 +457,38 @@ class MainWindow(tk.Frame):
     """ ----------------------------------------------------------------------------------------------"""
     """ ---------------------------------------- INPUT TABLES ----------------------------------------"""
     """ ----------------------------------------------------------------------------------------------"""
+
+    def _open_table_window(self) -> None:
+        """
+        Opens the window with all the input tables.
+        """
+
+        # Reseting window variables
+        self._table_window = None
+        self._table_tabs = None
+        self.Tables = []
+        self._boxes = []
+        self._buttons = []
+        self._node_tab = None
+        self._mat_tab = None
+        self._member_tab = None
+        self._support_tab = None
+        self._release_tab = None
+        self._node_load_tab = None
+        self._member_point_load_tab = None
+        self._member_dist_load_tab = None
+
+        self._create_table_window()
+
+        # adding Data to tables
+        self.Data.AddNodeToTable(self)
+        self.Data.AddMaterialsToTable(self)
+        self.Data.AddMemberToTable(self)
+        self.Data.AddSupportToTable(self)
+        self.Data.AddReleasesToTable(self)
+        self.Data.AddNodeLoadsToTables(self)
+        self.Data.AddMemberPointLoadToTable(self)
+        self.Data.AddMemberDistLoadsToTables(self)
 
     def _create_table_window(self):
         """

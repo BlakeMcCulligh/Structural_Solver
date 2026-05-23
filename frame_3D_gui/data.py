@@ -75,6 +75,18 @@ class Data:
 
         _reset_solutions(Window)
 
+    def AddNodeToTable(self, Window: MainWindow) -> None:
+        """
+        Adds the nodes to the input table.
+
+        :param Window: Object storing the main window.
+        """
+
+        num_row = len(Window.Tables[0].get_children())
+        for i in range(len(self.Nodes[0])):
+            Window.Tables[0].insert('', 'end', values=[str(num_row + i), self.Nodes[0][i], self.Nodes[1][i],
+                                                       self.Nodes[2][i]])
+
     def EditNode(self, Window: MainWindow, NewNode: List[float], Index: int, EditTable: bool, EditDisplay: bool,
                  RowID: str) -> None:
         """
@@ -140,6 +152,19 @@ class Data:
 
         _reset_solutions(Window)
 
+    def AddMaterialsToTable(self, Window: MainWindow) -> None:
+        """
+        Adds the materials to the input table.
+
+        :param Window: Object storing the main window.
+        """
+
+        num_row = len(Window.Tables[1].get_children())
+        for i in range(len(self.Materials[0])):
+            Window.Tables[1].insert('', 'end', values=[str(num_row + i), self.Materials[0][i], self.Materials[1][i],
+                                                       self.Materials[2][i], self.Materials[3][i],
+                                                       self.Materials[4][i]])
+
     def EditMaterials(self, Window: MainWindow, NewMaterials: List[float], Index: int, EditTable: bool,
                       EditDisplay: bool, RowID: list) -> None:
         """
@@ -194,6 +219,19 @@ class Data:
                 Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist())
 
         _reset_solutions(Window)
+
+    def AddMemberToTable(self, Window: MainWindow) -> None:
+        """
+        Adds the members to the input table.
+
+        :param Window: Object storing the main window.
+        """
+
+        num_row = len(Window.Tables[2].get_children())
+        for i in range(len(self.Members[0])):
+            Window.Tables[2].insert('', 'end', values=[str(num_row + i), self.Members[0][i], self.Members[1][i],
+                                                       self.Members[2][i], self.Members[3][i], self.Members[4][i],
+                                                       self.Members[5][i], self.Members[6][i], self.Members[7][i]])
 
     def EditMembers(self, Window: MainWindow, NewMembers: List[Union[int, bool, float]], Index: int, EditTable: bool,
                     EditDisplay: bool, RowID) -> None:
@@ -257,6 +295,19 @@ class Data:
             Window.UpdateCanves()
 
         _reset_solutions(Window)
+
+    def AddSupportToTable(self, Window: MainWindow) -> None:
+        """
+        Adds the supports to the input table.
+
+        :param Window: Object storing the main window.
+        """
+
+        num_row = len(Window.Tables[3].get_children())
+        for i in range(len(self.Supports[0])):
+            Window.Tables[3].insert('', 'end', values=[str(num_row + i), self.Supports[0][i], self.Supports[1][i],
+                                                       self.Supports[2][i], self.Supports[3][i], self.Supports[4][i],
+                                                       self.Supports[5][i], self.Supports[6][i]])
 
     def EditSupports(self, Window: MainWindow, NewSupport: List[Union[int,bool]], Index: int, EditTable: bool,
                      EditDisplay: bool, RowID: str) -> None:
@@ -324,6 +375,21 @@ class Data:
             Window.UpdateCanves()
 
         _reset_solutions(Window)
+
+    def AddReleasesToTable(self, Window: MainWindow) -> None:
+        """
+        Adds the releases to the input table.
+
+        :param Window: Object storing the main window.
+        """
+
+        num_row = len(Window.Tables[4].get_children())
+        for i in range(len(self.Releases[0])):
+            Window.Tables[4].insert('', 'end', values=[str(num_row + i), self.Releases[0][i], self.Releases[1][i],
+                                                       self.Releases[2][i], self.Releases[3][i], self.Releases[4][i],
+                                                       self.Releases[5][i], self.Releases[6][i], self.Releases[7][i],
+                                                       self.Releases[8][i], self.Releases[9][i], self.Releases[10][i],
+                                                       self.Releases[11][i], self.Releases[12][i]])
 
     def EditReleases(self, Window: MainWindow, NewReleases: List[Union[int, bool]], Index: int, EditTable: bool,
                      EditDisplay: bool,RowID: str) -> None:
@@ -393,6 +459,19 @@ class Data:
 
         _reset_solutions(Window)
 
+    def AddNodeLoadsToTables(self, Window: MainWindow) -> None:
+        """
+        Adds the node loads to the input table.
+
+        :param Window: Object storing the main window.
+        """
+
+        num_row = len(Window.Tables[5].get_children())
+        for i in range(len(self.NodeLoad[0])):
+            Window.Tables[5].insert('', 'end', values=[str(num_row + i), self.NodeLoad[0][i], self.NodeLoad[1][i],
+                                                       self.NodeLoad[2][i], self.NodeLoad[3][i], self.NodeLoad[4][i],
+                                                       self.NodeLoad[5][i], self.NodeLoad[6][i], self.NodeLoad[7][i]])
+
     def EditNodeLoads(self, Window: MainWindow, NewNodeLoad: List[Union[int, float]], Index: int, EditTable: bool,
                       EditDisplay: bool, RowID: str) -> None:
         """
@@ -456,6 +535,22 @@ class Data:
             Window.UpdateCanves()
 
         _reset_solutions(Window)
+
+    def AddMemberPointLoadToTable(self, Window: MainWindow) -> None:
+        """
+        Adds the member point loads to the input table.
+
+        :param Window: Object storing the main window.
+        """
+
+        num_row = len(Window.Tables[6].get_children())
+        for i in range(len(self.MemberPointLoad[0])):
+            Window.Tables[6].insert('', 'end', values=[str(num_row + i),
+                                                       self.MemberPointLoad[0][i], self.MemberPointLoad[1][i],
+                                                       self.MemberPointLoad[2][i], self.MemberPointLoad[3][i],
+                                                       self.MemberPointLoad[4][i], self.MemberPointLoad[5][i],
+                                                       self.MemberPointLoad[6][i], self.MemberPointLoad[7][i],
+                                                       self.MemberPointLoad[8][i]])
 
     def EditMemberPointLoad(self, Window: MainWindow, NewMemberPointLoad: List[Union[int, float]], Index: int,
                             EditTable: bool, EditDisplay: bool, RowID: str) -> None:
@@ -522,6 +617,22 @@ class Data:
             Window.UpdateCanves()
 
         _reset_solutions(Window)
+
+    def AddMemberDistLoadsToTables(self, Window: MainWindow) -> None:
+        """
+        Adds the member distributed loads to the input table.
+
+        :param Window: Object storing the main window.
+        """
+
+        num_row = len(Window.Tables[7].get_children())
+        for i in range(len(self.MemberDistLoad[0])):
+            Window.Tables[7].insert('', 'end', values=[str(num_row + i),
+                                                       self.MemberDistLoad[0][i], self.MemberDistLoad[1][i],
+                                                       self.MemberDistLoad[2][i], self.MemberDistLoad[3][i],
+                                                       self.MemberDistLoad[4][i], self.MemberDistLoad[5][i],
+                                                       self.MemberDistLoad[6][i], self.MemberDistLoad[7][i],
+                                                       self.MemberDistLoad[8][i], self.MemberDistLoad[9][i]])
 
     def EditMemberDistLoad(self, Window: MainWindow, NewMemberDistLoad: List[Union[int, float]], Index: int,
                            EditTable: bool, EditDisplay: bool, RowID: str) -> None:
