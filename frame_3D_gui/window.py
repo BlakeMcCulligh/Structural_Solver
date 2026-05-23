@@ -53,6 +53,9 @@ class MainWindow(tk.Frame):
 
         self._center_window()
 
+        self.box_set = None
+        self.popup_settings = None
+
         self._create_top_menu()
 
         self.Data: Data = Data()
@@ -80,6 +83,7 @@ class MainWindow(tk.Frame):
         self.FOV: float = 90
         self.Z_FAR: float = 1000
         self.Z_NEAR: float = 0.1
+        self.move_speed: float = 0.01
 
         self.LIGHT_DIR: np.ndarray = np.array([0, 0, -1]) # 3D rendering lighting direction unit vector
 
@@ -167,6 +171,89 @@ class MainWindow(tk.Frame):
         analysis_menu.add_command(label='Linear Analysis', command=self._linear_analysis)
         analysis_menu.add_command(label='Global Optimization', command=self._optimization_window)
         menubar.add_cascade(label="Analysis", menu=analysis_menu)
+
+        display_menu = tk.Menu(menubar, tearoff=False)
+        display_menu.add_command(label='Move Speed', command=self._chamge_move_speed)
+        display_menu.add_command(label='Support Scale', command=self._change_support_scale)
+        menubar.add_cascade(label="Display Settings", menu=display_menu)
+
+    def _chamge_move_speed(self):
+        """
+        Changes the movement moltiplier to the input value.
+        """
+
+        self.popup_settings = tk.Toplevel(self.Root)
+
+        WIDTH = 400
+        HEIGHT = 100
+        self._center_popup_window(self.popup_settings, WIDTH, HEIGHT)
+        self.popup_settings.title("Move Speed")  # Set the title
+        self.popup_settings.resizable(False, False)
+
+        title = tk.Label(self.popup_settings, text="Move Speed: ", font=('Helvetica', 12))
+        title.place(x=10, y=10)
+        self.box_set = tk.Entry(self.popup_settings, validate='key', validatecommand=self.val_float)
+        self.box_set.place(x=150, y=10)
+        but = (tk.Button(self.popup_settings, text="okay", command=self._set_move_speed))
+        but.place(x=150, y=50)
+
+    def _set_move_speed(self):
+        """
+        Sets the movement moltiplier to the value in the text box and closes the popup window.
+        """
+
+        new_val = self.box_set.get()
+        self.move_speed = float(new_val)
+        self.popup_settings.destroy()
+
+    def _change_support_scale(self):
+        """
+        Changes the support scale moltiplier to the input value.
+        """
+
+        self.popup_settings = tk.Toplevel(self.Root)
+
+        WIDTH = 400
+        HEIGHT = 100
+        self._center_popup_window(self.popup_settings, WIDTH, HEIGHT)
+        self.popup_settings.title("Support Scale")  # Set the title
+        self.popup_settings.resizable(False, False)
+
+        title = tk.Label(self.popup_settings, text="Support Scale: ", font=('Helvetica', 12))
+        title.place(x=10, y=10)
+        self.box_set = tk.Entry(self.popup_settings, validate='key', validatecommand=self.val_float)
+        self.box_set.place(x=150, y=10)
+        but = (tk.Button(self.popup_settings, text="okay", command=self._set_support_scale))
+        but.place(x=150, y=50)
+
+    def _set_support_scale(self):
+        """
+        Sets the support scale to the value in the text box and closes the popup window.
+        """
+
+        new_val = self.box_set.get()
+        self.DisplayData.scale[0] = float(new_val)
+        self.popup_settings.destroy()
+        self.DisplayData.ConvertToPrint()
+
+    def _center_popup_window(self, popup, width, height):
+        """
+        Centers the pop-up window on the screen and sets its size.
+
+        :param popup: Popup root.
+        :param width: Width to set the pop-Up window to.
+        :param height: Height to set the pop-Up window to.
+        """
+
+        main_window_x = self.Root.winfo_x()
+        main_window_y = self.Root.winfo_y()
+        main_window_width = self.Root.winfo_width()
+        main_window_height = self.Root.winfo_height()
+
+        x = (main_window_width // 2) + main_window_x - (width // 2)
+        y = (main_window_height // 2) + main_window_y - (height // 2)
+
+        popup.geometry(f"{width}x{height}+{x}+{y}")
 
     def _exit(self):
         """
@@ -1054,9 +1141,9 @@ class MainWindow(tk.Frame):
         """
 
         if event.delta > 0:
-            self.Camera = self.Camera + self.LookDir * 0.1
+            self.Camera = self.Camera + self.LookDir * self.move_speed * 10
         else:
-            self.Camera = self.Camera - self.LookDir * 0.1
+            self.Camera = self.Camera - self.LookDir * self.move_speed * 10
         self.UpdateCanves()
 
     def _pan_start(self, event):
@@ -1096,8 +1183,8 @@ class MainWindow(tk.Frame):
         """
 
         change_cords = [cords[0] - self._scroll_cords_last[0], cords[1] - self._scroll_cords_last[1]]
-        self.Camera = self.Camera - self.Up * change_cords[1] * 0.01
-        self.Camera = self.Camera + np.cross(self.LookDir, self.Up) * change_cords[0] * 0.01
+        self.Camera = self.Camera - self.Up * change_cords[1] * self.move_speed
+        self.Camera = self.Camera + np.cross(self.LookDir, self.Up) * change_cords[0] * self.move_speed
         self.UpdateCanves()
         self._scroll_cords_last = cords
 
