@@ -82,16 +82,24 @@ class Display:
 
         self.ConvertToPrint()
 
-    def AddMember(self, list_nodes: List[List[float]], member: List[int]) -> None:
+    def AddMember(self, list_nodes: List[List[float]], member: List[int], i = None) -> None:
         """
         Adds a member to be displayed in the 3D rendering.
 
         :param list_nodes: list. List of all nodes in the frame. shape: (3, # nodes)
         :param member: list. Line end Node indeces in the print Node array [i Node, j Node].
+        :param i: Index of member.
         """
         nodes = [list_nodes[0][member[0]], list_nodes[1][member[0]], list_nodes[2][member[0]],
                  list_nodes[0][member[1]], list_nodes[1][member[1]], list_nodes[2][member[1]]]
         self.Members.append(nodes)
+
+        if i is not None:
+            n = np.array(list_nodes)
+            n1 = [list_nodes[0][member[0]], list_nodes[1][member[0]], list_nodes[2][member[0]]]
+            n2 = [list_nodes[0][member[1]], list_nodes[1][member[1]], list_nodes[2][member[1]]]
+            self.text.append([i]+n1+n2)
+
         self.ConvertToPrint()
 
     def AddSupports(self, list_nodes: List[List[float]], support: List[Union[int,bool]] | np.ndarray) -> None:

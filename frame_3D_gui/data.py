@@ -112,7 +112,8 @@ class Data:
             Window.DisplayData.Members = []
             Members = np.array(self.Members)
             for i in range(len(self.Members[0])):
-                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist())
+                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist(),
+                                             len(self.Members[0])-1)
 
             # updating supports
             Window.DisplayData.supports = []
@@ -215,7 +216,7 @@ class Data:
         if AddToDisplay:
             Members = np.array(Members)
             for i in range(len(Members[0])):
-                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist())
+                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist(), len(self.Members[0]))
 
         _reset_solutions(Window)
 
