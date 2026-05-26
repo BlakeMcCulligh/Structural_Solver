@@ -1244,6 +1244,8 @@ class MainWindow(tk.Frame):
         line = copy(self.DisplayData.PrintLines)
         surf_tri = copy(self.DisplayData.PrintSurfaceTri)
         solid_tri = copy(self.DisplayData.PrintSolidTri)
+        text_nodes = copy(self.DisplayData.PrintText[1])
+        text_strings = copy(self.DisplayData.PrintText[0])
 
         # updating all the data about the location and direction of the camera.
         self._update_cam_data()
@@ -1262,10 +1264,11 @@ class MainWindow(tk.Frame):
         tri = solid_tri
 
         # transforming all the coordinates to the local coordinate system based on the camera.
-        node, line, tri = TDE.transform_to_local(self, node, line, tri)
+        node, line, tri, text_nodes = TDE.transform_to_local(self, node, line, tri, text_nodes)
 
         # trims all nodes, lines, and tris that are eather to close to the camera or are behind it.
-        node, line, tri, tri_color = TDE.clip_close(node, line, tri, tri_color)
+        node, line, tri, tri_color, text_nodes, text_strings = (
+            TDE.clip_close(node, line, tri, tri_color, text_nodes, text_strings))
 
         self.graph.delete("all") # clearing canvas of old rendering
 
@@ -1274,17 +1277,18 @@ class MainWindow(tk.Frame):
             # projecting the nodes, lines, and tris and scales to window size.
             w = self.graph.winfo_width()
             h = self.graph.winfo_height()
-            node, line, tri = TDE.project(self, node, line, tri)
+            node, line, tri, text_nodes = TDE.project(self, node, line, tri, text_nodes)
 
             # trimming all nodes, lines, and tris that are outside the frame of the camera.
             if len(tri) > 0: tri = tri[:, :, :-1]
             if len(line) > 0: line = line[:, :, :-1]
-            node, line, tri, tri_color = TDE.clip_edges(node, line, tri, tri_color, h, w)
+            node, line, tri, tri_color, text_nodes, text_strings = TDE.clip_edges(node, line, tri, tri_color, text_nodes, text_strings, h, w)
 
             # printing tris, lines, and nodes
             if len(tri) > 0: self._print_tri(np.array(tri), np.array(tri_color))
             if len(line) > 0: self._print_line(np.array(line))
             if len(node) > 0: self._print_node(np.array(node))
+            if len(text_nodes) > 0: self._print_text(np.array(text_strings), np.array(text_nodes))
 
         self.update()
 
@@ -1355,6 +1359,20 @@ class MainWindow(tk.Frame):
             node_p = [node[i][0], node[i][1]]
             self.graph.create_oval(node_p[0] - 4, node_p[1] - 4, node_p[0] + 4, node_p[1] + 4, fill="green")
 
+    def _print_text(self, text_strings, text_nodes):
+        """
+        Prints text to the canvas.
+
+        :param text_strings: Strings that are to be printed.
+        :param text_nodes: Two nodes that the strings are to be printed on top of.
+        """
+        for i in range(len(text_strings)):
+            dx = text_nodes[i*2+1][0]-text_nodes[i*2][0]
+            dy = text_nodes[i*2+1][1]-text_nodes[i*2][1]
+            angle = np.atan2(dy,dx)
+
+            node = [text_nodes[i*2][0] + dx/2, text_nodes[i*2][1] + dy/2]
+            self.graph.create_text(node[0],node[1], text=text_strings[i], angle=angle, font=("Arial", 16), fill="black")
 
 def _select_file_gui(file_types):
     """

@@ -70,8 +70,7 @@ class Data:
         if AddToDisplay:
             Nodes = np.array(Nodes)
             for i in range(len(Nodes[0])):
-                #Window.AddPrintNode(Nodes[:, i])
-                Window.DisplayData.AddNode(Nodes[:, i].tolist())
+                Window.DisplayData.AddNode(Nodes[:, i].tolist(),len(self.Nodes[0])-1)
 
         _reset_solutions(Window)
 

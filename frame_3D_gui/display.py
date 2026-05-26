@@ -34,7 +34,7 @@ class Display:
 
         self.window = window
 
-        self.scale = [0.1,0.1,0.1]
+        self.scale = [0.1,0.1,0.1,1]
         self.res = [8]
 
         self.Nodes: List[List[float]] = [] # shape: (# nodes, 3)
@@ -60,14 +60,26 @@ class Display:
         self.PrintLines: np.ndarray = np.empty((0, 2, 3))
         self.PrintSurfaceTri: np.ndarray = np.empty((0, 3, 3))
         self.PrintSolidTri: np.ndarray = np.empty((0, 3, 3))
+        self.PrintText: list = [[],np.empty((0,6))] # shape: [[strings], (# text, 6)]
 
-    def AddNode(self, node: List[float]) -> None:
+    def AddNode(self, node: List[float], i = None) -> None:
         """
         Adds a node to be displayed in the 3D rendering.
 
         :param node: list. Node to be added. shape: (3)
+        :param i: index of the node. optional, only needed if to be displayed.
         """
         self.Nodes.append(node)
+
+        if i is not None:
+            n = np.array(node)
+            n[2] += self.scale[3]
+            cross = np.cross(self.window.LookDir, self.window.Up)
+
+            n1 = (n + cross).tolist()
+            n2 = (n - cross).tolist()
+            self.text.append([i]+n1+n2)
+
         self.ConvertToPrint()
 
     def AddMember(self, list_nodes: List[List[float]], member: List[int]) -> None:
@@ -177,6 +189,7 @@ class Display:
         self.PrintLines: np.ndarray = np.empty((0, 2, 3))
         self.PrintSurfaceTri: np.ndarray = np.empty((0, 3, 3))
         self.PrintSolidTri: np.ndarray = np.empty((0, 3, 3))
+        self.PrintText: list = [[], np.empty((0, 6))]
 
         # nodes
         for i in range(len(self.Nodes)):
@@ -199,6 +212,12 @@ class Display:
 
         # distributed loads
         self._convert_dist_loads(self.window.LookDir)
+
+        # text
+        for i in range(len(self.text)):
+            self.PrintText[0].append(self.text[i][0])
+            self.PrintText[1] = np.vstack((self.PrintText[1],[[self.text[i][1],self.text[i][2],self.text[i][3],
+                                                                 self.text[i][4],self.text[i][5],self.text[i][6]]]))
 
     def _convert_supports(self):
         s = self.scale[0]

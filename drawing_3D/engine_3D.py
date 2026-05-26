@@ -132,7 +132,7 @@ def illumination(window, solid_tri_normals, num_surf_tri):
     tri_color = tri_color.tolist() + [200] * num_surf_tri
     return tri_color
 
-def transform_to_local(window, node, line, tri):
+def transform_to_local(window, node, line, tri, text_nodes):
     """
     Transforms the nodes, lines and surfaces to local coordinates relative to the camera.
 
@@ -140,7 +140,8 @@ def transform_to_local(window, node, line, tri):
     :param node: List of nodes. Shape: (# Nodes, 3)
     :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
     :param tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
-    :return: Nodes, Lines, Surfaces.
+    :param text_nodes: List of nodes that the text is to be prionted on. Shape: (# text, 6)
+    :return: Nodes, Lines, Surfaces, Text Nodes.
     """
 
     target = window.Camera + window.LookDir
@@ -149,6 +150,13 @@ def transform_to_local(window, node, line, tri):
     for i in range(len(node)):
         node_move.append((np.append(node[i],1) @ look_at_matrix)[:-1])
     node_move = np.array(node_move)
+
+    text_nodes_move = []
+    for i in range(len(text_nodes)):
+        text_nodes_move.append((np.append(text_nodes[i][0:3], 1) @ look_at_matrix)[:-1])
+        text_nodes_move.append((np.append(text_nodes[i][3:6], 1) @ look_at_matrix)[:-1])
+    text_nodes_move = np.array(text_nodes_move)
+
     line_move = []
     for i in range(len(line)):
         line_sub = []
@@ -163,7 +171,7 @@ def transform_to_local(window, node, line, tri):
             move_sub.append((np.append(tri[i][j], 1) @ look_at_matrix)[:-1])
         tri_move.append(move_sub)
     tri_move = np.array(tri_move)
-    return node_move, line_move, tri_move
+    return node_move, line_move, tri_move, text_nodes_move
 
 def get_look_at_matrix(position, target, up):
     """
@@ -189,7 +197,7 @@ def get_look_at_matrix(position, target, up):
                              [        -TA,     -TB,          -TC,1]])
     return look_at_matrix
 
-def project(window, node, line, tri):
+def project(window, node, line, tri, text_nodes):
     """
     Projects the nodes, lines, and surfaces and scales them to the size of the window.
 
@@ -197,7 +205,8 @@ def project(window, node, line, tri):
     :param node: List of nodes. Shape: (# Nodes, 3)
     :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
     :param tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
-    :return: Nodes, Lines, Surfaces.
+    :param text_nodes: List of nodes that the text is to be prionted on. Shape: (# text * 2, 3)
+    :return: Nodes, Lines, Surfaces, Text Nodes.
     """
 
     projection_matrix = get_projection_matrix(window)
@@ -206,6 +215,11 @@ def project(window, node, line, tri):
     for i in range(len(node)):
         node_projected.append((np.append(node[i], 1) @ projection_matrix) / node[i][2])
     node_projected = np.array(node_projected)
+
+    text_nodes_projected = []
+    for i in range(len(text_nodes)):
+        text_nodes_projected.append((np.append(text_nodes[i],1) @ projection_matrix) / text_nodes[i][2])
+    text_nodes_projected = np.array(text_nodes_projected)
 
     line_projected = []
     for i in range(len(line)):
@@ -231,6 +245,10 @@ def project(window, node, line, tri):
         node_projected[:,[0,1]] = node_projected[:,[0,1]] + 1
         node_projected[:, 0] = node_projected[:, 0] * 0.5 * w
         node_projected[:, 1] = node_projected[:, 1] * 0.5 * h
+    if len(text_nodes_projected) > 0:
+        text_nodes_projected[:, [0, 1]] = text_nodes_projected[:, [0, 1]] + 1
+        text_nodes_projected[:, 0] = text_nodes_projected[:, 0] * 0.5 * w
+        text_nodes_projected[:, 1] = text_nodes_projected[:, 1] * 0.5 * h
     if len(line_projected) > 0:
         line_projected[:, :, [0, 1]] = line_projected[:, :, [0, 1]] + 1
         line_projected[:, :, 0] = line_projected[:, :, 0] * 0.5 * w
@@ -239,7 +257,7 @@ def project(window, node, line, tri):
         tri_projected[:, :, [0, 1]] = tri_projected[:, :, [0, 1]] + 1
         tri_projected[:, :, 0] = tri_projected[:, :, 0] * 0.5 * w
         tri_projected[:, :, 1] = tri_projected[:, :, 1] * 0.5 * h
-    return node_projected, line_projected, tri_projected
+    return node_projected, line_projected, tri_projected, text_nodes_projected
 
 def get_projection_matrix(window):
     """
@@ -260,7 +278,7 @@ def get_projection_matrix(window):
     projection_matrix[2, 3] = 1
     return projection_matrix
 
-def clip_close(node, line, tri, tri_color):
+def clip_close(node, line, tri, tri_color, text_nodes, text_strings):
     """
     Cuts nodes, lines, and surfaces that are to close or behind the camera.
 
@@ -268,7 +286,9 @@ def clip_close(node, line, tri, tri_color):
     :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
     :param tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
     :param tri_color: Colour Variable between 0 and 255.
-    :return: Nodes, Lines, Triangles, Triangle Colours.
+    :param text_nodes: List of nodes that the text is to be printed on. Shape: (# text * 2, 3)
+    :param text_strings: List of strings that are to be printed. Shape: (# text)
+    :return: Nodes, Lines, Triangles, Triangle Colours, Text Nodes, Text Strings.
     """
 
     clipped_nodes = []
@@ -276,6 +296,15 @@ def clip_close(node, line, tri, tri_color):
         if node[i][2] > 0.01:
             clipped_nodes.append(node[i])
     clipped_nodes = np.array(clipped_nodes)
+
+    clipped_text_nodes = []
+    clipped_text_strings = []
+    for i in range(int(len(text_nodes)/2)):
+        if text_nodes[i*2][2] > 0.01 or text_nodes[i*2+1][2] > 0.01:
+            clipped_text_nodes.append(text_nodes[i*2])
+            clipped_text_nodes.append(text_nodes[i*2+1])
+            clipped_text_strings.append(text_strings[i])
+    clipped_text_nodes = np.array(clipped_text_nodes)
 
     clipped_lines = []
     for i in range(len(line)):
@@ -294,9 +323,9 @@ def clip_close(node, line, tri, tri_color):
             clipped_triangles.append(tri_out2)
             new_color.append(tri_color[i])
     clipped_triangles, tri_color = np.array(clipped_triangles), np.array(new_color)
-    return clipped_nodes, clipped_lines, clipped_triangles, tri_color
+    return clipped_nodes, clipped_lines, clipped_triangles, tri_color, clipped_text_nodes, text_strings
 
-def clip_edges(node, line, old_tri, old_tri_color, h, w):
+def clip_edges(node, line, old_tri, old_tri_color, text_nodes, text_strings, h, w):
     """
     Cuts nodes, lines, and surfaces that are outside the edges of the camera.
 
@@ -304,9 +333,11 @@ def clip_edges(node, line, old_tri, old_tri_color, h, w):
     :param line: List of nodes that forms lines. Shape: (# Lines, 2, 3)
     :param old_tri: List of nodes that forms triangular surfaces. Shape: (# Triangular Surfaces, 3, 3)
     :param old_tri_color: Colour Variable between 0 and 255.
+    :param text_nodes: List of nodes that the text is to be prionted on. Shape: (# text * 2, 3)
+    :param text_strings: List of strings that are to be printed. Shape: (# text)
     :param h: Height of window.
     :param w: Width of window.
-    :return: Nodes, Lines, Triangles, Triangle Colours.
+    :return: Nodes, Lines, Triangles, Triangle Colours, Text Nodes.
     """
 
     clip_plane_point = np.array([[0, 0, 0], [0, h, 0], [0, 0, 0], [w, 0, 0]])
@@ -317,6 +348,16 @@ def clip_edges(node, line, old_tri, old_tri_color, h, w):
         if 0 < node[i][0] < w and 0 < node[i][1] < h:
             clipped_nodes.append(node[i])
     clipped_nodes = np.array(clipped_nodes)
+
+    clipped_text_nodes = []
+    clipped_text_strings = []
+    for i in range(int(len(text_nodes)/2)):
+        if ((0 < text_nodes[i*2][0] < w and 0 < text_nodes[i*2][1] < h) or
+            (0 < text_nodes[i*2+1][0] < w and 0 < text_nodes[i*2+1][1] < h)):
+            clipped_text_nodes.append(text_nodes[i*2])
+            clipped_text_nodes.append(text_nodes[i*2+1])
+            clipped_text_strings.append(text_strings[i])
+    clipped_text_nodes = np.array(clipped_text_nodes)
 
     for j in range(4):
         new_line = []
@@ -338,7 +379,8 @@ def clip_edges(node, line, old_tri, old_tri_color, h, w):
                 new_tri.append(tri_out2)
                 new_tri_color.append(old_tri_color[i])
         old_tri, old_tri_color = new_tri, new_tri_color
-    return clipped_nodes, clipped_lines, old_tri, old_tri_color
+
+    return clipped_nodes, clipped_lines, old_tri, old_tri_color, clipped_text_nodes, clipped_text_strings
 
 def vector_intersect_plane(plane_point, plane_normal, line_start, line_end):
     """
