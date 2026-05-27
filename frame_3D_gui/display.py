@@ -34,7 +34,7 @@ class Display:
 
         self.window = window
 
-        self.scale = [0.1,0.1,0.1,1]
+        self.scale = [0.1,10,0.1,1]
         self.res = [8]
 
         self.Nodes: List[List[float]] = [] # shape: (# nodes, 3)
@@ -178,7 +178,6 @@ class Display:
         :param member_dist_loads: list. Local member distributed load.
                                   shape: [i Member, x1, x2, wx1, wx2, wy1, wy2, wz1, wz2]
         """
-
         location1 = get_loc_on_member(member_dist_loads[0], member_dist_loads[1], list_members, list_nodes)
         location2 = get_loc_on_member(member_dist_loads[0], member_dist_loads[2], list_members, list_nodes)
         location = location1.tolist() + location2.tolist()

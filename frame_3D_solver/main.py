@@ -1,6 +1,7 @@
 """
 Holds the 3D frame solver object and handles everything to do with the solving of 3D frames.
 """
+import time
 
 import frame_3D_solver.helper_functions as hf
 import numpy as np
@@ -466,13 +467,19 @@ class Frame3D:
         if log: print("num_variables: ", numVariables)
 
         self.PreAnalysisLinear(log=log)
+        t_start = time.time()
 
         constants = [self, costFunction, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
 
         bounds = hf.get_bounds(lowerBound, upperBound, numVariables)
 
-        optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants])
+        #optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants], options={'disp': True}, workers = -1)
+        optimization_results = opt.differential_evolution(hf.get_cost, bounds, args=[constants], disp = True)
 
+        log = True
+        if log:
+            t_end = time.time()
+            print("RunTime: ", t_end - t_start)
         if log: print("optimization results: ", optimization_results)
 
         return optimization_results

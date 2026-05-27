@@ -216,7 +216,7 @@ class Data:
         if AddToDisplay:
             Members = np.array(Members)
             for i in range(len(Members[0])):
-                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist(), len(self.Members[0]))
+                Window.DisplayData.AddMember(self.Nodes, Members[[0, 1], i].astype(int).tolist(), len(self.Members[0])-1)
 
         _reset_solutions(Window)
 
@@ -610,7 +610,7 @@ class Data:
         if AddToDisplay:
             for i in range(len(MemberDistLoad[0])):
                 load = []
-                for j in range(10): load.append(self.MemberDistLoad[j][i])
+                for j in range(10): load.append(MemberDistLoad[j][i])
                 Window.DisplayData.AddMemberDistLoads([self.Members[0],self.Members[1]], self.Nodes, load)
 
             Window.DisplayData.ConvertToPrint()
@@ -647,7 +647,7 @@ class Data:
         :param RowID: The input table row containing the member distributed load being edited.
         """
 
-        for i in range(10): self.Materials[i][Index] = NewMemberDistLoad[i]
+        for i in range(10): self.MemberDistLoad[i][Index] = NewMemberDistLoad[i]
 
         if EditTable:
             col_ids = Window.Tables[7]["columns"]

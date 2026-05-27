@@ -1002,7 +1002,10 @@ def get_cost(X, constants):
     D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = (
         frame.AnalysisLinear(weight_needed, reactions_needed, internal_forces_needed, log))
 
-    return _cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces, cost_function)
+    cost = _cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces, cost_function)
+    print("Cost: ", cost)
+
+    return cost
 
 def chack_inputs(members, member_group: list, member_group_type: list):
     """

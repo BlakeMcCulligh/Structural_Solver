@@ -1412,7 +1412,7 @@ def _add_data_to_frame(window, d):
                          bool(d.Supports[4][i]),bool(d.Supports[5][i]), bool(d.Supports[6][i]))
 
     for i in range(len(d.Releases[0])):
-        frame.AddReleases(d.Releases[0][i], d.Releases[1][i], d.Releases[2][i], d.Releases[3][i], d.Releases[4][i],
+        frame.AddReleases(int(d.Releases[0][i]), d.Releases[1][i], d.Releases[2][i], d.Releases[3][i], d.Releases[4][i],
                           d.Releases[5][i], d.Releases[6][i], d.Releases[7][i], d.Releases[8][i], d.Releases[9][i],
                           d.Releases[10][i], d.Releases[11][i], d.Releases[12][i])
 
@@ -1421,13 +1421,13 @@ def _add_data_to_frame(window, d):
                           d.NodeLoad[5][i], d.NodeLoad[6][i], d.NodeLoad[7][i])
 
     for i in range(len(d.MemberPointLoad[0])):
-        frame.AddMemberPointLoad(d.MemberPointLoad[0][i], d.MemberPointLoad[1][i], d.MemberPointLoad[2][i],
+        frame.AddMemberPointLoad(int(d.MemberPointLoad[0][i]), d.MemberPointLoad[1][i], d.MemberPointLoad[2][i],
                                  d.MemberPointLoad[3][i], d.MemberPointLoad[4][i], d.MemberPointLoad[5][i],
-                                 d.MemberPointLoad[6][i], d.MemberPointLoad[7][i], d.MemberPointLoad[8][i])
+                                 d.MemberPointLoad[6][i], d.MemberPointLoad[7][i], int(d.MemberPointLoad[8][i]))
 
     for i in range(len(d.MemberDistLoad[0])):
-        frame.addMemberDistLoad(d.MemberDistLoad[0][i], d.MemberDistLoad[1][i], d.MemberDistLoad[2][i],
+        frame.addMemberDistLoad(int(d.MemberDistLoad[0][i]), d.MemberDistLoad[1][i], d.MemberDistLoad[2][i],
                                 d.MemberDistLoad[3][i], d.MemberDistLoad[4][i], d.MemberDistLoad[5][i],
                                 d.MemberDistLoad[6][i], d.MemberDistLoad[7][i], d.MemberDistLoad[8][i],
-                                d.MemberDistLoad[9][i])
+                                int(d.MemberDistLoad[9][i]))
     return frame

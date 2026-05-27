@@ -228,7 +228,7 @@ def segment_member(members: np.ndarray, members_L: np.ndarray, members_cross_sec
                             seg_dist_load_y[i][1] += ((dist_load[7] - dist_load[6]) / (dist_load[1] - dist_load[0])
                                                       * (seg_x2[i] - dist_load[0]) + dist_load[6])
 
-                            w2_int = (dist_load[3][6] + (dist_load[7] - dist_load[6]) / (dist_load[1] - dist_load[0])
+                            w2_int = (dist_load[6] + (dist_load[7] - dist_load[6]) / (dist_load[1] - dist_load[0])
                                       * (x - dist_load[0]))
 
                             seg_internal_load_y[i][0] += (dist_load[6] + w2_int) / 2 * (x - dist_load[0])
