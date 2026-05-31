@@ -47,13 +47,13 @@ def export_results(results):
 
     file_path = _get_excel_save_path()
 
-    if file_path is not None:
+    if file_path is not None and results is not None:
 
         # Node Deflections
         node_deflection_array = []
-        ND = results.nodeDeflections
+        ND = results.NodalDeflections
         for i in range(len(results.NodalDeflections)):
-            for j in range(len(results.NodalDeflections.DX)):
+            for j in range(len(results.NodalDeflections[i].DX)):
                 n = [j,i,ND[i].DX[j],ND[i].DY[j],ND[i].DZ[j],ND[i].RX[j],ND[i].RY[j],ND[i].RZ[j],]
                 node_deflection_array.append(n)
         node_deflection_df = pd.DataFrame(node_deflection_array, columns=["MemberIndex","Load Case Index",
@@ -69,17 +69,32 @@ def export_results(results):
         reactions_array = []
         R = results.Reactions
         for i in range(len(results.Reactions)):
-            for j in range(len(results.Reactions.RX)):
+            for j in range(len(results.Reactions[i].RX)):
                 n = [j,i,R[i].RX[j],R[i].RY[j],R[i].RZ[j],R[i].MX[j],R[i].MY[j],R[i].MZ[j]]
                 reactions_array.append(n)
-        reactions_df = pd.DataFrame(reactions_array, columns=["MemberIndex","Load Case Index",
+        reactions_df = pd.DataFrame(reactions_array, columns=["Node Index","Load Case Index",
                                                              "RX", "RY", "RZ", "MX", "MY", "MZ",])
 
         # Internal Maximum forces in each member
         MIF = results.MaxInternalForces
-        internal_loads_array = [[MIF.FX,MIF.FX_case],[MIF.FY,MIF.FY_case],[MIF.FZ,MIF.FZ_case],[MIF.MX,MIF.MX_case],
-                              [MIF.MY,MIF.MY_case],[MIF.MZ,MIF.MZ_case]]
-        internal_loads_df = pd.DataFrame(internal_loads_array, columns=["Load", "Governing Load Case"])
+        internal_loads_array = []
+        for i in range(len(MIF.FX)):
+            for j in range(6):
+                if j == 0:
+                    internal_loads_array.append([i,"X",MIF.FX[i],MIF.FX_case[i]])
+                elif j == 1:
+                    internal_loads_array.append([i, "Y", MIF.FY[i], MIF.FY_case[i]])
+                elif j == 2:
+                    internal_loads_array.append([i, "Z", MIF.FZ[i], MIF.FZ_case[i]])
+                elif j == 3:
+                    internal_loads_array.append([i, "MX", MIF.MX[i], MIF.MX_case[i]])
+                elif j == 4:
+                    internal_loads_array.append([i, "MY", MIF.MY[i], MIF.MY_case[i]])
+                else:
+                    internal_loads_array.append([i, "MZ", MIF.MZ[i], MIF.MZ_case[i]])
+
+        internal_loads_df = pd.DataFrame(internal_loads_array,
+                                         columns=["Member","Direction","Load", "Governing Load Case"])
 
         # Writing to Excel file
         with pd.ExcelWriter(file_path) as writer:

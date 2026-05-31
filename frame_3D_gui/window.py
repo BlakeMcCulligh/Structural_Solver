@@ -12,6 +12,7 @@ from scipy.optimize import OptimizeResult
 
 from frame_3D_gui import export
 from frame_3D_gui.data import Data
+from frame_3D_gui.export import export_results
 from frame_3D_gui.opening import open_frame, open_results
 from frame_3D_gui.optimize_pop_up import OptimizationPopUp
 from frame_3D_gui.results import Results
@@ -150,6 +151,7 @@ class MainWindow(tk.Frame):
         file_menu.add_command(label='Save', command=self._save)
         file_menu.add_command(label='Save As', command=self._save_as)
         file_menu.add_command(label='Open Frame', command=self._open)
+        file_menu.add_command(label='Export Results', command=self._export_results)
         menubar.add_cascade(label="File", menu=file_menu)
 
         import_menu = tk.Menu(menubar, tearoff=False)
@@ -278,6 +280,13 @@ class MainWindow(tk.Frame):
             self._save_as()
         else:
             save_frame(self.Data, self.FilePath)
+
+    def _export_results(self):
+        """
+        Exports the analysis results to an Excel file.
+        """
+
+        export_results(self.Results)
 
     def _open(self):
         """

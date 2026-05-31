@@ -66,27 +66,25 @@ class MaximumInternalForces:
         """
         Maximum internal forces for each member object constructor.
 
-        :param internalForces: Maximum forces in each member. Shape: (2,3,2)
+        :param internalForces: Maximum forces in each member. Shape: (2,3,# Members,2)
         """
-
         self.internalForces = internalForces
         F, M = internalForces
-        FX, FY, FZ = F[0]
-        MX, MY, MZ = M[0]
+        F = np.array(F)
+        M = np.array(M)
+        self.FX = F[:,0,0]
+        self.FX_case = F[:,0,1]
+        self.FY = F[:,1,0]
+        self.FY_case = F[:,1,1]
+        self.FZ = F[:,2,0]
+        self.FZ_case = F[:,2,1]
 
-        self.FX = FX[0]
-        self.FX_case = FX[1]
-        self.FY = FY[0]
-        self.FY_case = FY[1]
-        self.FZ = FZ[0]
-        self.FZ_case = FZ[1]
-
-        self.MX = MX[0]
-        self.MX_case = MX[1]
-        self.MY = MY[0]
-        self.MY_case = MY[1]
-        self.MZ = MZ[0]
-        self.MZ_case = MZ[1]
+        self.MX = M[:,0,0]
+        self.MX_case = M[:,0,1]
+        self.MY = M[:,1,0]
+        self.MY_case = M[:,1,1]
+        self.MZ = M[:,2,0]
+        self.MZ_case = M[:,2,1]
 
 class Results:
     """

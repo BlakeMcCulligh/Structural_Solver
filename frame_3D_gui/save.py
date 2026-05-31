@@ -146,17 +146,12 @@ def save_results(results, file_path):
                     f.write(f"{results.Reactions[i].RX[j]},{results.Reactions[i].RY[j]},{results.Reactions[i].RZ[j]},"
                             f"{results.Reactions[i].MX[j]},{results.Reactions[i].MY[j]},{results.Reactions[i].MZ[j]}\n")
 
-            try:
-                f.write(f"{results.MaxInternalForces.FX},{results.MaxInternalForces.FX_case},\n")
-                f.write(f"{results.MaxInternalForces.FY},{results.MaxInternalForces.FY_case},\n")
-                f.write(f"{results.MaxInternalForces.FZ},{results.MaxInternalForces.FZ_case},\n")
-                f.write(f"{results.MaxInternalForces.MX},{results.MaxInternalForces.MX_case},\n")
-                f.write(f"{results.MaxInternalForces.MY},{results.MaxInternalForces.MY_case},\n")
-                f.write(f"{results.MaxInternalForces.MZ},{results.MaxInternalForces.MZ_case},\n")
-            except AttributeError:
-                f.write(f"{0},{0},\n")
-                f.write(f"{0},{0},\n")
-                f.write(f"{0},{0},\n")
-                f.write(f"{0},{0},\n")
-                f.write(f"{0},{0},\n")
-                f.write(f"{0},{0},\n")
+            f.write(f"{len(results.MaxInternalForces.FX)}\n")
+            MIF = results.MaxInternalForces
+            for i in range(len(results.MaxInternalForces.FX)):
+                try:
+                    f.write(f"{MIF.FX[i]},{MIF.FX_case[i]},{MIF.FY[i]},{MIF.FY_case[i]},{MIF.FZ[i]},{MIF.FZ_case[i]},"
+                            f"{MIF.MX[i]},{MIF.MX_case[i]},{MIF.MY[i]},{MIF.MY_case[i]},{MIF.MZ[i]},"
+                            f"{MIF.MZ_case[i]},\n")
+                except AttributeError:
+                    f.write(f"{0},{0},{0},{0},{0},{0},{0},{0},{0},{0},{0},{0},\n")

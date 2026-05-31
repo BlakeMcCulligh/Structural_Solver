@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 
-from frame_3D_gui.opening import open_frame
+from frame_3D_gui.opening import open_frame, open_results
 from opening_saving.opening import open_truss_topology_optimization_excel, open_truss_cross_section_optimization_excel
 from main.new_structure_pop_up import NewStructurePopUp
 import frame_3D_gui.window
@@ -97,6 +97,7 @@ class MainWindow(tk.Frame):
             root_widget.title('3D Frame')
             window = frame_3D_gui.window.MainWindow(root_widget)
             open_frame(window, file_path)
+            open_results(window, file_path.split('.')[0])
             window.Root.mainloop()
 
     @staticmethod

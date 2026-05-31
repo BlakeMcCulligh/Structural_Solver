@@ -230,14 +230,14 @@ def open_results(window, file_path):
     :param window:  Object storing the main window.
     :param file_path: File path to get the structural results from.
     """
-
     if file_path is not None:
         file_path = file_path + ".structresult"
-
         try:
             with open(file_path, "r") as f:
                 lines = f.readlines()
                 f.close()
+
+            window.Results = Results()
 
             num_cases = int(lines[0])
             num_nodes = int(lines[1])
@@ -250,8 +250,9 @@ def open_results(window, file_path):
                     k = 0
                     for x in deflection_line.split(','):
                         try:
-                            deflection_sub[k].append(float(x))
-                            k += 1
+                            if k <6:
+                                deflection_sub[k].append(float(x))
+                                k += 1
                         except ValueError:
                             if x != ",": print("Error Reading Deflections: ", x)
                 for k in range(6): d[k].append(deflection_sub[k])
@@ -285,17 +286,21 @@ def open_results(window, file_path):
             window.Results.AddReactions(reactions)
             index += num_cases * num_nodes + 2
 
+            # maximum internal forces
+            num_mem = int(lines[index])
             F = []
-            for i in range(6):
-                fLine = lines[index + i].replace(" ","")
+            M = []
+            for i in range(num_mem):
+                fLine = lines[index + i + 1].replace(" ","")
                 f = []
                 for x in fLine.split(','):
                     try: f.append(float(x))
                     except ValueError: pass
-                F.append(f)
-
-            F_formated = [[F[0],F[1],F[2]],[F[3],F[4],F[5]]]
+                F.append([[f[0],f[1]],[f[2],f[3]],[f[4],f[5]]])
+                M.append([[f[6],f[7]],[f[8],f[9]],[f[10],f[11]]])
+            F_formated = [F,M]
             window.Results.AddInternalForces(F_formated)
 
         except FileNotFoundError:
+            print("File not found")
             pass
