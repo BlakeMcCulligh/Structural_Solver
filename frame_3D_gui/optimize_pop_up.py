@@ -118,7 +118,7 @@ class OptimizationPopUp:
         self._member_group_input_table.column("Group Index", width=75)
 
         for i in range(len(indices_not_set_members)):
-            self._member_group_input_table.insert("", "end", values=(indices_not_set_members[i], i))
+            self._member_group_input_table.insert("", "end", values=(indices_not_set_members[i], 0))
 
         self._member_group_input_table.bind('<Double-1>', self._edit_cell_member_group_input_table)
 

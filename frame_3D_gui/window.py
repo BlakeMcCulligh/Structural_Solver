@@ -516,32 +516,47 @@ class MainWindow(tk.Frame):
         cost = [self.OptimizationResults.fun]
         opt_cross_section_props = hf.get_cross_section_props(x, group_assignments, group_types)
 
+        groupLength = []
+        startLocation = []
+
+        for i in range(len(group_types)):
+            group_type = group_types[i]
+            startLocation.append(sum(groupLength) - 1)
+            if group_type == ["Angle"]:
+                groupLength.append(3)
+            elif group_type == ["RectHSS"]:
+                groupLength.append(3)
+            elif group_type == ["SquareHSS"]:
+                groupLength.append(2)
+            else:
+                groupLength.append(2)
+
         results = []
         current_x_index = 0
         for i in range(len(opt_cross_section_props)):
             member_index = [member_indices[i]]
-            group_type = [group_types[i]]
+            group_type = [group_types[group_assignments[i]]]
 
             dim = []
             if group_type == ["Angle"]:
-                dim.append(x[current_x_index])
-                dim.append(x[current_x_index + 1])
-                dim.append(x[current_x_index + 2])
+                dim.append(x[startLocation[group_assignments[i]]])
+                dim.append(x[startLocation[group_assignments[i]] + 1])
+                dim.append(x[startLocation[group_assignments[i]] + 2])
                 current_x_index += 3
             elif group_type == ["RectHSS"]:
-                dim.append(x[current_x_index])
-                dim.append(x[current_x_index + 1])
-                dim.append(x[current_x_index + 2])
+                dim.append(x[startLocation[group_assignments[i]]])
+                dim.append(x[startLocation[group_assignments[i]] + 1])
+                dim.append(x[startLocation[group_assignments[i]] + 2])
                 current_x_index += 3
             elif group_type == ["SquareHSS"]:
-                dim.append(x[current_x_index])
+                dim.append(x[startLocation[group_assignments[i]]])
                 dim.append("N/A")
-                dim.append(x[current_x_index + 1])
+                dim.append(x[startLocation[group_assignments[i]] + 1])
                 current_x_index += 2
             elif group_type == ["TubeHSS"]:
-                dim.append(x[current_x_index])
+                dim.append(x[startLocation[group_assignments[i]]])
                 dim.append("N/A")
-                dim.append(x[current_x_index + 1])
+                dim.append(x[startLocation[group_assignments[i]] + 1])
                 current_x_index += 2
 
             cs = opt_cross_section_props[i]

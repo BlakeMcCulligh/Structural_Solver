@@ -469,12 +469,16 @@ class Frame3D:
         self.PreAnalysisLinear(log=log)
         t_start = time.time()
 
-        constants = [self, costFunction, memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
+        constants = [self.members, self.members_cross_section_props, self.AnalysisLinear, costFunction,
+                     memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
 
         bounds = hf.get_bounds(lowerBound, upperBound, numVariables)
 
         #optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants], options={'disp': True}, workers = -1)
+        t1 = time.time()
         optimization_results = opt.differential_evolution(hf.get_cost, bounds, args=[constants], disp = True)
+        t2 = time.time()
+        print("Run Time: ", t2-t1)
 
         log = True
         if log:
