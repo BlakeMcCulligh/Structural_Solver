@@ -1450,7 +1450,7 @@ def _add_data_to_frame(window, d):
                                  d.MemberPointLoad[6][i], d.MemberPointLoad[7][i], int(d.MemberPointLoad[8][i]))
 
     for i in range(len(d.MemberDistLoad[0])):
-        frame.addMemberDistLoad(int(d.MemberDistLoad[0][i]), d.MemberDistLoad[1][i], d.MemberDistLoad[2][i],
+        frame.AddMemberDistLoad(int(d.MemberDistLoad[0][i]), d.MemberDistLoad[1][i], d.MemberDistLoad[2][i],
                                 d.MemberDistLoad[3][i], d.MemberDistLoad[4][i], d.MemberDistLoad[5][i],
                                 d.MemberDistLoad[6][i], d.MemberDistLoad[7][i], d.MemberDistLoad[8][i],
                                 int(d.MemberDistLoad[9][i]))

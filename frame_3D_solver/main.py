@@ -241,7 +241,7 @@ class Frame3D:
 
             if case not in self.cases: self.cases.append(case)
 
-    def addMemberDistLoad(self, member_index: int, x1: float, x2: float, wx1: float = 0, wx2: float = 0,
+    def AddMemberDistLoad(self, member_index: int, x1: float, x2: float, wx1: float = 0, wx2: float = 0,
                           wy1: float = 0, wy2: float = 0, wz1: float = 0, wz2: float = 0, case: int = 0) -> None:
         """
         Adds a member distribution load to the frame.
@@ -469,13 +469,13 @@ class Frame3D:
         self.PreAnalysisLinear(log=log)
         t_start = time.time()
 
-        constants = [self.members, self.members_cross_section_props, self.AnalysisLinear, costFunction,
+        constants = [self, hf.get_cross_section_props, costFunction,
                      memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
 
         bounds = hf.get_bounds(lowerBound, upperBound, numVariables)
 
-        #optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants], options={'disp': True}, workers = -1)
         t1 = time.time()
+        #optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants], options={'disp': True})
         optimization_results = opt.differential_evolution(hf.get_cost, bounds, args=[constants], disp = True)
         t2 = time.time()
         print("Run Time: ", t2-t1)
@@ -509,8 +509,8 @@ class Frame3D:
 #     simple_beam.AddMemberPointLoad(0, 50, Pz=50, case=0)
 #     # simple_beam.AddMemberPointLoad(0, 2, Pz=1, case=0)
 #     # simple_beam.AddMemberPointLoad(0, 2, Pz=1, case=1)
-#     # simple_beam.addMemberDistLoad(0,0,5,5,2,0,0)
-#     # simple_beam.addMemberDistLoad(0, 0, 168, wy1 = -0.01, wy2 = -0.01, case=0)
+#     # simple_beam.AddMemberDistLoad(0,0,5,5,2,0,0)
+#     # simple_beam.AddMemberDistLoad(0, 0, 168, wy1 = -0.01, wy2 = -0.01, case=0)
 #     # simple_beam.addMemberSelfWeight()
 #     # simple_beam.addMemberSelfWeight(case=1)
 #     simple_beam.PreAnalysisLinear(log=False)
