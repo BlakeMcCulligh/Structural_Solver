@@ -174,8 +174,8 @@ t.AddMember(0,1,0,0)
 t.AddSupport(0,1,1,1,1,1,1)
 
 t.AddNodeLoad(1,1,1,1,0,0,0,0)
-t.AddMemberPointLoad(0,0.1,1,0,0,0,0,0,0)
-t.AddMemberDistLoad(0,0,1,1,0,0,0,0,0,0)
+#t.AddMemberPointLoad(0,0.1,1,0,0,0,0,0,0)
+#t.AddMemberDistLoad(0,0,1,1,0,0,0,0,0,0)
 
 t.SetNumCasses(1)
 

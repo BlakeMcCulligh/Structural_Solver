@@ -567,10 +567,11 @@ def get_parted_global_nodal_force_vector(nodes_loads, cases, D_unknown, D_known,
     for load_case_i in cases:
         p = np.zeros((num_n * 6, 1))
         for i in range(num_n):
-            if np.size(nodes_loads[int(load_case_i)]) != 0:
-                local = np.array(nodes_loads[int(load_case_i)][1])
-            else:
-                local = np.zeros(6, dtype=float)
+            node_load = nodes_loads[i]
+            local = np.zeros(6, dtype=float)
+            for j, n in enumerate(node_load):
+                if n[0] == load_case_i:
+                    local = np.array(nodes_loads[i][int(load_case_i)][1])
             dofs = np.empty(len([i]) * 6, dtype=np.int64)
             local_ = np.arange(6, dtype=np.int64)
             for j, node in enumerate([i]):
