@@ -487,36 +487,3 @@ class Frame3D:
         if log: print("optimization results: ", optimization_results)
 
         return optimization_results
-
-
-#     simple_beam = Frame3D()
-#
-#     simple_beam.AddNode(0, 0, 0)
-#     simple_beam.AddNode(168, 0, 0)
-#     simple_beam.AddNode(168, 5, 0)
-#
-#     simple_beam.AddMaterial(29000, 11200, 0.3, 2.836e-4)
-#
-#     simple_beam.AddMember(0, 1, 0, False, 20, 100, 150, 250)
-#     simple_beam.AddMember(0, 2, 0, False, 20, 100, 150, 250)
-#
-#     simple_beam.AddSupport(0, True, True, True, True, False, False)
-#     simple_beam.AddSupport(1, True, True, True, True, False, False)
-#     # simple_beam.AddSupport(0, True, True, True, True, True, True)
-#     # simple_beam.AddSupport(1, True, True, True, True, True, True)
-#     # 'M1', 'Fy', -0.01, -0.01, 0, 168
-#     # simple_beam.AddNodeLoad(0, Pz=1, case=0)
-#     simple_beam.AddMemberPointLoad(0, 50, Pz=50, case=0)
-#     # simple_beam.AddMemberPointLoad(0, 2, Pz=1, case=0)
-#     # simple_beam.AddMemberPointLoad(0, 2, Pz=1, case=1)
-#     # simple_beam.AddMemberDistLoad(0,0,5,5,2,0,0)
-#     # simple_beam.AddMemberDistLoad(0, 0, 168, wy1 = -0.01, wy2 = -0.01, case=0)
-#     # simple_beam.addMemberSelfWeight()
-#     # simple_beam.addMemberSelfWeight(case=1)
-#     simple_beam.PreAnalysisLinear(log=False)
-#     #print(simple_beam.AnalysisLinear(get_weight=True,get_internal_forces=True))
-#     simple_beam.AnalysisLinear(log=False)
-#
-#     member_group_type = ["Angle"]
-#     member_group = [0, 0]
-#     simple_beam.optimize(member_group, member_group_type, [1,1,0.1],[10,10,0.9], get_weight = True, get_reactions = False, get_internal_forces = False, log = False)

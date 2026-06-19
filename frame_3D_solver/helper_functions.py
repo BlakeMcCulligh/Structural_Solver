@@ -1,11 +1,13 @@
 """
 Helper functions used for the analysis of a 3D frame.
 """
+import threading
 
 import numpy as np
 import scipy.optimize as opt
 import tkinter as tk
 from tkinter import ttk
+import concurrent.futures
 
 from frame_3D_solver.cross_section_calculaters import angle, rect_hss, square_hss, tube_hss
 
@@ -1003,6 +1005,7 @@ def get_cost(X, constants):
     D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = (
         frame.AnalysisLinear(weight_needed, reactions_needed, internal_forces_needed, log))
     cost = _cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces, cost_function)
+    print(cost)
     return cost
 
 def chack_inputs(members, member_group: list, member_group_type: list):

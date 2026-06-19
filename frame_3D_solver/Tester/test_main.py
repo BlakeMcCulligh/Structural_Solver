@@ -16,10 +16,15 @@ __maintainer__ = "Blake McCulligh"
 __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
-# TODO add comments
-
 class TestCase:
+    """
+    Object that compairs the structural solver's results to pynite's to determin if structural solver is acurate.
+    """
     def __init__(self):
+        """
+        Initializes the structural solver tester object.
+        """
+
         self.nodes = []
         self.members = []
         self.materials = []
@@ -62,6 +67,9 @@ class TestCase:
         self.num_casses = num_casses
 
     def Check(self):
+        """
+        Compairs the Pynite and structural solver results
+        """
 
         results_pynite = self._get_results_PyNite()
         print("Pynite: ", results_pynite)
@@ -72,6 +80,11 @@ class TestCase:
         # TODO Add method to compair the resoults and flage any miss matches
 
     def _get_results_PyNite(self):
+        """
+        Gets the results fron the PyNite solver.
+        :return: Node Deflections
+        """
+
         model = FEModel3D()
 
         for i, node in enumerate(self.nodes):
@@ -128,6 +141,10 @@ class TestCase:
         return node_deflections
 
     def _get_results_struct_solver(self):
+        """
+        Gets the results from the structural solver.
+        :Return: D, DX, DY, DZ, RX, RY, RZ
+        """
 
         model = Frame3D(None)
 
@@ -174,8 +191,8 @@ t.AddMember(0,1,0,0)
 t.AddSupport(0,1,1,1,1,1,1)
 
 t.AddNodeLoad(1,1,1,1,0,0,0,0)
-#t.AddMemberPointLoad(0,0.1,1,0,0,0,0,0,0)
-#t.AddMemberDistLoad(0,0,1,1,0,0,0,0,0,0)
+t.AddMemberPointLoad(0,0.1,1,0,0,0,0,0,0)
+t.AddMemberDistLoad(0,0,1,1,0,0,0,0,0,0)
 
 t.SetNumCasses(1)
 
