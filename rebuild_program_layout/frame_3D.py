@@ -2,6 +2,8 @@
 Handels all operations to do with the 3D frame.
 """
 
+from rebuild_program_layout.optimization import start_optimization
+
 __author__ = "Blake McCulligh"
 __copyright__ = ""
 __credits__ = ["Blake McCulligh"]
@@ -13,10 +15,19 @@ __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
 class Frame3D:
-    def __init__(self):
-        pass
+    def __init__(self, controller):
+
+        self._controller = controller
 
     def linear_analysis(self):
+        pass
+
+    def GlobalOptimization(self, group_assignments, group_types, lower_bounds, upper_bounds,
+                                                      cost_function, weight_run, reaction_run, internal_forces_run):
+        # tempory testing
+        bounds = [(-5, 5), (-5, 5)]
+        start_optimization(self._controller.executor, self._controller.root, bounds)
+
         pass
 
     def save(self, file_path):

@@ -8,8 +8,7 @@ from tkinter import filedialog
 from typing import TYPE_CHECKING
 
 from rebuild_program_layout.frame_3D import Frame3D
-from rebuild_program_layout.frame_3D_popups import AddingTablesWindow
-from rebuild_program_layout.optimization import start_optimization
+from rebuild_program_layout.frame_3D_popups import AddingTablesWindow, OptimizationPopUp
 
 if TYPE_CHECKING:
     from rebuild_program_layout import __main__
@@ -40,13 +39,13 @@ class Frame3DFrame(tk.Frame):
         """
 
         super().__init__(parent)
-        self.controller = controller
+        self._controller = controller
         self.root_window = self.winfo_toplevel()
 
         self.menubar = self._create_top_menu()
 
         self.file_path = None
-        self.frame_3d = Frame3D()
+        self.frame_3d = Frame3D(self._controller)
 
     def _create_top_menu(self) -> tk.Menu:
         """
@@ -160,12 +159,11 @@ class Frame3DFrame(tk.Frame):
         self.frame_3d.linear_analysis()
 
     def _optimization_window(self) -> None:
+        """
+        Opens the window to input the data needed to run an optimization.
+        """
 
-        # tempory testing
-        bounds = [(-5, 5), (-5, 5)]
-        start_optimization(self.controller.executor, self.controller.root, bounds)
-
-        pass  # todo create popup
+        OptimizationPopUp(self.root_window, self)
 
 def _get_new_file_path(file_type: str, file_type_name: list[tuple[str, str]] ) ->  str | None:
     """
