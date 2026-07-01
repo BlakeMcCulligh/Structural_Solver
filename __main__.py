@@ -1,68 +1,40 @@
 import tkinter as tk
-from tkinter import ttk
-import multiprocessing
-import time
+from concurrent.futures import ThreadPoolExecutor
+from scipy.optimize import differential_evolution
 
 
-# 1. Define the task that runs in an independent process
-def heavy_calculation_process(process_id, data_queue):
-    """This runs entirely in its own process memory space."""
-    time.sleep(3)  # Simulate a 3-second heavy computational task
-    result = f"Process {process_id} finished successfully!"
-    data_queue.put(result)  # Safely send the result back to the main process
+def objective_function(x):
+    # Your expensive computations here
+    return x[0] ** 2 + x[1] ** 2
 
 
-class App(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Multiprocessing with Tkinter")
-        self.geometry("400x250")
+def run_optimizer_in_thread():
+    bounds = [(-5, 5), (-5, 5)]
 
-        # Create a thread/process safe queue
-        self.result_queue = multiprocessing.Queue()
-        self.process_counter = 0
+    # Run SciPy optimizer in the background (uses all available cores)
+    result = differential_evolution(objective_function, bounds, workers=-1)
 
-        # Setup simple UI elements
-        self.status_label = ttk.Label(self, text="Click below to start independent processes.")
-        self.status_label.pack(pady=20)
-
-        self.start_btn = ttk.Button(self, text="Launch New Process", command=self.start_new_process)
-        self.start_btn.pack(pady=10)
-
-        self.listbox = tk.Listbox(self)
-        self.listbox.pack(pady=10, fill="both", expand=True)
-
-        # 2. Begin the polling loop immediately
-        self.check_queue_loop()
-
-    def start_new_process(self):
-        self.process_counter += 1
-        self.listbox.insert(tk.END, f"Started Process #{self.process_counter}...")
-
-        # 3. Create and initialize the separate process
-        new_process = multiprocessing.Process(
-            target=heavy_calculation_process,
-            args=(self.process_counter, self.result_queue)
-        )
-        new_process.daemon = True  # Ensures process dies if main GUI window is closed
-        new_process.start()
-
-    def check_queue_loop(self):
-        """Checks the queue for new messages without freezing the GUI."""
-        try:
-            # Look for available data without blocking
-            while True:
-                result_message = self.result_queue.get_nowait()
-                self.listbox.insert(tk.END, result_message)
-        except multiprocessing.queues.Empty:
-            # The queue is currently empty; do nothing
-            pass
-
-        # 4. Schedule this function to run again in 100 milliseconds
-        self.after(100, self.check_queue_loop)
+    # Safely update your Tkinter UI with the results on the main thread
+    root.after(0, update_ui, result.x, result.fun)
 
 
-# 5. Guard statement is MANDATORY for Python multiprocessing to prevent recursive loops
+def start_optimization():
+    # Submit the optimizer to a background thread to prevent UI lockup
+    executor.submit(run_optimizer_in_thread)
+
+
+def update_ui(optimal_x, optimal_val):
+    result_label.config(text=f"Success! Best X: {optimal_x}, Value: {optimal_val:.4f}")
+
+
+# Initialize Tkinter GUI
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    root = tk.Tk()
+    tk.Button(root, text="Start Optimization", command=start_optimization).pack(pady=20)
+    result_label = tk.Label(root, text="Idle")
+    result_label.pack(pady=10)
+
+    # Start the Thread Pool Executor
+    executor = ThreadPoolExecutor(max_workers=1)
+
+    root.mainloop()

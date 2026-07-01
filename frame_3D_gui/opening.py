@@ -29,7 +29,7 @@ def open_frame(window, file_path = None):
     if file_path is None:
         fileTypes = [("Struct Frame files", "*.structframe")]
         file_path = _select_file_gui(window, fileTypes)
-        window.FilePath = file_path.replace(".structframe", "")
+        window.file_path = file_path.replace(".structframe", "")
 
     if file_path is not None:
         with open(file_path, "r") as f:

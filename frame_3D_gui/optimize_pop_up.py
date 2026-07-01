@@ -118,7 +118,7 @@ class OptimizationPopUp:
         self._member_group_input_table.column("Group Index", width=75)
 
         for i in range(len(indices_not_set_members)):
-            self._member_group_input_table.insert("", "end", values=(indices_not_set_members[i], i%10))
+            self._member_group_input_table.insert("", "end", values=(indices_not_set_members[i], i%4)) # i%1
 
         self._member_group_input_table.bind('<Double-1>', self._edit_cell_member_group_input_table)
 
@@ -336,7 +336,7 @@ class OptimizationPopUp:
             for i in range(len(p)):
                 if p[i].isdigit() or p[i] == "[" or p[i] == "]" or p[i] == "(" or p[i] == ")" or p[i] == " " or p[i] == "+" or p[i] == "-" or p[i] == "*" or p[i] == "/" or p[i] == ".":
                     keyword = None
-                elif (p[i] == "D" or p[i] == "R" or p[i] == "W" or p[i] == "I" or p[i] == "m" or p[i] == "a") and keyword is None:
+                elif (p[i] == "D" or p[i] == "R" or p[i] == "W" or p[i] == "I" or p[i] == "m" or p[i] == "a"  or p[i] == "s") and keyword is None:
                     keyword = p[i]
                 elif (p[i] == "X" or p[i] == "Y" or p[i] == "Z") and (keyword == "D" or keyword == "R"):
                     keyword = keyword + p[i]
@@ -347,6 +347,8 @@ class OptimizationPopUp:
                 elif (p[i] == "n" and keyword == "I") or (p[i] == "t" and keyword == "In") or (p[i] == "e" and keyword == "Int") or (p[i] == "r" and keyword == "Inte") or (p[i] == "n" and keyword == "Inter") or (p[i] == "a" and keyword == "Intern") or (p[i] == "a" and keyword == "Intern") or (p[i] == "l" and keyword == "Interna") or (p[i] == "F" and keyword == "Internal") or (p[i] == "o" and keyword == "InternalF") or (p[i] == "r" and keyword == "InternalFo") or (p[i] == "c" and keyword == "InternalFor") or (p[i] == "e" and keyword == "InternalForc") or (p[i] == "s" and keyword == "InternalForce"):
                     keyword = keyword + p[i]
                 elif (p[i] == "a" and keyword == "m") or (p[i] == "x" and keyword == "ma")  or (p[i] == "i" and keyword == "m") or (p[i] == "n" and keyword == "mi")  or (p[i] == "b" and keyword == "a")  or (p[i] == "s" and keyword == "ab"):
+                    keyword = keyword + p[i]
+                elif (p[i] == "u" and keyword == "s") or (p[i] == "m" and keyword == "su"):
                     keyword = keyword + p[i]
                 else:
                     return False
