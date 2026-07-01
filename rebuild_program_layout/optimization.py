@@ -13,7 +13,7 @@ def objective_function(x):
 def run_optimizer(window_root, bounds):
 
     # Run SciPy optimizer in the background (uses all available cores)
-    result = optimize.differential_evolution(objective_function, bounds, workers=-1)
+    result = optimize.differential_evolution(objective_function, bounds, updating='deferred', workers=-1)
 
     # update your Tkinter UI with the results on the main thread
     window_root.after(0, return_optimization_results, result)

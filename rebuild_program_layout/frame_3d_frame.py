@@ -8,6 +8,7 @@ from tkinter import filedialog
 from typing import TYPE_CHECKING
 
 from rebuild_program_layout.frame_3D import Frame3D
+from rebuild_program_layout.frame_3D_popups import AddingTablesWindow
 from rebuild_program_layout.optimization import start_optimization
 
 if TYPE_CHECKING:
@@ -145,7 +146,11 @@ class Frame3DFrame(tk.Frame):
             getattr(self.frame_3d, import_method_name)(file_path)
 
     def _open_table_window(self) -> None:
-        pass  # TODO create popup
+        """
+        Opens the window of tables that show and alow the changing of the structure.
+        """
+
+        AddingTablesWindow(self.root_window, self)
 
     def _linear_analysis(self) -> None:
         """

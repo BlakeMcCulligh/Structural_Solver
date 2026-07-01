@@ -77,12 +77,13 @@ class FrameMain(tk.Frame):
         file_types = [("Struct Frame files", "*.structframe")]
         file_path = select_file_gui(file_types)
 
-        if Path(file_path).suffix == ".structframe":
-            self.root_window.destroy()
+        if file_path is not None:
+            if Path(file_path).suffix == ".structframe":
+                self.root_window.destroy()
 
-            root_widget = tk.Tk()
-            root_widget.title('3D Frame')
-            self.controller.switch_to_frame_3d_frame(file_path)
+                root_widget = tk.Tk()
+                root_widget.title('3D Frame')
+                self.controller.switch_to_frame_3d_frame(file_path)
 
     def _new_structure(self) -> None:
         """
@@ -120,9 +121,6 @@ class NewStructurePopUp(tk.Toplevel):
         :param controller: Object containing the main program.
         :type controller: FrameMain
         """
-
-        print(type(parent))
-        print(type(controller))
 
         # Initialize the Toplevel window with its parent
         super().__init__(parent)
