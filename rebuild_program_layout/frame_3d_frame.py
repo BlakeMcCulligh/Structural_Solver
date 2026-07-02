@@ -61,6 +61,9 @@ class Frame3DFrame(tk.Frame):
         file_menu.add_command(label='Save', command=self._save)
         file_menu.add_command(label='Save As', command=self._save_as)
         file_menu.add_command(label='Export Results', command=self._export_results)
+        file_menu.add_command(label='Settings', command=self._settings_window)
+        file_menu.add_command(label='Import SAP2000 File', command=self._import_SAP2000_file)
+        file_menu.add_command(label='Export SAP2000 File', command=self._export_SAP2000_file)
         menubar.add_cascade(label="File", menu=file_menu)
 
         import_menu = tk.Menu(menubar, tearoff=False)
@@ -164,6 +167,18 @@ class Frame3DFrame(tk.Frame):
         """
 
         OptimizationPopUp(self.root_window, self)
+
+    def _settings_window(self) -> None:
+        pass
+        # TODO
+
+    def _import_SAP2000_file(self) -> None:
+        pass
+        # TODO
+
+    def _export_SAP2000_file(self) -> None:
+        pass
+        # TODO
 
 def _get_new_file_path(file_type: str, file_type_name: list[tuple[str, str]] ) ->  str | None:
     """

@@ -1,7 +1,9 @@
 """
 Handels all operations to do with the 3D frame.
 """
-
+from rebuild_program_layout.data_objects.member import Member
+from rebuild_program_layout.data_objects.material import Material
+from rebuild_program_layout.data_objects.node import Node
 from rebuild_program_layout.optimization import start_optimization
 
 __author__ = "Blake McCulligh"
@@ -18,6 +20,10 @@ class Frame3D:
     def __init__(self, controller):
 
         self._controller = controller
+
+        self.nodes: list[Node] = []
+        self.materials: list[Material] = []
+        self.members: list[Member] = []
 
     def linear_analysis(self):
         pass
