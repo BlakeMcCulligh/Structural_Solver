@@ -56,5 +56,45 @@ class Member:
 
         self.materials = self.frame.materials[self.material_index]
 
+        self.releces: list[bool] = [False, False, False, False, False, False, False, False, False, False, False, False]
 
+        self.point_loads: list[list[float | int]] = []
+        self.dist_loads: list[list[float | int]] = []
 
+    def set_releces(self, releces: list[bool]) -> None:
+        """
+        Sets the releces of the member. True is releced, False is fixed.
+
+        :param releces: list of relece degress of freedom. [iDX, iDY, iDZ, iRX, iRY, iRZ, jDX, jDY, jDZ, jRX, jRY, jRZ]
+        :type releces: list[bool]
+        """
+
+        self.releces = releces
+
+    def add_point_load(self, case: int, x: float, point_loads: list[float]) -> None:
+        """
+        Adds a point load to the frame member.
+
+        :param case: Load case the load is to be in.
+        :type case: int
+        :param x: distance along the member from the first node to place the load.
+        :type x: float
+        :param point_loads: list of magnatudes of the load in each direction. [DX, DY, DZ, RX, RY, RZ]
+        :type point_loads: list[float]
+        """
+
+        self.point_loads.append([case, x] + point_loads)
+
+    def add_dist_load(self, case: int, x: list[float], dist_loads: list[float]) -> None:
+        """
+        Adds a distributed load to the frame member.
+
+        :param case:  Load case the load is to be in.
+        :type case: int
+        :param x: Distance along the member for the start and end of the distributed load form the first node. [x1, x2]
+        :type x: list[float]
+        :param dist_loads: list of magnatudes in each direction. [DX1, DX2, DY1, DY2, DZ1, DZ2]
+        :type dist_loads: list[float]
+        """
+
+        self.dist_loads.append([case, x] + dist_loads)

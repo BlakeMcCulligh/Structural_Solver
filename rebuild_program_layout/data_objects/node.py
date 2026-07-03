@@ -40,6 +40,10 @@ class Node:
             self.y: float = cords[1]
             self.z: float = cords[2]
 
+        self.support: list[bool] = [False, False, False, False, False, False]
+
+        self.load: list[list[float | int]] = []
+
     def get_cords(self) -> list[float]:
         """
         Return the coordinates of the node.
@@ -49,3 +53,25 @@ class Node:
         """
 
         return [self.x, self.y, self.z]
+
+    def set_support(self, support: list[float]) -> None:
+        """
+        Set the support of the node. False for unsupported, True for supported.
+
+        :param support: list of support degress of freedom. [DX, DY, DZ, RX, RY, RZ]
+        :type support: list[float]
+        """
+
+        self.support = support
+
+    def add_load(self, case: int, load: list[float | int]) -> None:
+        """
+        Adds a load to the node.
+
+        :param case: Load case the load is to be in.
+        :type case: int
+        :param load: list of magnatudes of the load in each direction. [DX, DY, DZ, RX, RY, RZ]
+        :type load: list[float]
+        """
+
+        self.load.append([case] + load)

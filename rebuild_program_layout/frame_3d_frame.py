@@ -110,7 +110,7 @@ class Frame3DFrame(tk.Frame):
         Saves files under specified name and location.
         """
 
-        self.file_path = _get_new_file_path(".structframe", [("Struct Frame files", "*.structframe")])
+        self.file_path = self.get_new_file_path(".structframe", [("Struct Frame files", "*.structframe")])
 
         if self.file_path is not None:
             self.file_path = self.frame_3d.save(self.file_path)
@@ -130,7 +130,7 @@ class Frame3DFrame(tk.Frame):
         Exports the analysis results to an Excel file.
         """
 
-        self.file_path = _get_new_file_path(".xlsx", [("Excel Files", "*.xlsx")])
+        self.file_path = self.get_new_file_path(".xlsx", [("Excel Files", "*.xlsx")])
 
         if self.file_path is not None:
             self.frame_3d.export_results(self.file_path)
@@ -143,7 +143,7 @@ class Frame3DFrame(tk.Frame):
         :type import_method_name: str
         """
 
-        file_path = _get_existing_file_path([("Excel Files", "*.xlsx")])
+        file_path = self.get_existing_file_path([("Excel Files", "*.xlsx")])
         if file_path is not None:
             getattr(self.frame_3d, import_method_name)(file_path)
 
@@ -180,34 +180,36 @@ class Frame3DFrame(tk.Frame):
         pass
         # TODO
 
-def _get_new_file_path(file_type: str, file_type_name: list[tuple[str, str]] ) ->  str | None:
-    """
-    Gets the file path to save the frame to.
+    @staticmethod
+    def get_new_file_path(file_type: str, file_type_name: list[tuple[str, str]]) -> str | None:
+        """
+        Gets the file path to save the frame to.
 
-    :param file_type: String containing the file type aloued to be opend
-    :type file_type: str
-    :param file_type_name: list containing the names of the file types alowed and there file extension
-    :type file_type_name: list[ tuple[ str ] ]
-    :return: The file path to the save file or None if no file path is selected.
-    :rtype: str or None
-    """
+        :param file_type: String containing the file type aloued to be opend
+        :type file_type: str
+        :param file_type_name: list containing the names of the file types alowed and there file extension
+        :type file_type_name: list[ tuple[ str ] ]
+        :return: The file path to the save file or None if no file path is selected.
+        :rtype: str or None
+        """
 
-    file_path = filedialog.asksaveasfilename(defaultextension=file_type,filetypes=file_type_name)
-    if file_path: return file_path
-    return None
-
-def _get_existing_file_path(file_types: list[tuple[str, str]] ) ->  str | None:
-    """
-    Opens a file explorer dialogue using Tkinter and returns the selected file path.
-
-    :param file_types:  list containing the names of the file types alowed and there file extension
-    :type file_types: list[ tuple[ str ] ]
-    :return: The selected file path or None if no file path is selected
-    :rtype: str | None
-    """
-
-    file_path = filedialog.askopenfilename(title="Select a file", filetypes=file_types)
-    if file_path:
-        return file_path
-    else:
+        file_path = filedialog.asksaveasfilename(defaultextension=file_type,filetypes=file_type_name)
+        if file_path: return file_path
         return None
+
+    @staticmethod
+    def get_existing_file_path(file_types: list[tuple[str, str]]) -> str | None:
+        """
+        Opens a file explorer dialogue using Tkinter and returns the selected file path.
+
+        :param file_types:  list containing the names of the file types alowed and there file extension
+        :type file_types: list[ tuple[ str ] ]
+        :return: The selected file path or None if no file path is selected
+        :rtype: str | None
+        """
+
+        file_path = filedialog.askopenfilename(title="Select a file", filetypes=file_types)
+        if file_path:
+            return file_path
+        else:
+            return None
