@@ -45,8 +45,156 @@ class Frame3D:
     def export_results(self, file_path):
         pass
 
-    def open_frame(self, file_path):
-        pass
+    def open_frame(self, file_path: str) -> None:
+        """
+        Opens a .structframe file from the provided file path.
+
+        :param file_path: Path to the .structframe file
+        :type file_path: str
+        """
+
+        with open(file_path, "r") as f:
+            lines = f.readlines()
+            f.close()
+
+            # clearing current file
+            self.nodes = []
+            self.materials = []
+            self.members = []
+
+            # Nodes
+            num_nodes = int(lines[0])
+            for i in range(num_nodes):
+                node_line = lines[i + 1].replace(" ", "")
+                n = []
+                for x in node_line.split(','):
+                    try:
+                        n.append(float(x))
+                    except ValueError:
+                        pass
+                self.nodes.append(Node(cords=n))
+
+            # Materials
+            index = num_nodes + 1
+            num_materials = int(lines[index])
+            for i in range(num_materials):
+                material_line = lines[i + index + 1].replace(" ", "")
+                n = []
+                for x in material_line.split(','):
+                    try:
+                        n.append(float(x))
+                    except ValueError:
+                        pass
+                self.materials.append(Material(n[0],n[1],n[2],n[3],n[4]))
+
+            # Members
+            index += num_materials + 1
+            num_members = int(lines[index])
+            for i in range(num_members):
+                member_line = lines[i + index + 1].replace(" ", "")
+                n = []
+                for x in member_line.split(','):
+                    try:
+                        if x == "True":
+                            n.append(True)
+                        elif x == "False":
+                            n.append(False)
+                        else:
+                            n.append(float(x))
+                    except ValueError:
+                        pass
+                self.members.append(Member(int(n[0]),int(n[1]),int(n[2]),n[3],[n[4],n[5],n[6],n[7]],
+                                           self))
+
+            # Supports
+            index += num_members + 1
+            num_supports = int(lines[index])
+            for i in range(num_supports):
+                support_line = lines[i + index + 1].replace(" ", "")
+                n = []
+                for x in support_line.split(','):
+                    try:
+                        if x == "True":
+                            n.append(True)
+                        elif x == "False":
+                            n.append(False)
+                        else:
+                            n.append(float(x))
+                    except ValueError:
+                        pass
+                self.nodes[int(n[0])].set_support([n[1],n[2],n[3],n[4],n[5],n[6]])
+
+            # Releases
+            index += num_supports + 1
+            num_releases = int(lines[index])
+            for i in range(num_releases):
+                release_line = lines[i + index + 1].replace(" ", "")
+                n = []
+                for x in release_line.split(','):
+                    try:
+                        if x == "True":
+                            n.append(True)
+                        elif x == "False":
+                            n.append(False)
+                        else:
+                            n.append(float(x))
+                    except ValueError:
+                        pass
+                self.members[int(n[0])].set_releces([n[1],n[2],n[3],n[4],n[5],n[6],n[7],n[8],n[9],n[10],n[11],n[12]])
+
+            # Node Load
+            index += num_releases + 1
+            num_node_loads = int(lines[index])
+            for i in range(num_node_loads):
+                node_load_line = lines[i + index + 1].replace(" ", "")
+                n = []
+                for x in node_load_line.split(','):
+                    try:
+                        if x == "True":
+                            n.append(True)
+                        elif x == "False":
+                            n.append(False)
+                        else:
+                            n.append(float(x))
+                    except ValueError:
+                        pass
+                self.nodes[int(n[0])].add_load(int(n[7]),[n[1],n[2],n[3],n[4],n[5],n[6]])
+
+            # Member Point Load
+            index += num_node_loads + 1
+            num_member_point_loads = int(lines[index])
+            for i in range(num_member_point_loads):
+                member_point_line = lines[i + index + 1].replace(" ", "")
+                n = []
+                for x in member_point_line.split(','):
+                    try:
+                        if x == "True":
+                            n.append(True)
+                        elif x == "False":
+                            n.append(False)
+                        else:
+                            n.append(float(x))
+                    except ValueError:
+                        pass
+                self.members[int(n[0])].add_point_load(int(n[8]),n[1],[n[2],n[3],n[4],n[5],n[6],n[7]])
+
+            # Member Distributed Load
+            index += num_member_point_loads + 1
+            num_member_dist_loads = int(lines[index])
+            for i in range(num_member_dist_loads):
+                member_dist_line = lines[i + index + 1].replace(" ", "")
+                n = []
+                for x in member_dist_line.split(','):
+                    try:
+                        if x == "True":
+                            n.append(True)
+                        elif x == "False":
+                            n.append(False)
+                        else:
+                            n.append(float(x))
+                    except ValueError:
+                        pass
+                self.members[int(n[0])].add_dist_load(int(n[9]),[n[1],n[2]],[n[3],n[4],n[5],n[6],n[7],n[8]])
 
     def open_results(self, file_path):
         pass

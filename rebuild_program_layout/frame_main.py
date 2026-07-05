@@ -79,11 +79,8 @@ class FrameMain(tk.Frame):
 
         if file_path is not None:
             if Path(file_path).suffix == ".structframe":
-                self.root_window.destroy()
-
-                root_widget = tk.Tk()
-                root_widget.title('3D Frame')
-                self.controller.switch_to_frame_3d_frame(file_path)
+                self.controller.switch_to_frame_3d_frame()
+                self.controller.frame_3d_f.frame_3d.open_frame(file_path)
 
     def _new_structure(self) -> None:
         """
