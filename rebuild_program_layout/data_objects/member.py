@@ -2,8 +2,13 @@
 Handels everything to do with a member.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from rebuild_program_layout.data_objects.node import Node
-from rebuild_program_layout.frame_3D import Frame3D
+
+if TYPE_CHECKING:
+    from rebuild_program_layout.frame_3D import Frame3D
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
