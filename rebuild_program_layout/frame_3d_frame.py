@@ -44,8 +44,10 @@ class Frame3DFrame(tk.Frame):
 
         self.menubar = self._create_top_menu()
 
+        self.TableWindow = None
+
         self.file_path = None
-        self.frame_3d = Frame3D(self._controller)
+        self.frame_3d = Frame3D(self._controller, self)
 
     def _create_top_menu(self) -> tk.Menu:
         """
@@ -152,7 +154,8 @@ class Frame3DFrame(tk.Frame):
         Opens the window of tables that show and alow the changing of the structure.
         """
 
-        AddingTablesWindow(self.root_window, self)
+        self.TableWindow = AddingTablesWindow(self.root_window, self)
+        self.frame_3d.updateDisplays()
 
     def _linear_analysis(self) -> None:
         """

@@ -7,6 +7,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
+from rebuild_program_layout.data_objects.node import Node
+
 if TYPE_CHECKING:
     from rebuild_program_layout.frame_3d_frame import Frame3DFrame
 
@@ -51,7 +53,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         self._tabs_notebook = None
         self._frames = []
-        self._tables = []
+        self.tables = []
         self._boxes = []
         self._buttons = []
 
@@ -69,7 +71,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         # Nodes
         self._tabs_notebook.add(self._frames[0], text="Nodes")
-        self._tables.append(self._create_table(self._frames[0], ("Index", "X", "Y", "Z")))
+        self.tables.append(self._create_table(self._frames[0], ("Index", "X", "Y", "Z")))
         list_validate = [self._val_float,self._val_float,self._val_float]
         list_label = ["X:", "Y:", "Z:"]
         list_label_location = [[325,297],[325,347],[325,397]]
@@ -78,7 +80,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         # Materials
         self._tabs_notebook.add(self._frames[1], text="Materials")
-        self._tables.append(self._create_table(self._frames[1], ("Index", "E", "G", "nu", "rho", "fy")))
+        self.tables.append(self._create_table(self._frames[1], ("Index", "E", "G", "nu", "rho", "fy")))
         list_validate = [self._val_float, self._val_float, self._val_float, self._val_float, self._val_float]
         list_label = ["E:", "G:", "Poisons Ratio:", "Density:", "Yield Strength:"]
         list_label_location = [[125, 297], [325, 297], [40, 347], [70,397], [30,447]]
@@ -87,7 +89,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         # Members
         self._tabs_notebook.add(self._frames[2], text="Members")
-        self._tables.append(self._create_table(self._frames[2], ("Index", "i Node", "j Node", "Material Id",
+        self.tables.append(self._create_table(self._frames[2], ("Index", "i Node", "j Node", "Material Id",
                                                                  "Set C.S.", "A", "Iy", "Iz", "J")))
         list_validate = [self._val_index, self._val_index, self._val_index, None, self._val_float, self._val_float,
                          self._val_float, self._val_float]
@@ -98,7 +100,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         # Supports
         self._tabs_notebook.add(self._frames[3], text="Supports")
-        self._tables.append(self._create_table(self._frames[3], ("Index", "i Node", "D X", "D Y", "D Z.", "R X",
+        self.tables.append(self._create_table(self._frames[3], ("Index", "i Node", "D X", "D Y", "D Z.", "R X",
                                                                   "R Y", "R Z")))
         list_validate = [self._val_index, None, None, None, None, None, None]
         list_label = ["i Node:", "D X:", "D Y:", "D Z.:", "R X:", "R Y:", "R Z:"]
@@ -108,7 +110,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         # Releases
         self._tabs_notebook.add(self._frames[4], text="Releases")
-        self._tables.append(self._create_table(self._frames[4], ("Index", "i Member", "i DX", "i DY", "i DZ",
+        self.tables.append(self._create_table(self._frames[4], ("Index", "i Member", "i DX", "i DY", "i DZ",
                                                                   "i RX", "i RY", "i RZ", "j DX", "j DY", "j DZ",
                                                                   "j RX",
                                                                   "j RY", "j RZ")))
@@ -123,7 +125,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         # Nodal Loads
         self._tabs_notebook.add(self._frames[5], text="Node Loads")
-        self._tables.append(self._create_table(self._frames[5], ("Index", "i Node", "P X", "P Y", "P Z.",
+        self.tables.append(self._create_table(self._frames[5], ("Index", "i Node", "P X", "P Y", "P Z.",
                                                                     "M X", "M Y", "M Z", "Cases")))
         list_validate = [self._val_index, self._val_float, self._val_float, self._val_float, self._val_float,
                          self._val_float, self._val_float, self._val_index]
@@ -136,7 +138,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         # Member Point Loads
         self._tabs_notebook.add(self._frames[6], text="Member Point Loads")
-        self._tables.append(self._create_table(self._frames[6], ("Index", "i Member", "x", "P X", "P Y",
+        self.tables.append(self._create_table(self._frames[6], ("Index", "i Member", "x", "P X", "P Y",
                                                                             "P Z.", "M X", "M Y", "M Z", "Cases")))
         list_validate = [self._val_index, self._val_float, self._val_float, self._val_float, self._val_float,
                          self._val_float, self._val_float, self._val_float, self._val_index]
@@ -150,7 +152,7 @@ class AddingTablesWindow(tk.Toplevel):
 
         # Member Distributed Loads
         self._tabs_notebook.add(self._frames[7], text="Member Distributed Loads")
-        self._tables.append(self._create_table(self._frames[7], ("Index", "i Member", "x 1", "x 2", "wx 1",
+        self.tables.append(self._create_table(self._frames[7], ("Index", "i Member", "x 1", "x 2", "wx 1",
                                                                            "wx 2", "wy 1", "wy 2", "wz 1", "wz 2",
                                                                            "Case")))
         list_validate = [self._val_index, self._val_float, self._val_float, self._val_float, self._val_float,
@@ -238,8 +240,8 @@ class AddingTablesWindow(tk.Toplevel):
         num_col = [3,5,8,7,13,8,9,10]
         t_id = self._tabs_notebook.index("current")
 
-        row_id = self._tables[t_id].focus()
-        row_info = self._tables[t_id].item(row_id).get('values')
+        row_id = self.tables[t_id].focus()
+        row_info = self.tables[t_id].item(row_id).get('values')
         for i in range(num_col[t_id]):
             self._boxes[t_id][i].delete(0, 'end')
             self._boxes[t_id][i].insert(0, row_info[i + 1])
@@ -252,14 +254,14 @@ class AddingTablesWindow(tk.Toplevel):
         num_col = [3, 5, 8, 7, 13, 8, 9, 10]
         t_id = self._tabs_notebook.index("current")
 
-        row_id = self._tables[t_id].focus()
-        row_info = self._tables[t_id].item(row_id).get('values')
+        row_id = self.tables[t_id].focus()
+        row_info = self.tables[t_id].item(row_id).get('values')
         new_val = [row_info[0]]
         for i in range(num_col[t_id]): new_val.append(self._boxes[t_id][i].get()) # getting values from text boxes
 
         data_new = convert_str_to_float_or_bool(new_val, t_id, num_col)
 
-        self._update_structure(t_id, data_new)
+        self._update_structure(t_id, row_id, data_new)
 
     def _add_values(self) -> None:
         """
@@ -268,18 +270,36 @@ class AddingTablesWindow(tk.Toplevel):
 
         num_col = [3, 5, 8, 7, 13, 8, 9, 10]
         t_id = self._tabs_notebook.index("current")
-        num_row = len(self._tables[t_id].get_children())
+        num_row = len(self.tables[t_id].get_children())
         new_val = [num_row]
         for i in range(num_col[t_id]): new_val.append(self._boxes[t_id][i].get()) # getting values from text boxes
 
         data_new = convert_str_to_float_or_bool(new_val, t_id, num_col)
 
-        self._update_structure(t_id, data_new)
+        self._update_structure(t_id, "New", data_new)
 
-    def _update_structure(self, table, data_new):
-        print("update_structure", data_new)
-        pass
-        #TODO update structue and table
+    def _update_structure(self, table: int, row: int | str, data_new: list[float | bool]) -> None:
+        """
+        Updates the structure the add or edit button is clicked.
+
+        :param table: Index of the table that was modified.
+        :type table: int
+        :param row: Row of the table the was eddited. value is "New" if a new row was added.
+        :type row: int or str
+        :param data_new: The new data to be put in that row of the table
+        :type data_new: list[float | bool]
+        """
+
+        if table == 0:
+            if row == "New":
+                self._controller.frame_3d.nodes.append(Node(cords=data_new))
+            else:
+                self._controller.frame_3d.nodes[row].x = data_new[0]
+                self._controller.frame_3d.nodes[row].y = data_new[1]
+                self._controller.frame_3d.nodes[row].z = data_new[2]
+        # TODO
+
+        self._controller.frame_3d.updateDisplays()
 
 def convert_str_to_float_or_bool(new_val: list[str | int], t_id: int, num_col: list[int]) -> list[float | bool]:
     """

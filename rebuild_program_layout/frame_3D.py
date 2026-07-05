@@ -20,16 +20,72 @@ __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
 class Frame3D:
-    def __init__(self, controller):
+    def __init__(self, controller, display_frame):
 
         self._controller = controller
+        self._display_frame = display_frame
 
         self.nodes: list[Node] = []
         self.materials: list[Material] = []
         self.members: list[Member] = []
 
+    def updateDisplays(self):
+        """
+        Updates all places that display info about the truss.
+        """
+
+        # Updating Adding Tables if the window is open
+        if self._display_frame.TableWindow is not None:
+            tables = self._display_frame.TableWindow.tables
+
+            # nodes
+            tables[0].delete(*tables[0].get_children())
+            tables[3].delete(*tables[3].get_children())
+            tables[5].delete(*tables[5].get_children())
+            j = 0
+            k = 0
+            for i in range(len(self.nodes)):
+                tables[0].insert('', 'end', values=[str(i), self.nodes[i].x, self.nodes[i].y, self.nodes[i].z])
+                if any(self.nodes[i].support):
+                    tables[3].insert('', 'end', values=[str(j), str(i)] + self.nodes[i].support)
+                    j += 1
+                for a in range(len(self.nodes[i].load)):
+                    tables[5].insert('', 'end', values=[str(k), str(i)] + self.nodes[i].load[a])
+                    k += 1
+
+            # materials
+            tables[1].delete(*tables[1].get_children())
+            for i in range(len(self.materials)):
+                tables[1].insert('', 'end', values=[str(i), self.materials[i].E, self.materials[i].G,
+                                                    self.materials[i].nu, self.materials[i].rho, self.materials[i].fy])
+
+            # members
+            tables[2].delete(*tables[2].get_children())
+            tables[4].delete(*tables[4].get_children())
+            tables[6].delete(*tables[6].get_children())
+            tables[7].delete(*tables[7].get_children())
+            j = 0
+            k = 0
+            c = 0
+            for i in range(len(self.members)):
+                tables[2].insert('', 'end', values=[str(i), self.members[i].node_1_index, self.members[i].node_2_index,
+                                                    self.members[i].material_index,
+                                                    self.members[i].set_cross_section_props, self.members[i].A,
+                                                    self.members[i].Iy, self.members[i].Iz, self.members[i].J])
+                if any(self.members[i].releces):
+                    tables[4].insert('', 'end', values=[str(j), str(i)] + self.members[i].releces)
+                    j += 1
+                for a in range(len(self.members[i].point_loads)):
+                    tables[5].insert('', 'end', values=[str(k), str(i)] + self.members[i].point_loads[a])
+                    k += 1
+                for b in range(len(self.members[i].dist_loads)):
+                    tables[7].insert('', 'end', values=[str(c), str(i)] + self.members[i].dist_loads[b])
+                    c += 1
+
+        # TODO
+
     def linear_analysis(self):
-        pass
+        pass #TODO
 
     def GlobalOptimization(self, group_assignments, group_types, lower_bounds, upper_bounds,
                                                       cost_function, weight_run, reaction_run, internal_forces_run):
@@ -37,13 +93,13 @@ class Frame3D:
         bounds = [(-5, 5), (-5, 5)]
         start_optimization(self._controller.executor, self._controller.root, bounds)
 
-        pass
+        pass #TODO
 
     def save(self, file_path):
-        pass
+        pass #TODO
 
     def export_results(self, file_path):
-        pass
+        pass #TODO
 
     def open_frame(self, file_path: str) -> None:
         """
@@ -196,8 +252,10 @@ class Frame3D:
                         pass
                 self.members[int(n[0])].add_dist_load(int(n[9]),[n[1],n[2]],[n[3],n[4],n[5],n[6],n[7],n[8]])
 
+        self.updateDisplays()
+
     def open_results(self, file_path):
-        pass
+        pass #TODO
 
     def import_nodes(self, file_path: str) -> None:
         """
@@ -211,6 +269,8 @@ class Frame3D:
         nodes_df = pd.read_excel(file_path)
         nodes = [nodes_df["X"].tolist(), nodes_df["Y"].tolist(), nodes_df["Z"].tolist()]
         for i in nodes[0]: self.nodes.append(Node(x=nodes[0][i], y=nodes[1][i], z=nodes[2][i]))
+
+        self.updateDisplays()
 
     def import_members(self, file_path: str) -> None:
         """
@@ -230,6 +290,8 @@ class Frame3D:
         for i in m[0]: self.members.append(Member(m[0][i], m[1][i], m[2][i], m[3][i],
                                        [m[4][i], m[5][i], m[6][i], m[7][i]], self))
 
+        self.updateDisplays()
+
     def import_materials(self, file_path: str) -> None:
         """
         Imports material properties from the specified Excel file.
@@ -243,6 +305,8 @@ class Frame3D:
         m = [m_df["E"].tolist(), m_df["G"].tolist(), m_df["nu"].tolist(), m_df["rho"].tolist(),
                      m_df["fy"].tolist()]
         for i in m[0]: self.materials.append(Material(m[0][i], m[1][i], m[2][i], m[3][i], m[4][i]))
+
+        self.updateDisplays()
 
     def import_supports(self, file_path: str) -> None:
         """
@@ -259,6 +323,8 @@ class Frame3D:
         supports = np.array(supports).T
         for i in range(len(supports)):
             self.nodes[supports[i,0]].set_support(supports[i,1:].tolist())
+
+        self.updateDisplays()
 
     def import_releases(self, file_path: str) -> None:
         """
@@ -280,6 +346,8 @@ class Frame3D:
         for i in range(len(releases)):
             self.members[releases[i,0]].set_releces(releases[i,1:].tolist())
 
+        self.updateDisplays()
+
     def import_node_loads(self, file_path: str) -> None:
         """
         Imports node load, node indices, what directions and magnitudes the load is to be in,
@@ -296,6 +364,8 @@ class Frame3D:
         node_loads = np.array(node_loads).T
         for i in range(len(node_loads)):
             self.nodes[node_loads[i,0]].add_load(node_loads[i,1].tolist(),node_loads[i,2:].tolist())
+
+        self.updateDisplays()
 
     def import_member_point_loads(self, file_path: str) -> None:
         """
@@ -314,6 +384,8 @@ class Frame3D:
                                                                  member_point_loads[i,2].tolist(),
                                                                  member_point_loads[i,3:].tolist())
 
+        self.updateDisplays()
+
     def import_member_dist_loads(self, file_path: str) -> None:
         """
         Imports member distributed loads: member indices, start and end locations, start and end force magnitude and
@@ -330,3 +402,5 @@ class Frame3D:
             self.members[member_dist_loads[i,0]].add_dist_load(member_dist_loads[i,1].tolist(),
                                                                member_dist_loads[i,2:3].tolist(),
                                                                member_dist_loads[i,4:].tolist())
+
+        self.updateDisplays()

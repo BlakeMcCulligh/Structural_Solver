@@ -74,4 +74,4 @@ class Node:
         :type load: list[float]
         """
 
-        self.load.append([case] + load)
+        self.load.append(load + [case])

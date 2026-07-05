@@ -88,7 +88,7 @@ class Member:
         :type point_loads: list[float]
         """
 
-        self.point_loads.append([case, x] + point_loads)
+        self.point_loads.append([x] + point_loads + [case])
 
     def add_dist_load(self, case: int, x: list[float], dist_loads: list[float]) -> None:
         """
@@ -102,4 +102,4 @@ class Member:
         :type dist_loads: list[float]
         """
 
-        self.dist_loads.append([case, x] + dist_loads)
+        self.dist_loads.append([x] + dist_loads + [case])
