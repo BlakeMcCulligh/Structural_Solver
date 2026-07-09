@@ -627,7 +627,7 @@ def partition_K_global(K_global: np.ndarray, R_unreleased: np.ndarray, R_release
     return K11, K12, K21, K22
 
 def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.ndarray, index_unsupported:np.ndarray,
-          index_supported: np.ndarray, window_root, num_n: int, num_c:int, log):
+          index_supported: np.ndarray, num_n: int, num_c:int, log):
     """
     Solves for the nodal displacement for the frame.
 
@@ -637,7 +637,6 @@ def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.nd
     :param FER1_array: ndarray. An array of the released DOFs fixed end reactions.
     :param index_unsupported: ndarray. Indices of the unsupported DOFs.
     :param index_supported: ndarray. Indices of the supported DOFs.
-    :param window_root:  Root of the main window.
     :param num_n: int. Number of nodes.
     :param num_c: int. Number of cases.
     :param log: bool. Used for debuging. Prints values when true.
@@ -665,29 +664,7 @@ def get_D(K11: np.ndarray, K12:np.ndarray, P1_array:np.ndarray, FER1_array:np.nd
 
                 # handeling if the structure is unstable
 
-                popup = tk.Toplevel(window_root)
-                WIDTH = 500
-                HEIGHT = 150
-                main_window_x = window_root.winfo_x()
-                main_window_y = window_root.winfo_y()
-                main_window_width = window_root.winfo_width()
-                main_window_height = window_root.winfo_height()
-                x = (main_window_width // 2) + main_window_x - (WIDTH // 2)
-                y = int((main_window_height / 2) + main_window_y - (HEIGHT // 2))
-                popup.geometry(f"{WIDTH}x{HEIGHT}+{x}+{y}")
-                popup.title("Error")  # Set the title
-                popup.resizable(False, False)
-                title = tk.Label(popup, text="Structure is unstable", font=('Helvetica', 20))
-                w_title = title.winfo_reqwidth()
-                h_title = title.winfo_reqheight()
-                title.place(x=WIDTH / 2 - w_title / 2, y=0)
-                ttk.Button(popup, text="Okay", command=popup.destroy).place(x=400, y=100)
-                popup.attributes("-topmost", True)
-                popup.attributes('-toolwindow', True)
-                def disable_event(): pass
-                popup.protocol("WM_DELETE_WINDOW", disable_event)
-                popup.focus_force()
-                window_root.wait_window(popup)
+                print("Structure is unstable")
 
                 return None, None, None, None, None, None, None
 
@@ -1001,7 +978,7 @@ def get_cost(X, constants):
     D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = (
         frame.AnalysisLinear(weight_needed, reactions_needed, internal_forces_needed, log))
     cost = _cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces, cost_function)
-    #print(cost)
+    print(cost)
     return cost
 
 def chack_inputs(members, member_group: list, member_group_type: list):

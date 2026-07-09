@@ -17,18 +17,17 @@ __maintainer__ = "Blake McCulligh"
 __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
+from rebuild_program_layout.optimization import return_optimization_results
+
+
 class Frame3D:
     """
     Object that handles the solving of a 3D frame.
     """
-    def __init__(self, main_window_root) -> None:
+    def __init__(self) -> None:
         """
         Initializes the 3D frame solver object.
-
-        :param main_window_root: Root of the main window.
         """
-
-        self.main_window_root = main_window_root
 
         # general Lists
         self.cases: np.ndarray | list = []
@@ -337,6 +336,16 @@ class Frame3D:
         """
 
         if log:
+            print("Nodes: ", self.nodes_cord)
+            print("Materials: ", self.materials)
+            print("Members: ", self.members)
+            print("Supports: ", self.nodes_support)
+            print("Releces: ", self.members_releases)
+            print("Node Point Loads: ", self.nodes_loads)
+            print("Member Point Loads: ", self.members_point_loads)
+            print("Member Dist Loads: ", self.members_dist_loads)
+
+        if log:
             print("--------------------------------------------------------------")
             print("-------------------  Analysis Linear  ------------------------")
             print("--------------------------------------------------------------")
@@ -366,7 +375,7 @@ class Frame3D:
             fer1, fer2 = hf.member_part_fer(fer_unc_ARRAY, self.members_dof_unreleased, self.members_dof_released, num_m,
                                             num_c)
             if log:
-                print("fer1 dim: ", np.shape(fer1))
+                #print("fer1 dim: ", np.shape(fer1))
                 print("fer1: ", fer1)
                 print("fer2: ", fer2)
 
@@ -401,7 +410,7 @@ class Frame3D:
                 print("K22: ", K22)
 
             D, DX, DY, DZ, RX, RY, RZ = hf.get_D(K11, K12, P1, FER1, self.nodes_dof_unknown, self.nodes_dof_known,
-                                                 self.main_window_root, num_n, num_c, log)
+                                                 num_n, num_c, log)
 
             weight = None
             reactions = None
@@ -434,8 +443,8 @@ class Frame3D:
         else:
             raise Exception('Pre analysis has not been run. Aborting analysis.')
 
-    def optimize(self, memberGroup: list, memberGroupType: list,  lowerBound: list | float, upperBound: list | float,
-                 costFunction: str, getWeight: bool = False, getReactions: bool = False,
+    def optimize(self, after, memberGroup: list, memberGroupType: list,  lowerBound: list | float, upperBound: list | float,
+                 costFunction: str,  getWeight: bool = False, getReactions: bool = False,
                  getInternalForces: bool = False, log: bool =False):
         """
         Finds the optimum cross-sections for members with their cross-sections not set.
@@ -475,15 +484,12 @@ class Frame3D:
         bounds = hf.get_bounds(lowerBound, upperBound, numVariables)
 
         t1 = time.time()
+        print("Handing over to scipy differential_evolution")
         #optimization_results = opt.shgo(hf.get_cost, bounds, args=[constants], options={'disp': True})
-        optimization_results = opt.differential_evolution(hf.get_cost, bounds, args=[constants], disp = True)
+        #optimization_results = opt.differential_evolution(hf.get_cost, bounds, args=[constants], disp = True, updating='deferred', workers=10)
+        optimization_results = opt.differential_evolution(hf.get_cost, bounds, args=[constants], disp=True)
         t2 = time.time()
+
         print("Run Time: ", t2-t1)
-
-        log = True
-        if log:
-            t_end = time.time()
-            print("RunTime: ", t_end - t_start)
-        if log: print("optimization results: ", optimization_results)
-
-        return optimization_results
+        print(optimization_results)
+        after(0, return_optimization_results, optimization_results)

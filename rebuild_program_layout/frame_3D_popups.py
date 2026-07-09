@@ -432,7 +432,7 @@ class OptimizationPopUp(tk.Toplevel):
         self._member_group_input_table.column("Group Index", width=75)
 
         for i in range(len(indices_not_set_members)):
-            self._member_group_input_table.insert("", "end", values=(indices_not_set_members[i], i%4))
+            self._member_group_input_table.insert("", "end", values=(indices_not_set_members[i], i%1))
             #TODO ^ used for testing perpuses ^
 
         self._member_group_input_table.bind('<Double-1>', self._edit_cell_member_group_input_table)
@@ -801,8 +801,8 @@ class OptimizationPopUp(tk.Toplevel):
 
         self.destroy()
 
-        (self._controller.frame_3d.GlobalOptimization(group_assignments, group_types, lower_bounds, upper_bounds,
-                                                      cost_function, weight_run, reaction_run, internal_forces_run))
+        (self._controller.frame_3d.global_optimization(group_assignments, group_types, lower_bounds, upper_bounds,
+                                                       cost_function, weight_run, reaction_run, internal_forces_run))
 
     def _cancel_pop_up(self) -> None:
         """
@@ -819,11 +819,12 @@ class OptimizationPopUp(tk.Toplevel):
         :rtype: list[int | list[int]]
         """
 
-        #TODO
-
         num = 0
         non_indices = []
-
-        #self._controller.frame_3d
+        
+        for i, m in enumerate(self._controller.frame_3d.members):
+            if not m.set_cross_section_props:
+                num += 1
+                non_indices.append(i)
 
         return [num, non_indices]

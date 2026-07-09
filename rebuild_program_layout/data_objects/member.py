@@ -102,4 +102,4 @@ class Member:
         :type dist_loads: list[float]
         """
 
-        self.dist_loads.append([x] + dist_loads + [case])
+        self.dist_loads.append(x + dist_loads + [case])

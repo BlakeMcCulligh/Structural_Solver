@@ -7,7 +7,8 @@ import pandas as pd
 from rebuild_program_layout.data_objects.member import Member
 from rebuild_program_layout.data_objects.material import Material
 from rebuild_program_layout.data_objects.node import Node
-from rebuild_program_layout.optimization import start_optimization
+from rebuild_program_layout.optimization import start_global_optimization
+import frame_3D_solver.main
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -28,6 +29,8 @@ class Frame3D:
         self.nodes: list[Node] = []
         self.materials: list[Material] = []
         self.members: list[Member] = []
+
+        self.solver_frame = None
 
     def updateDisplays(self):
         """
@@ -82,24 +85,59 @@ class Frame3D:
                     tables[7].insert('', 'end', values=[str(c), str(i)] + self.members[i].dist_loads[b])
                     c += 1
 
-        # TODO
+        # TODO update 3D display system
 
     def linear_analysis(self):
-        pass #TODO
+        """
+        Runs linear analysis on the frame.
+        """
 
-    def GlobalOptimization(self, group_assignments, group_types, lower_bounds, upper_bounds,
-                                                      cost_function, weight_run, reaction_run, internal_forces_run):
-        # tempory testing
-        bounds = [(-5, 5), (-5, 5)]
-        start_optimization(self._controller.executor, self._controller.root, bounds)
+        self.load_data_solver()
 
-        pass #TODO
+        self.solver_frame.PreAnalysisLinear()
+        D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internal_forces = self.solver_frame.AnalysisLinear(
+                                                                                             get_weight=True,
+                                                                                             get_reactions=True,
+                                                                                             get_internal_forces=True)
+        #TODO handeling results
+
+    def global_optimization(self, group_assignments: list[int], group_types: list[str], lower_bounds: list[float],
+                            upper_bounds: list[float], cost_function: str, weight_run: bool, reaction_run: bool,
+                            internal_forces_run: bool) -> None:
+        """
+        Runs global optimization on the cross-sections of unset members frame.
+
+        :param group_assignments: list of indices of member groups for non set members to be assigned to.
+                                  Must be length of non set members.
+        :type group_assignments: list[int]
+        :param group_types: List of cross-section types for each member group to be assigned. Must be length of number
+                            of member groups.
+        :type group_types: list[str]
+        :param lower_bounds: Lower bound on the optimization variables. If list must be length of number of variables.
+        :type lower_bounds: list[float]
+        :param upper_bounds: Upper bound on the optimization variables. If list must be length of number of variables.
+        :type upper_bounds: list[float]
+        :param cost_function: Cost function for optimization stored in a string.
+        :type cost_function: str
+        :param weight_run: Weather the weight of all the members is needed for the cost function.
+        :type weight_run: bool
+        :param reaction_run: Weather the reactions are needed for the cost function.
+        :type reaction_run: bool
+        :param internal_forces_run: Weather the internal forces are needed for the cost function.
+        :type internal_forces_run: bool
+        """
+
+        self.load_data_solver()
+
+        start_global_optimization(self._controller.executor, self._controller.root, self.solver_frame,
+                                  group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
+                                  weight_run, reaction_run, internal_forces_run)
 
     def save(self, file_path):
-        pass #TODO
+        pass #TODO saving
 
     def export_results(self, file_path):
-        pass #TODO
+        pass #TODO exporting resutls
 
     def open_frame(self, file_path: str) -> None:
         """
@@ -404,3 +442,41 @@ class Frame3D:
                                                                member_dist_loads[i,4:].tolist())
 
         self.updateDisplays()
+
+    def load_data_solver(self):
+        """
+        Creates a 3D frame solver object from the data stored in this frame.
+        """
+
+        self.solver_frame = frame_3D_solver.main.Frame3D()
+
+        for n in self.nodes:
+            self.solver_frame.AddNode(n.x, n.y, n.z)
+
+        for m in self.materials:
+            self.solver_frame.AddMaterial(m.E, m.G, m.nu, m.rho, m.fy)
+
+        for m in self.members:
+            self.solver_frame.AddMember(m.node_1_index, m.node_2_index, m.material_index, m.set_cross_section_props,
+                            m.A, m.Iy, m.Iz, m.J)
+
+        for i, n in enumerate(self.nodes):
+            self.solver_frame.AddSupport(i, n.support[0], n.support[1], n.support[2], n.support[3], n.support[4],
+                                         n.support[5])
+
+        for i, m in enumerate(self.members):
+            self.solver_frame.AddReleases(i, m.releces[0], m.releces[1], m.releces[2], m.releces[3], m.releces[4],
+                                          m.releces[5], m.releces[6], m.releces[7], m.releces[8], m.releces[9],
+                                          m.releces[10], m.releces[11])
+
+        for i, n in enumerate(self.nodes):
+            for l in n.load:
+                self.solver_frame.AddNodeLoad(i, l[0], l[1], l[2], l[3], l[4], l[5], l[6])
+
+        for i, m in enumerate(self.members):
+            for l in m.point_loads:
+                self.solver_frame.AddMemberPointLoad(i, l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7])
+
+        for i, m in enumerate(self.members):
+            for l in m.dist_loads:
+                self.solver_frame.AddMemberDistLoad(i, l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7], l[8])
