@@ -7,6 +7,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
+from rebuild_program_layout.data_objects.material import Material
+from rebuild_program_layout.data_objects.member import Member
 from rebuild_program_layout.data_objects.node import Node
 
 if TYPE_CHECKING:
@@ -290,14 +292,140 @@ class AddingTablesWindow(tk.Toplevel):
         :type data_new: list[float | bool]
         """
 
-        if table == 0:
+        if table == 0: # node
             if row == "New":
                 self._controller.frame_3d.nodes.append(Node(cords=data_new))
             else:
                 self._controller.frame_3d.nodes[row].x = data_new[0]
                 self._controller.frame_3d.nodes[row].y = data_new[1]
                 self._controller.frame_3d.nodes[row].z = data_new[2]
-        # TODO
+
+        elif table == 1: # material
+            if row == "New":
+                self._controller.frame_3d.materials.append(Material(data_new[0], data_new[1], data_new[2],
+                                                                    data_new[3], data_new[4]))
+            else:
+                self._controller.frame_3d.materials[row].E = data_new[0]
+                self._controller.frame_3d.materials[row].G = data_new[1]
+                self._controller.frame_3d.materials[row].nu = data_new[2]
+                self._controller.frame_3d.materials[row].rho = data_new[3]
+                self._controller.frame_3d.materials[row].fy = data_new[4]
+
+        elif table == 2: # member
+            if row == "New":
+                self._controller.frame_3d.members.append(
+                    Member(data_new[0], data_new[1], data_new[2], data_new[3],
+                           [data_new[4],data_new[5],data_new[6],data_new[7]],
+                           self._controller.frame_3d))
+            else:
+                self._controller.frame_3d.members[row].node_1_index = data_new[0]
+                self._controller.frame_3d.members[row].node_2_index = data_new[1]
+                self._controller.frame_3d.members[row].material_index = data_new[2]
+                self._controller.frame_3d.members[row].set_cross_section_props = data_new[3]
+                self._controller.frame_3d.members[row].A = data_new[4]
+                self._controller.frame_3d.members[row].Iy = data_new[5]
+                self._controller.frame_3d.members[row].Iz = data_new[6]
+                self._controller.frame_3d.members[row].J = data_new[7]
+
+        elif table == 3: #supports
+            self._controller.frame_3d.nodes[data_new[0]].set_support([data_new[1],data_new[2],data_new[3],
+                                                                          data_new[4],data_new[5],data_new[6]])
+
+        elif table == 4: # releases
+            self._controller.frame_3d.members[data_new[0]].set_releces([data_new[1],data_new[2],data_new[3],
+                                                                        data_new[4],data_new[5],data_new[6],
+                                                                        data_new[7],data_new[8],data_new[9],
+                                                                        data_new[10],data_new[11],data_new[12]])
+        elif table == 5: # node loads
+            if row == "New":
+                found = False
+                for i in range(len(self._controller.frame_3d.nodes[data_new[0]].load)):
+                    if self._controller.frame_3d.nodes[data_new[0]].load[i][6] == data_new[7]:
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][0] += data_new[1]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][1] += data_new[2]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][2] += data_new[3]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][3] += data_new[4]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][4] += data_new[5]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][5] += data_new[6]
+                        found = True
+                        break
+                if not found:
+                    self._controller.frame_3d.nodes[data_new[0]].add_load(data_new[7],[data_new[1],data_new[2],
+                                                                                       data_new[3],data_new[4],
+                                                                                       data_new[5],data_new[6]])
+            else:
+                for i in range(len(self._controller.frame_3d.nodes[data_new[0]].load)):
+                    if self._controller.frame_3d.nodes[data_new[0]].load[i][6] == data_new[7]:
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][0] += data_new[1]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][1] += data_new[2]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][2] += data_new[3]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][3] += data_new[4]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][4] += data_new[5]
+                        self._controller.frame_3d.nodes[data_new[0]].load[i][5] += data_new[6]
+                        break
+
+        elif table == 6: # member point loads
+            if row == "New":
+                found = False
+                for i in range(len(self._controller.frame_3d.members[data_new[0]].point_loads)):
+                    if (self._controller.frame_3d.members[data_new[0]].point_loads[i][7] == data_new[8]
+                            and self._controller.frame_3d.members[data_new[0]].point_loads[i][0] == data_new[1]):
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][1] += data_new[2]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][2] += data_new[3]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][3] += data_new[4]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][4] += data_new[5]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][5] += data_new[6]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][6] += data_new[7]
+                        found = True
+                        break
+                if not found:
+                    self._controller.frame_3d.members[data_new[0]].add_point_load(data_new[7], data_new[1],
+                                                                                  [data_new[2], data_new[3],
+                                                                                   data_new[4], data_new[5],
+                                                                                   data_new[6], data_new[7]])
+            else:
+                for i in range(len(self._controller.frame_3d.members[data_new[0]].point_loads)):
+                    if (self._controller.frame_3d.members[data_new[0]].point_loads[i][7] == data_new[8]
+                            and self._controller.frame_3d.members[data_new[0]].point_loads[i][0] == data_new[1]):
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][1] += data_new[2]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][2] += data_new[3]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][3] += data_new[4]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][4] += data_new[5]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][5] += data_new[6]
+                        self._controller.frame_3d.members[data_new[0]].point_loads[i][6] += data_new[7]
+                        break
+
+        elif table == 7: # member distributed loads
+            if row == "New":
+                found = False
+                for i in range(len(self._controller.frame_3d.members[data_new[0]].dist_loads)):
+                    if (self._controller.frame_3d.members[data_new[0]].dist_loads[i][8] == data_new[9]
+                            and self._controller.frame_3d.members[data_new[0]].dist_loads[i][0] == data_new[1]
+                            and self._controller.frame_3d.members[data_new[0]].dist_loads[i][1] == data_new[2]):
+                        self._controller.frame_3d.members[data_new[0]].dist_loads[i][2] += data_new[3]
+                        self._controller.frame_3d.members[data_new[0]].dist_loads[i][3] += data_new[4]
+                        self._controller.frame_3d.members[data_new[0]].dist_loads[i][4] += data_new[5]
+                        self._controller.frame_3d.members[data_new[0]].dist_loads[i][5] += data_new[6]
+                        self._controller.frame_3d.members[data_new[0]].dist_loads[i][6] += data_new[7]
+                        self._controller.frame_3d.members[data_new[0]].dist_loads[i][7] += data_new[8]
+                        found = True
+                        break
+                if not found:
+                    self._controller.frame_3d.members[data_new[0]].add_dist_load(data_new[9],
+                                                                                 [data_new[1], data_new[2]],
+                                                                                 [data_new[3],data_new[4],data_new[5],
+                                                                                  data_new[6],data_new[7],data_new[8]])
+            else:
+                for i in range(len(self._controller.frame_3d.members[data_new[0]].point_loads)):
+                    if (self._controller.frame_3d.members[data_new[0]].point_loads[i][7] == data_new[8]
+                            and self._controller.frame_3d.members[data_new[0]].point_loads[i][0] == data_new[1]):
+                        self._controller.frame_3d.members[data_new[0]].dist_loads[i][1] += data_new[2]
+                        self._controller.frame_3d.members[data_new[0]].dist_loads[i][2] += data_new[3]
+                        self._controller.frame_3d.nodes[data_new[0]].dist_loads[i][3] += data_new[4]
+                        self._controller.frame_3d.nodes[data_new[0]].dist_loads[i][4] += data_new[5]
+                        self._controller.frame_3d.nodes[data_new[0]].dist_loads[i][5] += data_new[6]
+                        self._controller.frame_3d.nodes[data_new[0]].dist_loads[i][6] += data_new[7]
+                        break
 
         self._controller.frame_3d.updateDisplays()
 
