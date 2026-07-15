@@ -17,9 +17,6 @@ __maintainer__ = "Blake McCulligh"
 __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
-from rebuild_program_layout.optimization import return_optimization_results
-
-
 class Frame3D:
     """
     Object that handles the solving of a 3D frame.
@@ -443,7 +440,7 @@ class Frame3D:
         else:
             raise Exception('Pre analysis has not been run. Aborting analysis.')
 
-    def optimize(self, after, memberGroup: list, memberGroupType: list,  lowerBound: list | float, upperBound: list | float,
+    def optimize(self, memberGroup: list, memberGroupType: list,  lowerBound: list | float, upperBound: list | float,
                  costFunction: str,  getWeight: bool = False, getReactions: bool = False,
                  getInternalForces: bool = False, log: bool =False):
         """
@@ -491,5 +488,4 @@ class Frame3D:
         t2 = time.time()
 
         print("Run Time: ", t2-t1)
-        print(optimization_results)
-        after(0, return_optimization_results, optimization_results)
+        return optimization_results

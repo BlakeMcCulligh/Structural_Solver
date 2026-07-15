@@ -79,7 +79,7 @@ class Frame3D:
                     tables[4].insert('', 'end', values=[str(j), str(i)] + self.members[i].releces)
                     j += 1
                 for a in range(len(self.members[i].point_loads)):
-                    tables[5].insert('', 'end', values=[str(k), str(i)] + self.members[i].point_loads[a])
+                    tables[6].insert('', 'end', values=[str(k), str(i)] + self.members[i].point_loads[a])
                     k += 1
                 for b in range(len(self.members[i].dist_loads)):
                     tables[7].insert('', 'end', values=[str(c), str(i)] + self.members[i].dist_loads[b])
@@ -129,9 +129,14 @@ class Frame3D:
 
         self.load_data_solver()
 
-        start_global_optimization(self._controller.executor, self._controller.root, self.solver_frame,
+        start_global_optimization(self._controller.executor, self, self.solver_frame,
                                   group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
                                   weight_run, reaction_run, internal_forces_run)
+
+    def handel_global_optimization_results(self, results):
+        print("Global optimization results: ", results)
+        pass
+        #TODO
 
     def save(self, file_path):
         pass #TODO saving
