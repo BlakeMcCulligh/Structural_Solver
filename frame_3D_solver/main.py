@@ -17,7 +17,7 @@ __maintainer__ = "Blake McCulligh"
 __email__ = "bmcculli@uwaterloo.ca"
 __status__ = ""
 
-class Frame3D:
+class Frame3D_Solver:
     """
     Object that handles the solving of a 3D frame.
     """

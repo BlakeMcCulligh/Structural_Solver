@@ -18,7 +18,7 @@ from frame_3D_gui.optimize_pop_up import OptimizationPopUp
 from frame_3D_gui.results import Results
 from frame_3D_gui.save import save_frame, save_results
 from frame_3D_gui.text_validate import validate_float, validate_index, validate_bool
-from frame_3D_solver.main import Frame3D
+from frame_3D_solver.main import Frame3D_Solver
 # noinspection PyPep8Naming
 import drawing_3D.engine_3D as TDE
 import frame_3D_solver.helper_functions as hf
@@ -66,7 +66,7 @@ class MainWindow(tk.Frame):
         self.val_bool = (self.Root.register(validate_bool), '#P')
 
         # setting analysis objects to none.
-        self.Frame: Frame3D | None = None
+        self.Frame: Frame3D_Solver | None = None
         self.Results: Results | None = None
         self.OptimizationResults: OptimizeResult | None = None
 
@@ -1419,7 +1419,7 @@ def _add_data_to_frame(window, d):
     :return: 3D frame object.
     """
 
-    frame = Frame3D(window.Root)
+    frame = Frame3D_Solver(window.Root)
 
     for i in range(len(d.Nodes[0])):
         frame.AddNode(d.Nodes[0][i], d.Nodes[1][i], d.Nodes[2][i])

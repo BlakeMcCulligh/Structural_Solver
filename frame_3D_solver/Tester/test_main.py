@@ -4,7 +4,7 @@ Used for cheacking the acercy of the 3D frame solver.
 
 from Pynite import FEModel3D
 
-from frame_3D_solver.main import Frame3D
+from frame_3D_solver.main import Frame3D_Solver
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -146,7 +146,7 @@ class TestCase:
         :Return: D, DX, DY, DZ, RX, RY, RZ
         """
 
-        model = Frame3D(None)
+        model = Frame3D_Solver(None)
 
         for node in self.nodes:
             model.AddNode(node[0], node[1], node[2])

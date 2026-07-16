@@ -453,7 +453,7 @@ class Frame3D:
         Creates a 3D frame solver object from the data stored in this frame.
         """
 
-        self.solver_frame = frame_3D_solver.main.Frame3D()
+        self.solver_frame = frame_3D_solver.main.Frame3D_Solver()
 
         for n in self.nodes:
             self.solver_frame.AddNode(n.x, n.y, n.z)
