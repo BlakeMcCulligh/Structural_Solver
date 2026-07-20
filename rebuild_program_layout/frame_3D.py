@@ -3,12 +3,14 @@ Handels all operations to do with the 3D frame.
 """
 import numpy as np
 import pandas as pd
+import scipy.optimize as opt
 
 from rebuild_program_layout.data_objects.member import Member
 from rebuild_program_layout.data_objects.material import Material
 from rebuild_program_layout.data_objects.node import Node
 from rebuild_program_layout.optimization import start_global_optimization
 import frame_3D_solver.main
+import frame_3D_solver.helper_functions as hf
 
 __author__ = "Blake McCulligh"
 __copyright__ = ""
@@ -133,10 +135,104 @@ class Frame3D:
                                   group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
                                   weight_run, reaction_run, internal_forces_run)
 
-    def handel_global_optimization_results(self, results):
-        print("Global optimization results: ", results)
-        pass
-        #TODO
+    def handel_global_optimization_results(self, result_opt: opt.OptimizeResult, group_assignments: list[int],
+                                           group_types: list[str]) -> None:
+        """
+        Updates the frame to the optimized results and exports the optimization results to an Excel file.
+
+        :param result_opt: scipy's OptimizeResult object
+        :type result_opt: scipy.optimize.OptimizeResult
+        :param group_assignments: list of indices of member groups for non set members to be assigned to.
+                                  Must be length of non set members.
+        :type group_assignments: list[int]
+        :param group_types: List of cross-section types for each member group to be assigned. Must be length of number
+                            of member groups.
+        :type group_types: list[str]
+        """
+
+        x = result_opt.x
+        cost = result_opt.fun
+
+        if x is not None:
+            cross_section_props = hf.get_cross_section_props(x, group_assignments, group_types)
+            j = 0
+            member_indices = []
+            for i in range(len(self.members)):
+                if not self.members[i].set_cross_section_props:
+                    member_indices.append(i)
+                    cs = cross_section_props[j]
+                    self.members[i].set_cross_section_props = True
+                    self.members[i].A = cs[0]
+                    self.members[i].Iy = cs[1]
+                    self.members[i].Iz = cs[2]
+                    self.members[i].J = cs[3]
+                    j += 1
+
+            self.linear_analysis()
+
+            groupLength = []
+            startLocation = []
+
+            for i in range(len(group_types)):
+                group_type = group_types[i]
+                startLocation.append(sum(groupLength) - 1)
+                if group_type == ["Angle"]:
+                    groupLength.append(3)
+                elif group_type == ["RectHSS"]:
+                    groupLength.append(3)
+                elif group_type == ["SquareHSS"]:
+                    groupLength.append(2)
+                else:
+                    groupLength.append(2)
+
+            results = []
+            current_x_index = 0
+            for i in range(len(cross_section_props)):
+                member_index = [member_indices[i]]
+                group_type = [group_types[group_assignments[i]]]
+
+                dim = []
+                if group_type == ["Angle"]:
+                    dim.append(x[startLocation[group_assignments[i]]])
+                    dim.append(x[startLocation[group_assignments[i]] + 1])
+                    dim.append(x[startLocation[group_assignments[i]] + 2])
+                    current_x_index += 3
+                elif group_type == ["RectHSS"]:
+                    dim.append(x[startLocation[group_assignments[i]]])
+                    dim.append(x[startLocation[group_assignments[i]] + 1])
+                    dim.append(x[startLocation[group_assignments[i]] + 2])
+                    current_x_index += 3
+                elif group_type == ["SquareHSS"]:
+                    dim.append(x[startLocation[group_assignments[i]]])
+                    dim.append("N/A")
+                    dim.append(x[startLocation[group_assignments[i]] + 1])
+                    current_x_index += 2
+                elif group_type == ["TubeHSS"]:
+                    dim.append(x[startLocation[group_assignments[i]]])
+                    dim.append("N/A")
+                    dim.append(x[startLocation[group_assignments[i]] + 1])
+                    current_x_index += 2
+
+                cs = cross_section_props[i]
+
+                results.append(member_index + group_type + dim + cs)
+
+            self.updateDisplays()
+
+            file_path = self._display_frame.get_new_file_path(".xlsx", [("Excel Files", "*.xlsx")])
+
+            if file_path is not None:
+
+                df1 = pd.DataFrame(results,
+                                   columns=["Member Index", "Cross-Section _type", "d", "b", "t", "A", "Iy", "Iz","J"])
+                df2 = pd.DataFrame({'Cost': [cost]})
+
+                with pd.ExcelWriter(file_path) as writer:
+                    df1.to_excel(writer, sheet_name="Results", index=False)
+                    df2.to_excel(writer, sheet_name="Cost", index=False)
+
+            else:
+                print("Failed to export optimization Results")
 
     def save(self, file_path):
         pass #TODO saving

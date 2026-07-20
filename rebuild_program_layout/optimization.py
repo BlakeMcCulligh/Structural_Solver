@@ -58,7 +58,7 @@ def start_global_optimization(executor: ThreadPoolExecutor, frame3D: Frame3D, so
                                                                internal_forces_run))
 
     global_opt.done()
-    frame3D.handel_global_optimization_results(global_opt.result())
+    frame3D.handel_global_optimization_results(global_opt.result(), group_assignments, group_types)
 
     error = global_opt.exception()
     if error:
