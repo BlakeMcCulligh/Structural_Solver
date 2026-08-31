@@ -39,22 +39,37 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
 
     # Nodes
     nodes_df = pd.read_excel(file_path, sheet_name='Nodes')
-    nodes = [nodes_df["X"].tolist(), nodes_df["Y"].tolist(), nodes_df["Z"].tolist()]
-    for i in range(len(nodes[0])): frame.nodes.append(Node(x=nodes[0][i], y=nodes[1][i], z=nodes[2][i]))
+    nodes = [nodes_df["Name"].tolist(),nodes_df["X"].tolist(), nodes_df["Y"].tolist(), nodes_df["Z"].tolist()]
+    for i in range(len(nodes[0])): frame.nodes.append(Node(x=nodes[1][i], y=nodes[2][i], z=nodes[3][i]))
 
     # Materials
     mat_df = pd.read_excel(file_path, sheet_name='Materials')
-    m = [mat_df["E"].tolist(), mat_df["G"].tolist(), mat_df["nu"].tolist(), mat_df["rho"].tolist(),
-         mat_df["fy"].tolist()]
-    for i in range(len(m[0])): frame.materials.append(Material(m[0][i], m[1][i], m[2][i], m[3][i], m[4][i]))
+    mat = [mat_df["Name"].tolist(),mat_df["E"].tolist(), mat_df["G"].tolist(), mat_df["nu"].tolist(),
+           mat_df["rho"].tolist(), mat_df["fy"].tolist()]
+    for i in range(len(mat[0])): frame.materials.append(Material(mat[1][i], mat[2][i], mat[3][i], mat[4][i], mat[5][i]))
 
     # Members
     mem_df = pd.read_excel(file_path, sheet_name='Members')
-    m = [mem_df["i Node"].tolist(), mem_df["j Node"].tolist(), mem_df["Material"].tolist(),
+    mem = [mem_df["Name"].tolist(), mem_df["i Node"].tolist(), mem_df["j Node"].tolist(), mem_df["Material"].tolist(),
          mem_df["Set Cross-Section Properties"].tolist(), mem_df["A"].tolist(), mem_df["Iy"].tolist(),
          mem_df["Iz"].tolist(), mem_df["J"].tolist()]
-    for i in range(len(m[0])): frame.members.append(Member(m[0][i], m[1][i], m[2][i], m[3][i],
-                                              [m[4][i], m[5][i], m[6][i], m[7][i]], frame))
+    for i in range(len(mem[0])):
+        nodei = None
+        nodej = None
+        material = None
+        for j in range(len(nodes[0])):
+            if nodes[0][j] == mem[1][i]:
+                nodei = j
+            elif nodes[0][j] == mem[2][i]:
+                nodej = j
+        for j in range(len(mat[0])):
+            if mat[0][j] == mem[3][i]:
+                material = j
+        if nodei is not None and nodej is not None and material is not None:
+            frame.members.append(Member(nodei, nodej, material, mem[4][i],
+                                              [mem[5][i], mem[6][i], mem[7][i], mem[8][i]], frame))
+        else:
+            print("Node or Material not found. For member: ", mem[0][i])
 
     # Supports
     s_df = pd.read_excel(file_path, sheet_name='Supports')
@@ -62,7 +77,14 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
                 s_df["RX"].tolist(), s_df["RY"].tolist(), s_df["RZ"].tolist()]
     supports = np.array(supports).T
     for i in range(len(supports)):
-        frame.nodes[supports[i, 0]].set_support(supports[i, 1:].tolist())
+        node = None
+        for j in range(len(nodes[0])):
+            if nodes[0][j] == supports[i, 0]:
+                node = j
+        if node is not None:
+            frame.nodes[node].set_support(supports[i, 1:].tolist())
+        else:
+            print("Support not found. For node: ", supports[i, 0])
 
     # Releases
     r_df = pd.read_excel(file_path, sheet_name='Releases')
@@ -72,7 +94,14 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
                 r_df["j RZ"].tolist()]
     releases = np.array(releases).T
     for i in range(len(releases)):
-        frame.members[releases[i, 0]].set_releces(releases[i, 1:].tolist())
+        member = None
+        for j in range(len(mem[0])):
+            if mem[0][j] == releases[i, 0]:
+                member = j
+        if member is not None:
+            frame.members[member].set_releces(releases[i, 1:].tolist())
+        else:
+            print("Mmeber not found. For Release: ", releases[i, 0])
 
     # Node Loads
     n_df = pd.read_excel(file_path, sheet_name='Node_Loads')
@@ -80,7 +109,14 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
                   n_df["PZ"].tolist(), n_df["MX"].tolist(), n_df["MY"].tolist(), n_df["MZ"].tolist()]
     node_loads = np.array(node_loads).T
     for i in range(len(node_loads)):
-        frame.nodes[node_loads[i, 0]].add_load(node_loads[i, 1].tolist(), node_loads[i, 2:].tolist())
+        node = None
+        for j in range(len(nodes[0])):
+            if nodes[0][j] == node_loads[i, 0]:
+                node = j
+        if node is not None:
+            frame.nodes[node].add_load(node_loads[i, 1].tolist(), node_loads[i, 2:].tolist())
+        else:
+            print("Support not found. For Node Load: ", node_loads[i, 0])
 
     # Member Point Loads
     mp_df = pd.read_excel(file_path, sheet_name = 'Member_Point_Loads')
@@ -89,9 +125,16 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
                           mp_df["MZ"].tolist()]
     member_point_loads = np.array(member_point_loads).T
     for i in range(len(member_point_loads)):
-        frame.members[int(member_point_loads[i, 0])].add_point_load(member_point_loads[i, 1].tolist(),
-                                                              member_point_loads[i, 2].tolist(),
-                                                              member_point_loads[i, 3:].tolist())
+        member = None
+        for j in range(len(mem[0])):
+            if mem[0][j] == int(member_point_loads[i, 0]):
+                member = j
+        if member is not None:
+            frame.members[member].add_point_load(member_point_loads[i, 1].tolist(),
+                                                                        member_point_loads[i, 2].tolist(),
+                                                                        member_point_loads[i, 3:].tolist())
+        else:
+            print("Mmeber not found. For Member Point Load: ", int(member_point_loads[i, 0]))
 
     # Member Distributed Loads
     md_df = pd.read_excel(file_path, sheet_name='Member_Dist_Loads')
@@ -100,9 +143,16 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
                          md_df["WZ1"].tolist(), md_df["WZ2"].tolist()]
     member_dist_loads = np.array(member_dist_loads).T
     for i in range(len(member_dist_loads)):
-        frame.members[int(member_dist_loads[i, 0])].add_dist_load(member_dist_loads[i, 1].tolist(),
-                                                            member_dist_loads[i, 2:4].tolist(),
-                                                            member_dist_loads[i, 4:].tolist())
+        member = None
+        for j in range(len(mem[0])):
+            if mem[0][j] == int(member_dist_loads[i, 0]):
+                member = j
+        if member is not None:
+            frame.members[member].add_dist_load(member_dist_loads[i, 1].tolist(),
+                                                                      member_dist_loads[i, 2:4].tolist(),
+                                                                      member_dist_loads[i, 4:].tolist())
+        else:
+            print("Mmeber not found. For Member Distributed Load: ", int(member_dist_loads[i, 0]))
 
     # Member Groups
     mga_df = pd.read_excel(file_path, sheet_name='Member_Group_Assignments')
@@ -190,11 +240,11 @@ def frame_3d_global_opt_temp(file_path: str) -> None:
     Exports a template Excel file forff the 3D frame global analysis.
     """
 
-    nodes_df = pd.DataFrame([["","",""]], columns=["X", "Y", "Z"])
-    mem_df = pd.DataFrame([["","","","","","","",""]],
-                          columns=["i Node", "j Node", "Material", "Set Cross-Section Properties", "A", "Iy", "Iz",
+    nodes_df = pd.DataFrame([["","","",""]], columns=["Name","X", "Y", "Z"])
+    mem_df = pd.DataFrame([["","","","","","","","",""]],
+                          columns=["Name","i Node", "j Node", "Material", "Set Cross-Section Properties", "A", "Iy", "Iz",
                                    "J"])
-    mat_df = pd.DataFrame([["","","","",""]], columns=["E", "G", "nu", "rho", "fy"])
+    mat_df = pd.DataFrame([["","","","","",""]], columns=["Name","E", "G", "nu", "rho", "fy"])
     s_df = pd.DataFrame([["","","","","","",""]], columns=["Node", "DX", "DY", "DZ", "RX", "RY", "RZ"])
     r_df = pd.DataFrame([["","","","","","","","","","","","",""]],
                         columns=["Member","i DX", "i DY", "i DZ", "i RX", "i RY", "i RZ",
