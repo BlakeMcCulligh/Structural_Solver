@@ -389,7 +389,7 @@ def _assemble_dist_loads(members_dist_loads, num_c):
             new_load = []
             for j in range(len(loads[1])):
                 new_load.append(loads[1][j][0] + loads[1][j][1])
-            new_loads[loads[0]] = new_load
+            new_loads[int(loads[0])] = new_load
         for j in range(len(new_loads)):
             if new_loads[j] is None:
                 # noinspection PyTypeChecker
@@ -959,7 +959,7 @@ def get_cost(X, constants):
                      weight_needed, reactions_needed, internal_forces_needed, log]
     :return: float. _cost
     """
-
+    #log = True
     (frame, get_cross_section_props, cost_function, member_group, member_group_type,
      weight_needed, reactions_needed, internal_forces_needed, log) = constants
 
@@ -978,7 +978,7 @@ def get_cost(X, constants):
     D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces = (
         frame.AnalysisLinear(weight_needed, reactions_needed, internal_forces_needed, log))
     cost = _cost(D, DX, DY, DZ, RX, RY, RZ, weight, reactions, internalForces, cost_function)
-    #print(cost)
+    #print("Cost: ", cost)
     return cost
 
 def chack_inputs(members, member_group: list, member_group_type: list):

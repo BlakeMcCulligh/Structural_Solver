@@ -331,7 +331,7 @@ class Frame3D_Solver:
             reactions: ndarray or None. Reactions of the nodes to teh supports.
             internal_forces: ndarray or None. Maximum internal forces of each member.
         """
-
+        #log = True
         if log:
             print("Nodes: ", self.nodes_cord)
             print("Materials: ", self.materials)

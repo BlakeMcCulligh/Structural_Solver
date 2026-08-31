@@ -8,6 +8,9 @@ from tkinter import filedialog
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from rebuild_program_layout.excel_analysis import frame_3d_global_opt, frame_3d_global_opt_temp
+from rebuild_program_layout.frame_3D import Frame3D
+
 if TYPE_CHECKING:
     from rebuild_program_layout import __main__
 
@@ -60,6 +63,14 @@ class FrameMain(tk.Frame):
         new_menu.add_command(label='Structure', command= self._new_structure)
         menubar.add_cascade(label="New", menu=new_menu)
 
+        excel_menu = tk.Menu(menubar, tearoff=False)
+        excel_menu.add_command(label='3D Frame Global Optimization', command = self._ex_3d_frame_global_opt)
+        menubar.add_cascade(label="Excel Analysis", menu=excel_menu)
+
+        ex_temp_menu = tk.Menu(menubar, tearoff=False)
+        ex_temp_menu.add_command(label='3D Frame Global Optimization', command = self._ex_3d_frame_global_opt_temp)
+        menubar.add_cascade(label="Excel Templates", menu=ex_temp_menu)
+
         return menubar
 
     def on_show(self) -> None:
@@ -90,6 +101,28 @@ class FrameMain(tk.Frame):
 
         NewStructurePopUp(self.root_window, self)
 
+    def _ex_3d_frame_global_opt(self) -> None:
+        """
+        Gets the selected Excel file and then runs an optimizes of the cross-sections of a 3D frame in the global space.
+        """
+
+        file_path = select_file_gui([("Excel Files", "*.xlsx")])
+
+        if file_path is not None:
+            frame = Frame3D(self.controller, None)
+            frame_3d_global_opt(file_path, self.controller, frame)
+
+    def _ex_3d_frame_global_opt_temp(self) -> None:
+        """
+        Exports a template Excel file forff the 3D frame global analysis.
+        """
+
+        file_path = get_new_file_path(".xlse", [("Excel Files", "*.xlsx")])
+
+        if file_path is not None:
+            frame_3d_global_opt_temp(file_path)
+
+
 def select_file_gui(file_types: list[tuple[str, str]] )  ->  str | None:
     """
     Lets the user select a file of the type: file_types.
@@ -103,6 +136,22 @@ def select_file_gui(file_types: list[tuple[str, str]] )  ->  str | None:
     file_path = filedialog.askopenfilename(title="Select a file", filetypes= file_types)
     if file_path: return file_path
     else: return None
+
+def get_new_file_path(file_type: str, file_type_name: list[tuple[str, str]]) -> str | None:
+    """
+    Gets the file path to save the frame to.
+
+    :param file_type: String containing the file type aloued to be opend
+    :type file_type: str
+    :param file_type_name: list containing the names of the file types alowed and there file extension
+    :type file_type_name: list[ tuple[ str ] ]
+    :return: The file path to the save file or None if no file path is selected.
+    :rtype: str or None
+    """
+
+    file_path = filedialog.asksaveasfilename(defaultextension=file_type,filetypes=file_type_name)
+    if file_path: return file_path
+    return None
 
 class NewStructurePopUp(tk.Toplevel):
     """

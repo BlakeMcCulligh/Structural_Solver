@@ -8,6 +8,7 @@ import scipy.optimize as opt
 from rebuild_program_layout.data_objects.member import Member
 from rebuild_program_layout.data_objects.material import Material
 from rebuild_program_layout.data_objects.node import Node
+from rebuild_program_layout.excel_analysis import results_frame_3d_global_opt
 from rebuild_program_layout.optimization import start_global_optimization
 import frame_3D_solver.main
 import frame_3D_solver.helper_functions as hf
@@ -33,6 +34,7 @@ class Frame3D:
         self.members: list[Member] = []
 
         self.solver_frame = None
+        self.import_data = None
 
     def updateDisplays(self):
         """
@@ -105,7 +107,7 @@ class Frame3D:
 
     def global_optimization(self, group_assignments: list[int], group_types: list[str], lower_bounds: list[float],
                             upper_bounds: list[float], cost_function: str, weight_run: bool, reaction_run: bool,
-                            internal_forces_run: bool) -> None:
+                            internal_forces_run: bool, import_data: list | None = None) -> None:
         """
         Runs global optimization on the cross-sections of unset members frame.
 
@@ -127,10 +129,12 @@ class Frame3D:
         :type reaction_run: bool
         :param internal_forces_run: Weather the internal forces are needed for the cost function.
         :type internal_forces_run: bool
+        :param import_data: List of the data from an Excel file analysis
+        :type import_data: list
         """
 
         self.load_data_solver()
-
+        self.import_data = import_data
         start_global_optimization(self._controller.executor, self, self.solver_frame,
                                   group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
                                   weight_run, reaction_run, internal_forces_run)
@@ -217,22 +221,26 @@ class Frame3D:
 
                 results.append(member_index + group_type + dim + cs)
 
-            self.updateDisplays()
-
-            file_path = self._display_frame.get_new_file_path(".xlsx", [("Excel Files", "*.xlsx")])
-
-            if file_path is not None:
-
-                df1 = pd.DataFrame(results,
-                                   columns=["Member Index", "Cross-Section _type", "d", "b", "t", "A", "Iy", "Iz","J"])
-                df2 = pd.DataFrame({'Cost': [cost]})
-
-                with pd.ExcelWriter(file_path) as writer:
-                    df1.to_excel(writer, sheet_name="Results", index=False)
-                    df2.to_excel(writer, sheet_name="Cost", index=False)
-
+            if self._display_frame is None:
+                results_frame_3d_global_opt(cost, results, self.import_data)
             else:
-                print("Failed to export optimization Results")
+
+                self.updateDisplays()
+
+                file_path = self._display_frame.get_new_file_path(".xlsx", [("Excel Files", "*.xlsx")])
+
+                if file_path is not None:
+
+                    df1 = pd.DataFrame(results,
+                                       columns=["Member Index", "Cross-Section _type", "d", "b", "t", "A", "Iy", "Iz","J"])
+                    df2 = pd.DataFrame({'Cost': [cost]})
+
+                    with pd.ExcelWriter(file_path) as writer:
+                        df1.to_excel(writer, sheet_name="Results", index=False)
+                        df2.to_excel(writer, sheet_name="Cost", index=False)
+
+                else:
+                    print("Failed to export optimization Results")
 
     def save(self, file_path):
         pass #TODO saving
@@ -539,7 +547,7 @@ class Frame3D:
         member_dist_loads = np.array(member_dist_loads).T
         for i in range(len(member_dist_loads)):
             self.members[member_dist_loads[i,0]].add_dist_load(member_dist_loads[i,1].tolist(),
-                                                               member_dist_loads[i,2:3].tolist(),
+                                                               member_dist_loads[i,2:4].tolist(),
                                                                member_dist_loads[i,4:].tolist())
 
         self.updateDisplays()
