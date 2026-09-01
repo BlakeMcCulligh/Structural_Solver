@@ -441,11 +441,11 @@ class Frame3D_Solver:
         else:
             raise Exception('Pre analysis has not been run. Aborting analysis.')
 
-    def optimize(self, memberGroup: list, memberGroupType: list,  lowerBound: list | float, upperBound: list | float,
-                 costFunction: str,  getWeight: bool = False, getReactions: bool = False,
-                 getInternalForces: bool = False, log: bool =False):
+    def optimize_global(self, memberGroup: list, memberGroupType: list, lowerBound: list | float, upperBound: list | float,
+                        costFunction: str, getWeight: bool = False, getReactions: bool = False,
+                        getInternalForces: bool = False, log: bool =False):
         """
-        Finds the optimum cross-sections for members with their cross-sections not set.
+        Finds the global optimum cross-sections for members with their cross-sections not set.
 
         :param memberGroup: list. list of indices of member groups for non set members to be assigned to.
                             Must be length of non set members.
@@ -474,7 +474,6 @@ class Frame3D_Solver:
         if log: print("num_variables: ", numVariables)
 
         self.PreAnalysisLinear(log=log)
-        t_start = time.time()
 
         constants = [self, hf.get_cross_section_props, costFunction,
                      memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
@@ -489,4 +488,54 @@ class Frame3D_Solver:
         t2 = time.time()
 
         print("Run Time: ", t2-t1)
+        return optimization_results
+
+    def optimize_local(self, memberGroup: list, memberGroupType: list, lowerBound: list | float,
+                       upperBound: list | float, inital: list, costFunction: str, getWeight: bool = False,
+                       getReactions: bool = False, getInternalForces: bool = False, log: bool =False):
+        """
+        Finds the local optimum cross-sections for members with their cross-sections not set.
+
+        :param memberGroup: list. list of indices of member groups for non set members to be assigned to.
+                            Must be length of non set members.
+        :param memberGroupType: list. List of cross-section types for each member group to be assigned.
+                                Must be length of number of member groups.
+        :param lowerBound: list or float. Lower bound on the optimization variables.
+                            If list must be length of number of variables.
+        :param upperBound: list or float. Upper bound on the optimization variables.
+                            If list must be length of number of variables.
+        :param inital: list. Initial guess for the optimization variables. Must be length of number of variables.
+        :param costFunction: String. Cost function for optimization stored in a string.
+        :param getWeight: bool. Weather the weight of all the members is needed for the cost function.
+        :param getReactions: bool. Weather the reactions are needed for the cost function.
+        :param getInternalForces: bool. Weather the internal forces are needed for the cost function.
+        :param log: bool. Used for debuging. Prints values when true.
+        :return: scipi optimization_results class: results of the optimization.
+        """
+
+        if log:
+            print("--------------------------------------------------------------")
+            print("-----------------  Local Optimization  ----------------------")
+            print("--------------------------------------------------------------")
+
+        hf.chack_inputs(self.members, memberGroup, memberGroupType)
+
+        numVariables = hf.get_num_variables(memberGroupType)
+        if log: print("num_variables: ", numVariables)
+
+        self.PreAnalysisLinear(log=log)
+        t_start = time.time()
+
+        constants = [self, hf.get_cross_section_props, costFunction,
+                     memberGroup, memberGroupType, getWeight, getReactions, getInternalForces, log]
+
+        bounds = hf.get_bounds(lowerBound, upperBound, numVariables)
+
+        t1 = time.time()
+        print("Handing over to scipy minimize")
+        optimization_results = opt.minimize(hf.get_cost, np.array(inital), args=constants, bounds=bounds,
+                                            options={'disp':True})
+        t2 = time.time()
+
+        print("Run Time: ", t2 - t1)
         return optimization_results

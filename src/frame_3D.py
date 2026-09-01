@@ -8,8 +8,8 @@ import scipy.optimize as opt
 from data_objects.member import Member
 from data_objects.material import Material
 from data_objects.node import Node
-from src.excel_analysis import results_frame_3d_global_opt
-from optimization import start_global_optimization
+from src.excel_analysis import results_frame_3d_opt
+from optimization import start_3D_frame_global_optimization, start_3D_frame_local_optimization
 import frame_3D_solver.main
 import frame_3D_solver.helper_functions as hf
 
@@ -135,12 +135,48 @@ class Frame3D:
 
         self.load_data_solver()
         self.import_data = import_data
-        start_global_optimization(self._controller.executor, self, self.solver_frame,
-                                  group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
-                                  weight_run, reaction_run, internal_forces_run)
+        start_3D_frame_global_optimization(self._controller.executor, self, self.solver_frame,
+                                           group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
+                                           weight_run, reaction_run, internal_forces_run)
 
-    def handel_global_optimization_results(self, result_opt: opt.OptimizeResult, group_assignments: list[int],
-                                           group_types: list[str]) -> None:
+    def local_optimization(self, group_assignments: list[int], group_types: list[str], lower_bounds: list[float],
+                           upper_bounds: list[float], inital: list[float], cost_function: str, weight_run: bool,
+                           reaction_run: bool, internal_forces_run: bool, import_data: list | None = None):
+        """
+        Runs local optimization on the cross-sections of unset members frame.
+
+        :param group_assignments: list of indices of member groups for non set members to be assigned to.
+                                    Must be length of non set members.
+        :type group_assignments: list[int]
+        :param group_types: List of cross-section types for each member group to be assigned. Must be length of number
+                            of member groups.
+        :type group_types: list[str]
+        :param lower_bounds: Lower bound on the optimization variables. If list must be length of number of variables.
+        :type lower_bounds: list[float]
+        :param upper_bounds: Upper bound on the optimization variables. If list must be length of number of variables.
+        :type upper_bounds: list[float]
+        :param inital: Initial guess for the optimization variables.
+        :type inital: list[float]
+        :param cost_function: Cost function for optimization stored in a string.
+        :type cost_function: str
+        :param weight_run: Weather the weight of all the members is needed for the cost function.
+        :type weight_run: bool
+        :param reaction_run: Weather the reactions are needed for the cost function.
+        :type reaction_run: bool
+        :param internal_forces_run: Weather the internal forces are needed for the cost function.
+        :type internal_forces_run: bool
+        :param import_data: List of the data from an Excel file analysis
+        :type import_data: list
+        """
+
+        self.load_data_solver()
+        self.import_data = import_data
+        start_3D_frame_local_optimization(self._controller.executor, self, self.solver_frame,
+                                          group_assignments, group_types, lower_bounds, upper_bounds, inital,
+                                          cost_function, weight_run, reaction_run, internal_forces_run)
+
+    def handel_optimization_results(self, result_opt: opt.OptimizeResult, group_assignments: list[int],
+                                    group_types: list[str], optimization_type: str) -> None:
         """
         Updates the frame to the optimized results and exports the optimization results to an Excel file.
 
@@ -152,6 +188,8 @@ class Frame3D:
         :param group_types: List of cross-section types for each member group to be assigned. Must be length of number
                             of member groups.
         :type group_types: list[str]
+        :param optimization_type: Type of optimization that was performed.
+        :type optimization_type: str
         """
 
         x = result_opt.x
@@ -222,7 +260,8 @@ class Frame3D:
                 results.append(member_index + group_type + dim + cs)
 
             if self._display_frame is None:
-                results_frame_3d_global_opt(cost, results, self.import_data)
+                results_frame_3d_opt(cost, results, self.import_data, optimization_type)
+
             else:
 
                 self.updateDisplays()
@@ -233,7 +272,7 @@ class Frame3D:
 
                     df1 = pd.DataFrame(results,
                                        columns=["Member Index", "Cross-Section _type", "d", "b", "t", "A", "Iy", "Iz","J"])
-                    df2 = pd.DataFrame({'Cost': [cost]})
+                    df2 = pd.DataFrame({'Cost': [cost], 'Optimization Type': [optimization_type]})
 
                     with pd.ExcelWriter(file_path) as writer:
                         df1.to_excel(writer, sheet_name="Results", index=False)

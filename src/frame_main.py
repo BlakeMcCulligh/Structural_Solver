@@ -8,7 +8,7 @@ from tkinter import filedialog
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.excel_analysis import frame_3d_global_opt, frame_3d_global_opt_temp
+from src.excel_analysis import frame_3d_global_opt, frame_3d_opt_temp, frame_3d_local_opt
 from src.frame_3D import Frame3D
 
 if TYPE_CHECKING:
@@ -65,10 +65,12 @@ class FrameMain(tk.Frame):
 
         excel_menu = tk.Menu(menubar, tearoff=False)
         excel_menu.add_command(label='3D Frame Global Optimization', command = self._ex_3d_frame_global_opt)
+        excel_menu.add_command(label='3D Frame Local Optimization', command=self._ex_3d_frame_local_opt)
         menubar.add_cascade(label="Excel Analysis", menu=excel_menu)
 
         ex_temp_menu = tk.Menu(menubar, tearoff=False)
         ex_temp_menu.add_command(label='3D Frame Global Optimization', command = self._ex_3d_frame_global_opt_temp)
+        ex_temp_menu.add_command(label='3D Frame Local Optimization', command=self._ex_3d_frame_local_opt_temp)
         menubar.add_cascade(label="Excel Templates", menu=ex_temp_menu)
 
         return menubar
@@ -112,6 +114,17 @@ class FrameMain(tk.Frame):
             frame = Frame3D(self.controller, None)
             frame_3d_global_opt(file_path, self.controller, frame)
 
+    def _ex_3d_frame_local_opt(self) -> None:
+        """
+        Gets the selected Excel file and then runs an optimizes of the cross-sections of a 3D frame in the local space.
+        """
+
+        file_path = select_file_gui([("Excel Files", "*.xlsx")])
+
+        if file_path is not None:
+            frame = Frame3D(self.controller, None)
+            frame_3d_local_opt(file_path, self.controller, frame)
+
     @staticmethod
     def _ex_3d_frame_global_opt_temp() -> None:
         """
@@ -121,7 +134,18 @@ class FrameMain(tk.Frame):
         file_path = get_new_file_path(".xlse", [("Excel Files", "*.xlsx")])
 
         if file_path is not None:
-            frame_3d_global_opt_temp(file_path)
+            frame_3d_opt_temp(file_path, "Global")
+
+    @staticmethod
+    def _ex_3d_frame_local_opt_temp() -> None:
+        """
+        Exports a template Excel file for the 3D frame local analysis.
+        """
+
+        file_path = get_new_file_path(".xlse", [("Excel Files", "*.xlsx")])
+
+        if file_path is not None:
+            frame_3d_opt_temp(file_path, "Local")
 
 
 def select_file_gui(file_types: list[tuple[str, str]] )  ->  str | None:
