@@ -5,6 +5,7 @@ Handels Analysis done by importing an Excel file and printing the results to an 
 from __future__ import annotations
 import numpy as np
 import pandas as pd
+import tkinter as tk
 from typing import TYPE_CHECKING
 
 from data_objects.material import Material
@@ -36,6 +37,8 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
     :param frame: Frame to be optimized.
     :type frame: Frame3D
     """
+
+    fail = False
 
     # Nodes
     nodes_df = pd.read_excel(file_path, sheet_name='Nodes')
@@ -180,28 +183,39 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
 
     # Cost Function
     cost_df = pd.read_excel(file_path, sheet_name='Cost_Function')
-    method_of_defination = cost_df["Cost Function Name"].tolist()[0]
 
-    if method_of_defination == "Other":
-        cost_function = cost_df["Function"].tolist()[0]
-        weight_run = cost_df["Weight Run"].tolist()[0]
-        reaction_run = cost_df["Reaction Run"].tolist()[0]
-        internal_forces_run = cost_df["Internal Forces Run"].tolist()[0]
-    elif method_of_defination == "2027_Steel_Bridge":
-        cost_function = "max(max(DZ)) + sum(Weight)"
-        weight_run = True
-        reaction_run = False
-        internal_forces_run = False
-    else:
-        cost_function = ""
-        weight_run = False
-        reaction_run = False
-        internal_forces_run = False
+    try:
+        method_of_defination = cost_df["Cost Function Name"].tolist()[0]
+    except IndexError:
+        fail = True
+        tk.messagebox.showinfo("Undefined Information", "Please define a valid 'Cost Function Name'.")
 
-    import_data = [file_path, nodes_df, mem_df, mat_df, s_df, r_df, n_df, mp_df, md_df, mga_df, mgt_df, cost_df]
+    if not fail:
+        # noinspection PyUnboundLocalVariable
+        if method_of_defination == "Other":
+            cost_function = cost_df["Function"].tolist()[0]
+            weight_run = cost_df["Weight Run"].tolist()[0]
+            reaction_run = cost_df["Reaction Run"].tolist()[0]
+            internal_forces_run = cost_df["Internal Forces Run"].tolist()[0]
+        elif method_of_defination == "2027_Steel_Bridge":
+            cost_function = "max(max(DZ)) + sum(Weight)"
+            weight_run = True
+            reaction_run = False
+            internal_forces_run = False
+        else:
+            fail = True
+            tk.messagebox.showinfo("Undefined Information", "Please define a valid 'Cost Function Name'.")
 
-    frame.global_optimization(group_assignments, group_types, lower_bounds, upper_bounds, cost_function, weight_run,
-                              reaction_run, internal_forces_run, import_data = import_data)
+    if not fail:
+        import_data = [file_path, nodes_df, mem_df, mat_df, s_df, r_df, n_df, mp_df, md_df, mga_df, mgt_df, cost_df]
+
+        # noinspection PyBroadException
+        try:
+            # noinspection PyUnboundLocalVariable
+            frame.global_optimization(group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
+                                      weight_run, reaction_run, internal_forces_run, import_data = import_data)
+        except Exception as e:
+            tk.messagebox.showinfo("Error", "An error ha occurred while running the analysis: {e}")
 
 def results_frame_3d_global_opt(cost: float, results: list, import_data: list) -> None:
     """
@@ -234,6 +248,8 @@ def results_frame_3d_global_opt(cost: float, results: list, import_data: list) -
         cost_df.to_excel(writer, sheet_name="Cost_Function", index=False)
         df1.to_excel(writer, sheet_name="Results", index=False)
         df2.to_excel(writer, sheet_name="Cost", index=False)
+
+    tk.messagebox.showinfo("Analysis Complete", "Analysis Complete")
 
 def frame_3d_global_opt_temp(file_path: str) -> None:
     """
@@ -273,3 +289,5 @@ def frame_3d_global_opt_temp(file_path: str) -> None:
         mga_df.to_excel(writer, sheet_name="Member_Group_Assignments", index=False)
         mgt_df.to_excel(writer, sheet_name="Member_Group_Types", index=False)
         cost_df.to_excel(writer, sheet_name="Cost_Function", index=False)
+
+    tk.messagebox.showinfo("File Made", "Your excel tmeplate has been made.")
