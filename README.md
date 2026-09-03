@@ -9,11 +9,13 @@ This program is still in beta, undergoing constant changes, and has many incompl
 To use the program, run src.__main__.py, and a window will open, allowing you to either create a structure using the program's UI and then run analyses and optimizations on it, or directly fill out Excel templates with all the data for that analysis or optimization.
 
 ### Structure File Analysis/Optimization:
+These are still very much a work in progress.
 - 3D Frame Linear Analysis
 - 3D Frame Global Cross-Section Optimization
 
 ### Excel File Analysis/Optimization:
 - 3D Frame Global Cross-Section Optimization
+- 3D Frame Local Cross-Section Optimization
 
 If you have any questions, don't be afraid to ask at bmcculli@uwaterloo.ca
 
