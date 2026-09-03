@@ -16,6 +16,8 @@ These are still very much a work in progress.
 ### Excel File Analysis/Optimization:
 - 3D Frame Global Cross-Section Optimization
 - 3D Frame Local Cross-Section Optimization
+- 2D Frame Global Cross-Section Optimization
+- 2D Frame Local Cross-Section Optimization
 
 If you have any questions, don't be afraid to ask at bmcculli@uwaterloo.ca
 
