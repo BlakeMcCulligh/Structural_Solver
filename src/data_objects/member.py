@@ -9,6 +9,7 @@ from src.data_objects.node import Node
 
 if TYPE_CHECKING:
     from src.frame_3D import Frame3D
+    from src.frame_2D import Frame2D
 
 __author__ = "Blake McCulligh"
 __copyright__ = "Copyright 2026 Blake McCulligh"
@@ -26,7 +27,7 @@ class Member:
     """
 
     def __init__(self, node_1_index: int, node_2_index: int, material_index: int, set_cross_section_props: bool,
-                 cross_section_props: list[float], frame: Frame3D):
+                 cross_section_props: list[float], frame: Frame3D | Frame2D):
         """
         Constructor. sets the data for a member.
 

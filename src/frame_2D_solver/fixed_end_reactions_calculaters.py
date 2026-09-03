@@ -1,0 +1,141 @@
+"""
+Holds functions used to calculate the end reactions of a member if it were fixed.
+"""
+
+import numpy as np
+
+__author__ = "Blake McCulligh"
+__copyright__ = "Copyright 2026 Blake McCulligh"
+__credits__ = ["Blake McCulligh"]
+
+__license__ = "MIT"
+__version__ = "0.1.0b1"
+__maintainer__ = "Blake McCulligh"
+__email__ = "bmcculli@uwaterloo.ca"
+__status__ = "Beta"
+
+def point_load_x(F: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
+    """
+    Calculates the reactions of a member from x direction point loads.
+
+    :param F: ndarray. Force applied to the member.
+    :param x: ndarray. Location of the force applied to the member.
+    :param L: float. Length of the member.
+    :return: ndarray, Reactions of the member.
+    """
+
+    b = L - x
+    n = len(F)
+
+    R = np.zeros((n, 6))
+
+    R[:, 0] = -F * b / L
+    R[:, 3] = -F * x / L
+
+    return R
+
+def point_load_y(F: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
+    """
+    Calculates the reactions of a member from y direction point loads.
+
+    :param F: ndarray. Force applied to the member.
+    :param x: ndarray. Location of the force applied to the member.
+    :param L: float. Length of the member.
+    :return: ndarray, Reactions of the member.
+    """
+
+    b = L - x
+    n = len(F)
+
+    R = np.zeros((n, 6))
+
+    R[:, 1]  = -F * b**2 * (L + 2*x) / L**3
+    R[:, 2]  = -F * x * b**2 / L**2
+    R[:, 4]  = -F * x**2 * (L + 2*b) / L**3
+    R[:,5]  =  F * x**2 * b / L**2
+
+    return R
+
+def moment(M: np.ndarray, x: np.ndarray, L: float) -> np.ndarray:
+    """
+    Calculates the reactions of a member from x direction moments.
+
+    :param M: ndarray. Moment applied to the member.
+    :param x: ndarray. Location of the force applied to the member.
+    :param L: float. Length of the member.
+    :return: ndarray, Reactions of the member.
+    """
+
+    b = L - x
+    n = len(M)
+
+    R = np.zeros((n, 6))
+
+    R[:, 2] = -M * b / L
+    R[:, 5] = -M * x / L
+
+    return R
+
+
+def distributed_load_x(w: list, loc: list, L: float) -> np.ndarray:
+    """
+    Calculates the reactions of a member from an x direction distributed load.
+
+    :param w: list. Distributed load represented by the magnitude at both ends of it.
+    :param loc: list. Start and end points of the distributed load.
+    :param L: float. Length of the member.
+    :return: ndarray, Reactions of the member.
+    """
+
+    reactions = np.zeros((6, 1))
+
+    reactions[0, 0] = 1 / (6 * L) * (loc[0] - loc[1]) * (
+                3 * L * w[0] + 3 * L * w[1] - 2 * w[0] * loc[0] - w[0] * loc[1] - w[1] * loc[0] - 2 * w[1] * loc[1])
+
+    reactions[3, 0] = 1 / (6 * L) * (loc[0] - loc[1]) * (
+                2 * w[0] * loc[0] + w[0] * loc[1] + w[1] * loc[0] + 2 * w[1] * loc[1])
+
+    return reactions
+
+def distributed_load_y(w: list, loc: list, L: float) -> np.ndarray:
+    """
+    Calculates the reactions of a member from a y direction distributed load.
+
+    :param w: list. Distributed load represented by the magnitude at both ends of it.
+    :param loc: list. Start and end points of the distributed load.
+    :param L: float. Length of the member.
+    :return: ndarray, Reactions of the member.
+    """
+
+    reactions = np.zeros((6, 1))
+
+    reactions[1, 0] = (loc[0] - loc[1]) * (
+            10 * L ** 3 * w[0] + 10 * L ** 3 * w[1] - 15 * L * w[0] * loc[0] ** 2 - 10 * L * w[0] * loc[0] * loc[
+        1] - 5 * L * w[0] * loc[1] ** 2 - 5 * L * w[1] * loc[0] ** 2 - 10 * L * w[1] * loc[0] * loc[1] - 15 * L * w[1] *
+            loc[1] ** 2 + 8 * w[0] * loc[0] ** 3 + 6 * w[0] * loc[0] ** 2 * loc[1] + 4 * w[0] * loc[0] * loc[
+                1] ** 2 + 2 * w[0] * loc[1] ** 3 + 2 * w[1] * loc[0] ** 3 + 4 * w[1] * loc[0] ** 2 * loc[1] + 6 * w[1] *
+            loc[0] * loc[1] ** 2 + 8 * w[1] * loc[1] ** 3) / (20 * L ** 3)
+
+    reactions[2, 0] = (loc[0] - loc[1]) * (
+            20 * L ** 2 * w[0] * loc[0] + 10 * L ** 2 * w[0] * loc[1] + 10 * L ** 2 * w[1] * loc[0] + 20 * L ** 2 * w[
+        1] * loc[1] - 30 * L * w[0] * loc[0] ** 2 - 20 * L * w[0] * loc[0] * loc[1] - 10 * L * w[0] * loc[
+                1] ** 2 - 10 * L * w[1] * loc[0] ** 2 - 20 * L * w[1] * loc[0] * loc[1] - 30 * L * w[1] * loc[
+                1] ** 2 + 12 * w[0] * loc[0] ** 3 + 9 * w[0] * loc[0] ** 2 * loc[1] + 6 * w[0] * loc[0] * loc[
+                1] ** 2 + 3 * w[0] * loc[1] ** 3 + 3 * w[1] * loc[0] ** 3 + 6 * w[1] * loc[0] ** 2 * loc[1] + 9 * w[1] *
+            loc[0] * loc[1] ** 2 + 12 * w[1] * loc[1] ** 3) / (60 * L ** 2)
+
+    reactions[4, 0] = -(loc[0] - loc[1]) * (
+            -15 * L * w[0] * loc[0] ** 2 - 10 * L * w[0] * loc[0] * loc[1] - 5 * L * w[0] * loc[1] ** 2 - 5 * L * w[1] *
+            loc[0] ** 2 - 10 * L * w[1] * loc[0] * loc[1] - 15 * L * w[1] * loc[1] ** 2 + 8 * w[0] * loc[0] ** 3 + 6 *
+            w[0] * loc[0] ** 2 * loc[1] + 4 * w[0] * loc[0] * loc[1] ** 2 + 2 * w[0] * loc[1] ** 3 + 2 * w[1] * loc[
+                0] ** 3 + 4 * w[1] * loc[0] ** 2 * loc[1] + 6 * w[1] * loc[0] * loc[1] ** 2 + 8 * w[1] * loc[
+                1] ** 3) / (20 * L ** 3)
+
+    reactions[5, 0] = (loc[0] - loc[1]) * (
+            -15 * L * w[0] * loc[0] ** 2 - 10 * L * w[0] * loc[0] * loc[1] - 5 * L * w[0] * loc[1] ** 2 - 5 * L * w[1] *
+            loc[0] ** 2 - 10 * L * w[1] * loc[0] * loc[1] - 15 * L * w[1] * loc[1] ** 2 + 12 * w[0] * loc[0] ** 3 + 9 *
+            w[0] * loc[0] ** 2 * loc[1] + 6 * w[0] * loc[0] * loc[1] ** 2 + 3 * w[0] * loc[1] ** 3 + 3 * w[1] * loc[
+                0] ** 3 + 6 * w[1] * loc[0] ** 2 * loc[1] + 9 * w[1] * loc[0] * loc[1] ** 2 + 12 * w[1] * loc[
+                1] ** 3) / (60 * L ** 2)
+
+    return reactions
