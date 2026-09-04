@@ -217,7 +217,7 @@ class Frame3D:
 
             for i in range(len(group_types)):
                 group_type = group_types[i]
-                startLocation.append(sum(groupLength) - 1)
+                startLocation.append(sum(groupLength))
                 if group_type == ["Angle"]:
                     groupLength.append(3)
                 elif group_type == ["RectHSS"]:

@@ -50,7 +50,8 @@ def frame_3d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
             frame.global_optimization(group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
                                       weight_run, reaction_run, internal_forces_run, import_data = import_data)
         except Exception as e:
-            tk.messagebox.showinfo("Error", "An error ha occurred while running the analysis: {e}")
+            print(e)
+            tk.messagebox.showinfo("Error", f"An error ha occurred while running the analysis: {e}")
 
 def frame_3d_local_opt(file_path: str, controller: __main__.Structural_Solver, frame: Frame3D) -> None:
     """
@@ -75,7 +76,8 @@ def frame_3d_local_opt(file_path: str, controller: __main__.Structural_Solver, f
             frame.local_optimization(group_assignments, group_types, lower_bounds, upper_bounds, inital, cost_function,
                                       weight_run, reaction_run, internal_forces_run, import_data = import_data)
         except Exception as e:
-            tk.messagebox.showinfo("Error", "An error ha occurred while running the analysis: {e}")
+            print(e)
+            tk.messagebox.showinfo("Error", f"An error ha occurred while running the analysis: {e}")
 
 def results_frame_3d_opt(cost: float, results: list, import_data: list, optimization_type: str) -> None:
     """
@@ -382,12 +384,13 @@ def frame_2d_global_opt(file_path: str, controller: __main__.Structural_Solver, 
     if group_assignments is not None:
 
         # noinspection PyBroadException
-        # try:
+        try:
             # noinspection PyUnboundLocalVariable
             frame.global_optimization(group_assignments, group_types, lower_bounds, upper_bounds, cost_function,
                                       weight_run, reaction_run, import_data = import_data)
-        # except Exception as e:
-        #     tk.messagebox.showinfo("Error", "An error ha occurred while running the analysis: {e}")
+        except Exception as e:
+            print(e)
+            tk.messagebox.showinfo("Error", f"An error ha occurred while running the analysis: {e}")
 
 def frame_2d_local_opt(file_path: str, controller: __main__.Structural_Solver, frame: Frame2D) -> None:
     """
@@ -412,7 +415,8 @@ def frame_2d_local_opt(file_path: str, controller: __main__.Structural_Solver, f
             frame.local_optimization(group_assignments, group_types, lower_bounds, upper_bounds, inital, cost_function,
                                       weight_run, reaction_run, import_data = import_data)
         except Exception as e:
-            tk.messagebox.showinfo("Error", "An error ha occurred while running the analysis: {e}")
+            print(e)
+            tk.messagebox.showinfo("Error", f"An error ha occurred while running the analysis: {e}")
 
 def results_frame_2d_opt(cost: float, results: list, import_data: list, optimization_type: str) -> None:
     """
@@ -508,7 +512,7 @@ def _import_2D_opt_data_from_excel(file_path: str, frame: Frame2D):
     for i in range(len(supports)):
         node = None
         for j in range(len(nodes[0])):
-            if nodes[0][j] == supports[i, 0]:
+            if str(nodes[0][j]) == str(supports[i, 0]):
                 node = j
         if node is not None:
             frame.nodes[node].set_support(supports[i, 1:].tolist())
@@ -632,7 +636,7 @@ def _import_2D_opt_data_from_excel(file_path: str, frame: Frame2D):
             weight_run = cost_df["Weight Run"].tolist()[0]
             reaction_run = cost_df["Reaction Run"].tolist()[0]
         elif method_of_defination == "2027_Steel_Bridge":
-            cost_function = "max(max(DY)) + sum(Weight)"
+            cost_function = "DY.min() + sum(Weight)"
             weight_run = True
             reaction_run = False
         else:
